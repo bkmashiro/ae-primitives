@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+[[mods]]
+modId="aeprimitives"
+version="${version}"
+displayName="AE Primitives"
+authors="Yuzhe"
+description='Compact AE2-native machines for common world-interaction processing.'
+[[dependencies.aeprimitives]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.aeprimitives]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.aeprimitives]]
+modId="ae2"
+type="required"
+versionRange="[19.2,20.0)"
+ordering="AFTER"
+side="BOTH"

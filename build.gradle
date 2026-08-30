@@ -1,0 +1,28 @@
+plugins { id 'java'; id 'net.neoforged.moddev' version '2.0.78' }
+group = 'dev.yuzhe.aeprimitives'
+version = mod_version
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+repositories { exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } } }
+dependencies {
+ implementation "maven.modrinth:ae2:${ae2_version}"
+ runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ testImplementation platform('org.junit:junit-bom:5.11.4')
+ testImplementation 'org.junit.jupiter:junit-jupiter'
+ testImplementation 'org.assertj:assertj-core:3.27.3'
+}
+neoForge {
+ version = neoforge_version
+ runs {
+  client { client(); gameDirectory = project.file('run-client') }
+  server { server(); programArgument '--nogui'; gameDirectory = project.file('run-server') }
+  gameTestServer { type='gameTestServer'; gameDirectory=project.file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives' }
+ }
+ mods { aeprimitives { sourceSet sourceSets.main } }
+ unitTest { enable(); testedMod = mods.aeprimitives }
+}
+tasks.withType(JavaCompile).configureEach { options.encoding='UTF-8'; options.release=21 }
+tasks.named('jar', Jar) { exclude 'dev/yuzhe/aeprimitives/gametest/**'; exclude 'data/aeprimitives/structure/empty.nbt' }
+tasks.register('verifyAll') { group='verification'; dependsOn tasks.named('build'), tasks.named('runGameTestServer') }
+test { useJUnitPlatform() }
+def expandedModVersion=providers.gradleProperty('mod_version').get()
+processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }

@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "aeprimitives:block/casing",
+    "up": "aeprimitives:block/casing_top",
+    "north": "aeprimitives:block/fortune_front",
+    "south": "aeprimitives:block/casing",
+    "west": "aeprimitives:block/casing",
+    "east": "aeprimitives:block/casing"
+  }
+}

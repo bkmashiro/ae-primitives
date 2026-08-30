@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "aeprimitives:block/transformation_chamber"
+    }
+  }
+}
