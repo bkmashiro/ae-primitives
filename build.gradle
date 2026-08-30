@@ -30,6 +30,32 @@ neoForge {
 tasks.withType(JavaCompile).configureEach { options.encoding='UTF-8'; options.release=21 }
 tasks.named('jar', Jar) { exclude 'dev/yuzhe/aeprimitives/gametest/**'; exclude 'data/aeprimitives/structure/empty.nbt' }
 tasks.register('verifyAll') { group='verification'; dependsOn tasks.named('build'), tasks.named('runGameTestServer') }
+tasks.register('machineAssetTests', Exec) {
+ group='verification'
+ description='Run the deterministic CSG, texture and lint unit tests.'
+ commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tools/tests', '-v'
+ inputs.files fileTree('tools') { include 'machine_assets.py', 'tests/**/*.py' }
+}
+tasks.register('generateMachineAssets', Exec) {
+ group='build'
+ description='Compile declarative CSG machine specs into Minecraft models and textures.'
+ commandLine 'python3', project.file('tools/generate_machine_assets.py')
+ inputs.files fileTree('assets-src/machines') { include '*.json' }
+ inputs.files project.files('tools/machine_assets.py', 'tools/generate_machine_assets.py')
+ outputs.file project.file('src/main/resources/assets/aeprimitives/models/block/transformation_chamber.json')
+ outputs.files fileTree('src/main/resources/assets/aeprimitives/textures/block') { include 'transformation_*.png' }
+ outputs.file layout.buildDirectory.file('machine-assets/report.json')
+}
+tasks.register('lintMachineAssets', Exec) {
+ group='verification'
+ description='Fail when generated machine assets contain a lint diagnostic.'
+ dependsOn tasks.named('machineAssetTests'), tasks.named('generateMachineAssets')
+ commandLine 'python3', project.file('tools/lint_machine_asset_report.py')
+ inputs.file layout.buildDirectory.file('machine-assets/report.json')
+ inputs.file project.file('tools/lint_machine_asset_report.py')
+}
+tasks.named('processResources') { dependsOn tasks.named('generateMachineAssets') }
+tasks.named('verifyAll') { dependsOn tasks.named('lintMachineAssets') }
 tasks.register('visualGallery', Exec) {
  group='verification'
  description='Generate an interactive gallery from the shipped block models and textures.'
@@ -38,6 +64,7 @@ tasks.register('visualGallery', Exec) {
  inputs.file project.file('tools/render_block_gallery.py')
  outputs.file layout.buildDirectory.file('visual-gallery/index.html')
 }
+tasks.named('visualGallery') { dependsOn tasks.named('generateMachineAssets') }
 tasks.register('exportVisualGallery', Exec) {
  group='verification'
  description='Export the block gallery and individual machine previews to PNG without opening a browser.'

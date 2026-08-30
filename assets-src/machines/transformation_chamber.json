@@ -1,0 +1,79 @@
+{
+  "id": "transformation_chamber",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {"texture": "casing"},
+    "glass": {"texture": "glass"},
+    "back": {
+      "texture": "transformation_back",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "vertical_gradient", "top": "#243341", "bottom": "#121922"},
+          {"type": "border", "width": 1, "color": "#536779"},
+          {"type": "rect", "bounds": [7, 1, 9, 15], "color": "#344a58"},
+          {"type": "rect", "bounds": [1, 7, 15, 9], "color": "#344a58"},
+          {"type": "noise", "amount": 4, "seed": 31}
+        ]
+      }
+    },
+    "fluix": {
+      "texture": "transformation_fluix",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "vertical_gradient", "top": "#f4c6ff", "bottom": "#572f91"},
+          {"type": "border", "width": 2, "color": "#9a64d8"},
+          {"type": "rect", "bounds": [6, 1, 10, 15], "color": "#c57cf0"},
+          {"type": "noise", "amount": 5, "seed": 47}
+        ]
+      }
+    },
+    "charged": {
+      "texture": "transformation_charged",
+      "texture_spec": {"size": 16, "layers": [{"type": "fill", "color": "#2f788c"}, {"type": "border", "width": 2, "color": "#8cf6ff"}, {"type": "noise", "amount": 5, "seed": 11}]}
+    },
+    "redstone": {
+      "texture": "transformation_redstone",
+      "texture_spec": {"size": 16, "layers": [{"type": "fill", "color": "#8c2733"}, {"type": "border", "width": 2, "color": "#ef6a75"}, {"type": "noise", "amount": 5, "seed": 13}]}
+    },
+    "quartz": {
+      "texture": "transformation_quartz",
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#fff8e6", "bottom": "#afa79e"}, {"type": "border", "width": 2, "color": "#e8e0d2"}, {"type": "noise", "amount": 3, "seed": 17}]}
+    },
+    "energy": {
+      "texture": "transformation_energy",
+      "texture_spec": {"size": 16, "layers": [{"type": "fill", "color": "#8d65d7"}, {"type": "border", "width": 3, "color": "#d8b6ff"}]}
+    }
+  },
+  "root": {
+    "type": "group",
+    "children": [
+      {
+        "type": "boolean",
+        "op": "subtract",
+        "left": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "casing"},
+        "right": {
+          "type": "group",
+          "allow_overlap": true,
+          "children": [
+            {"type": "box", "bounds": [5, 2, 0, 11, 4, 7]},
+            {"type": "box", "bounds": [3, 4, 0, 13, 12, 7]},
+            {"type": "box", "bounds": [5, 12, 0, 11, 14, 7]}
+          ]
+        }
+      },
+      {"id": "back", "type": "box", "composition": "overlay", "bounds": [3, 3, 6.75, 13, 13, 7], "material": "back", "allow_overlap_with": ["solid"]},
+      {"id": "glass", "type": "box", "composition": "overlay", "bounds": [3, 2, 0.25, 13, 14, 0.5], "material": "glass", "allow_overlap_with": ["solid"]},
+      {"id": "fluix_core", "type": "crystal", "composition": "overlay", "bounds": [6.25, 4, 4, 9.75, 11, 6.5], "material": "fluix", "axis": "z", "angle": 45},
+      {"id": "charged_input", "type": "crystal", "composition": "overlay", "bounds": [3.25, 7, 3, 5.25, 9, 5], "material": "charged", "axis": "z", "angle": 45},
+      {"id": "redstone_input", "type": "crystal", "composition": "overlay", "bounds": [10.75, 7, 3, 12.75, 9, 5], "material": "redstone", "axis": "z", "angle": 45},
+      {"id": "quartz_input", "type": "crystal", "composition": "overlay", "bounds": [7, 11.75, 3, 9, 13.75, 5], "material": "quartz", "axis": "z", "angle": 45},
+      {"id": "beam_left", "type": "box", "composition": "overlay", "bounds": [5, 7.5, 3.8, 6.5, 8.5, 4.6], "material": "energy", "allow_overlap_with": ["charged_input", "fluix_core"]},
+      {"id": "beam_right", "type": "box", "composition": "overlay", "bounds": [9.5, 7.5, 3.8, 11, 8.5, 4.6], "material": "energy", "allow_overlap_with": ["redstone_input", "fluix_core"]},
+      {"id": "beam_top", "type": "box", "composition": "overlay", "bounds": [7.5, 10.75, 3.8, 8.5, 12, 4.6], "material": "energy", "allow_overlap_with": ["quartz_input", "fluix_core"]}
+    ]
+  }
+}

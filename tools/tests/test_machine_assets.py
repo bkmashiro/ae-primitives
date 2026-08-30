@@ -1,0 +1,153 @@
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from machine_assets import compile_machine, render_texture, write_png
+
+
+class CsgCompilerTest(unittest.TestCase):
+    def test_subtract_carves_a_cavity_and_emits_boxes(self):
+        spec = {
+            "id": "carved",
+            "materials": {"shell": {"texture": "shell"}},
+            "root": {
+                "type": "boolean",
+                "op": "subtract",
+                "left": {"type": "box", "bounds": [0, 0, 0, 4, 4, 4], "material": "shell"},
+                "right": {"type": "box", "bounds": [1, 1, 0, 3, 3, 3]},
+            },
+        }
+
+        result = compile_machine(spec)
+
+        self.assertEqual(52, result.solid_voxels)
+        self.assertGreater(len(result.model["elements"]), 1)
+        self.assertFalse([d for d in result.diagnostics if d.severity == "error"])
+
+    def test_xor_removes_the_shared_volume(self):
+        spec = {
+            "id": "xor",
+            "materials": {"a": {"texture": "a"}, "b": {"texture": "b"}},
+            "root": {
+                "type": "boolean",
+                "op": "xor",
+                "children": [
+                    {"type": "box", "bounds": [0, 0, 0, 3, 1, 1], "material": "a"},
+                    {"type": "box", "bounds": [2, 0, 0, 5, 1, 1], "material": "b"},
+                ],
+            },
+        }
+
+        result = compile_machine(spec)
+
+        self.assertEqual(4, result.solid_voxels)
+
+    def test_unacknowledged_union_overlap_is_reported(self):
+        spec = {
+            "id": "overlap",
+            "materials": {"a": {"texture": "a"}, "b": {"texture": "b"}},
+            "root": {
+                "type": "boolean",
+                "op": "union",
+                "children": [
+                    {"type": "box", "bounds": [0, 0, 0, 3, 3, 3], "material": "a"},
+                    {"type": "box", "bounds": [2, 2, 2, 4, 4, 4], "material": "b"},
+                ],
+            },
+        }
+
+        result = compile_machine(spec)
+
+        self.assertIn("geometry.overlap", {d.code for d in result.diagnostics})
+
+    def test_disconnected_solid_is_warning_unless_declared(self):
+        root = {
+            "type": "group",
+            "children": [
+                {"type": "box", "bounds": [0, 0, 0, 2, 2, 2], "material": "a"},
+                {"type": "box", "bounds": [5, 5, 5, 6, 6, 6], "material": "a"},
+            ],
+        }
+        spec = {"id": "islands", "materials": {"a": {"texture": "a"}}, "root": root}
+        result = compile_machine(spec)
+        self.assertIn("topology.disconnected", {d.code for d in result.diagnostics})
+
+        root["allow_islands"] = True
+        allowed = compile_machine(spec)
+        self.assertNotIn("topology.disconnected", {d.code for d in allowed.diagnostics})
+
+    def test_overlay_overlap_requires_an_explicit_allowance(self):
+        spec = {
+            "id": "overlay",
+            "materials": {"core": {"texture": "core"}, "beam": {"texture": "beam"}},
+            "root": {
+                "type": "group",
+                "children": [
+                    {"id": "core", "type": "box", "composition": "overlay", "bounds": [4, 4, 4, 8, 8, 8], "material": "core"},
+                    {"id": "beam", "type": "box", "composition": "overlay", "bounds": [0, 5, 5, 6, 7, 7], "material": "beam"},
+                ],
+            },
+        }
+
+        result = compile_machine(spec)
+        self.assertIn("overlay.intersection", {d.code for d in result.diagnostics})
+
+        spec["root"]["children"][1]["allow_overlap_with"] = ["core"]
+        allowed = compile_machine(spec)
+        self.assertNotIn("overlay.intersection", {d.code for d in allowed.diagnostics})
+
+    def test_overlay_inside_solid_is_reported_unless_allowed(self):
+        spec = {
+            "id": "embedded",
+            "materials": {"shell": {"texture": "shell"}, "glass": {"texture": "glass"}},
+            "root": {
+                "type": "group",
+                "children": [
+                    {"type": "box", "bounds": [0, 0, 0, 4, 4, 4], "material": "shell"},
+                    {
+                        "id": "glass",
+                        "type": "box",
+                        "composition": "overlay",
+                        "bounds": [1, 1, 1, 3, 3, 3],
+                        "material": "glass",
+                    },
+                ],
+            },
+        }
+        result = compile_machine(spec)
+        self.assertIn("overlay.solid_intersection", {d.code for d in result.diagnostics})
+
+        spec["root"]["children"][1]["allow_overlap_with"] = ["solid"]
+        allowed = compile_machine(spec)
+        self.assertNotIn("overlay.solid_intersection", {d.code for d in allowed.diagnostics})
+
+
+class TextureCompilerTest(unittest.TestCase):
+    def test_texture_layers_are_deterministic_and_writable(self):
+        spec = {
+            "size": 16,
+            "layers": [
+                {"type": "fill", "color": "#182028"},
+                {"type": "border", "width": 2, "color": "#6bdde8"},
+                {"type": "noise", "amount": 8, "seed": 7},
+            ],
+        }
+        first = render_texture(spec)
+        second = render_texture(spec)
+        self.assertEqual(first, second)
+        self.assertNotEqual(first[0][0], first[8][8])
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "texture.png"
+            write_png(output, first)
+            contents = output.read_bytes()
+            self.assertTrue(contents.startswith(b"\x89PNG\r\n\x1a\n"))
+            self.assertEqual((16, 16), tuple(int.from_bytes(contents[i:i + 4], "big") for i in (16, 20)))
+
+
+if __name__ == "__main__":
+    unittest.main()

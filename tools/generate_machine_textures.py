@@ -53,18 +53,3 @@ beam = canvas((83, 221, 232, 255))
 rect(beam, 0, 0, 16, 2, (202, 255, 255, 255))
 rect(beam, 0, 14, 16, 16, (29, 114, 143, 255))
 write_png("fortune_beam.png", beam)
-
-core = canvas((27, 80, 91, 255))
-rect(core, 2, 2, 14, 14, (34, 176, 191, 255))
-rect(core, 4, 4, 12, 12, (103, 238, 230, 255))
-rect(core, 6, 6, 10, 10, (224, 255, 250, 255))
-for x, y in ((1, 1), (13, 1), (1, 13), (13, 13)):
-    rect(core, x, y, x + 2, y + 2, (126, 73, 197, 255))
-write_png("transform_core.png", core)
-
-matter = canvas((92, 64, 130, 255))
-rect(matter, 2, 2, 8, 8, (173, 101, 209, 255))
-rect(matter, 8, 2, 14, 8, (62, 203, 215, 255))
-rect(matter, 2, 8, 8, 14, (219, 98, 145, 255))
-rect(matter, 8, 8, 14, 14, (111, 223, 170, 255))
-write_png("transform_matter.png", matter)

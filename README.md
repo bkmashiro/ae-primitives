@@ -54,6 +54,8 @@ Images are written to `build/visual-gallery/images/`. The exporter runs its rend
 
 For interactive inspection, generate `build/visual-gallery/index.html` with `./gradlew visualGallery` and open it manually. Use these previews for fast geometry, UV and texture review; Minecraft remains the final check for lighting, transparency and dynamic contents.
 
+Machine models can also be generated from the repository's tree-shaped CSG and procedural texture format. See [Machine asset pipeline](docs/machine-assets.md).
+
 ## License
 
 [MIT](LICENSE)
