@@ -42,6 +42,17 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 ./gradlew verifyAll
 ```
 
+## Visual gallery
+
+Generate an interactive preview directly from the shipped block models and textures:
+
+```bash
+./gradlew visualGallery
+open build/visual-gallery/index.html
+```
+
+Use the gallery for fast geometry, UV and texture review. Minecraft remains the final check for lighting, transparency and dynamic contents.
+
 ## License
 
 [MIT](LICENSE)

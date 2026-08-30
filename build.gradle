@@ -23,6 +23,14 @@ neoForge {
 tasks.withType(JavaCompile).configureEach { options.encoding='UTF-8'; options.release=21 }
 tasks.named('jar', Jar) { exclude 'dev/yuzhe/aeprimitives/gametest/**'; exclude 'data/aeprimitives/structure/empty.nbt' }
 tasks.register('verifyAll') { group='verification'; dependsOn tasks.named('build'), tasks.named('runGameTestServer') }
+tasks.register('visualGallery', Exec) {
+ group='verification'
+ description='Generate an interactive gallery from the shipped block models and textures.'
+ commandLine 'python3', project.file('tools/render_block_gallery.py')
+ inputs.files fileTree('src/main/resources/assets/aeprimitives') { include 'models/block/*.json', 'textures/**/*.png' }
+ inputs.file project.file('tools/render_block_gallery.py')
+ outputs.file layout.buildDirectory.file('visual-gallery/index.html')
+}
 test { useJUnitPlatform() }
 def expandedModVersion=providers.gradleProperty('mod_version').get()
 processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }
