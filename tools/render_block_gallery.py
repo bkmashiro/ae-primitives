@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import base64
 import json
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ MODELS = ASSETS / "models/block"
 TEXTURES = ASSETS / "textures"
 OUTPUT = ROOT / "build/visual-gallery/index.html"
 MODEL_IDS = ("fortune_chamber", "transformation_chamber", "resource_generator")
+CLIENT_JAR = Path.home() / ".gradle/caches/neoformruntime/artifacts/minecraft_1.21.1_client.jar"
 
 FACE_VERTICES = {
     "north": lambda a, b: [[b[0], b[1], a[2]], [a[0], b[1], a[2]], [a[0], a[1], a[2]], [b[0], a[1], a[2]]],
@@ -28,7 +30,11 @@ NORMALS = {
 }
 
 def png_data(path: Path) -> str:
-    raw = base64.b64encode(path.read_bytes()).decode("ascii")
+    return png_bytes(path.read_bytes())
+
+
+def png_bytes(contents: bytes) -> str:
+    raw = base64.b64encode(contents).decode("ascii")
     return f"data:image/png;base64,{raw}"
 
 
@@ -73,6 +79,25 @@ def load_model(model_id: str) -> tuple[dict, dict[str, str]]:
                 "texture": key,
             })
         normalized.append({"faces": faces})
+
+    if model_id == "resource_generator" and CLIENT_JAR.exists():
+        with zipfile.ZipFile(CLIENT_JAR) as client:
+            previews = (
+                ("minecraft:block/water_still", "assets/minecraft/textures/block/water_still.png", "#3f76e4", [3, 3, 3], [6, 11, 12]),
+                ("minecraft:block/lava_still", "assets/minecraft/textures/block/lava_still.png", None, [10, 3, 3], [13, 11, 12]),
+            )
+            for key, entry, tint, lower, upper in previews:
+                used[key] = png_bytes(client.read(entry))
+                normalized.append({"faces": [
+                    {
+                        "direction": direction,
+                        "vertices": FACE_VERTICES[direction](lower, upper),
+                        "normal": NORMALS[direction],
+                        "texture": key,
+                        "tint": tint,
+                    }
+                    for direction in FACE_VERTICES
+                ]})
     return {"id": model_id, "label": model_id.replace("_", " ").title(), "elements": normalized}, used
 
 
@@ -115,7 +140,7 @@ function rot(p,yaw,pitch){let x=p[0]-8,y=p[1]-8,z=p[2]-8;const cy=Math.cos(yaw),
 function rotN(n,yaw,pitch){const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);const rx=n[0]*cy-n[2]*sy,rz=n[0]*sy+n[2]*cy;return [rx,n[1]*cp-rz*sp,n[1]*sp+rz*cp]}
 function render(canvas,model){const ctx=canvas.getContext('2d');const dpr=devicePixelRatio||1,w=canvas.clientWidth||380,h=w*.82;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);const yaw=+document.querySelector('#yaw').value*Math.PI/180,pitch=+document.querySelector('#pitch').value*Math.PI/180,scale=Math.min(w,h)*.044,cx=w*.5,cy=h*.52;let faces=[];
 for(const el of model.elements)for(const f of el.faces){const n=rotN(f.normal,yaw,pitch);if(n[2]>=-.015)continue;const pts=f.vertices.map(p=>rot(p,yaw,pitch));faces.push({...f,pts,depth:pts.reduce((a,p)=>a+p[2],0)/4,shade:f.direction==='up'?.02:(f.direction==='east'||f.direction==='west')?.18:.08})}faces.sort((a,b)=>b.depth-a.depth);
-ctx.imageSmoothingEnabled=false;for(const f of faces){const p=f.pts.map(q=>[cx+q[0]*scale,cy-q[1]*scale]),img=loaded[f.texture];ctx.save();ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.clip();ctx.transform((p[1][0]-p[0][0])/img.width,(p[1][1]-p[0][1])/img.width,(p[3][0]-p[0][0])/img.height,(p[3][1]-p[0][1])/img.height,p[0][0],p[0][1]);ctx.drawImage(img,0,0);ctx.restore();if(f.shade){ctx.save();ctx.fillStyle=`rgba(0,0,0,${f.shade})`;ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.fill();ctx.restore()}}
+ctx.imageSmoothingEnabled=false;for(const f of faces){const p=f.pts.map(q=>[cx+q[0]*scale,cy-q[1]*scale]),img=loaded[f.texture],tw=img.width,th=Math.min(img.height,img.width);ctx.save();ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.clip();ctx.transform((p[1][0]-p[0][0])/tw,(p[1][1]-p[0][1])/tw,(p[3][0]-p[0][0])/th,(p[3][1]-p[0][1])/th,p[0][0],p[0][1]);ctx.drawImage(img,0,0,tw,th,0,0,tw,th);ctx.restore();if(f.tint){ctx.save();ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.58;ctx.fillStyle=f.tint;ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.fill();ctx.restore()}if(f.shade){ctx.save();ctx.fillStyle=`rgba(0,0,0,${f.shade})`;ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.fill();ctx.restore()}}
 ctx.strokeStyle='#ffffff20';ctx.strokeRect(cx-8*scale,cy-8*scale,16*scale,16*scale)}
 function renderAll(){document.querySelectorAll('canvas[data-i]').forEach(c=>render(c,DATA.models[+c.dataset.i]))}
 loadImages().then(()=>{const grid=document.querySelector('#grid');DATA.models.forEach((m,i)=>{const card=document.createElement('article');card.className='card';card.innerHTML=`<h2>${m.label}</h2><canvas data-i="${i}"></canvas>`;grid.appendChild(card)});document.querySelector('#gui').src=DATA.gui;renderAll();document.querySelectorAll('input').forEach(x=>x.addEventListener('input',renderAll));addEventListener('resize',renderAll)})

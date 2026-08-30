@@ -3,254 +3,76 @@
     "particle": "aeprimitives:block/casing",
     "casing": "aeprimitives:block/casing",
     "top": "aeprimitives:block/casing_top",
-    "glass": "aeprimitives:block/glass",
-    "water": "aeprimitives:block/water",
-    "lava": "aeprimitives:block/lava"
+    "glass": "aeprimitives:block/glass"
   },
   "render_type": "minecraft:translucent",
   "elements": [
     {
-      "from": [
-        0,
-        0,
-        0
-      ],
-      "to": [
-        16,
-        3,
-        16
-      ],
+      "from": [0, 0, 0],
+      "to": [16, 3, 16],
       "faces": {
-        "down": {
-          "texture": "#casing"
-        },
-        "up": {
-          "texture": "#casing"
-        },
-        "north": {
-          "texture": "#casing"
-        },
-        "south": {
-          "texture": "#casing"
-        },
-        "west": {
-          "texture": "#casing"
-        },
-        "east": {
-          "texture": "#casing"
-        }
+        "down": { "texture": "#casing" },
+        "up": { "texture": "#casing" },
+        "north": { "texture": "#casing" },
+        "south": { "texture": "#casing" },
+        "west": { "texture": "#casing" },
+        "east": { "texture": "#casing" }
       }
     },
     {
-      "from": [
-        0,
-        13,
-        0
-      ],
-      "to": [
-        16,
-        16,
-        16
-      ],
+      "from": [0, 13, 0],
+      "to": [16, 16, 16],
       "faces": {
-        "down": {
-          "texture": "#casing"
-        },
-        "up": {
-          "texture": "#top"
-        },
-        "north": {
-          "texture": "#casing"
-        },
-        "south": {
-          "texture": "#casing"
-        },
-        "west": {
-          "texture": "#casing"
-        },
-        "east": {
-          "texture": "#casing"
-        }
+        "down": { "texture": "#casing" },
+        "up": { "texture": "#top" },
+        "north": { "texture": "#casing" },
+        "south": { "texture": "#casing" },
+        "west": { "texture": "#casing" },
+        "east": { "texture": "#casing" }
       }
     },
     {
-      "from": [
-        0,
-        3,
-        0
-      ],
-      "to": [
-        3,
-        13,
-        16
-      ],
+      "from": [0, 3, 0],
+      "to": [3, 13, 16],
       "faces": {
-        "down": {
-          "texture": "#casing"
-        },
-        "up": {
-          "texture": "#casing"
-        },
-        "north": {
-          "texture": "#casing"
-        },
-        "south": {
-          "texture": "#casing"
-        },
-        "west": {
-          "texture": "#casing"
-        },
-        "east": {
-          "texture": "#casing"
-        }
+        "down": { "texture": "#casing" },
+        "up": { "texture": "#casing" },
+        "north": { "texture": "#casing" },
+        "south": { "texture": "#casing" },
+        "west": { "texture": "#casing" },
+        "east": { "texture": "#casing" }
       }
     },
     {
-      "from": [
-        13,
-        3,
-        0
-      ],
-      "to": [
-        16,
-        13,
-        16
-      ],
+      "from": [13, 3, 0],
+      "to": [16, 13, 16],
       "faces": {
-        "down": {
-          "texture": "#casing"
-        },
-        "up": {
-          "texture": "#casing"
-        },
-        "north": {
-          "texture": "#casing"
-        },
-        "south": {
-          "texture": "#casing"
-        },
-        "west": {
-          "texture": "#casing"
-        },
-        "east": {
-          "texture": "#casing"
-        }
+        "down": { "texture": "#casing" },
+        "up": { "texture": "#casing" },
+        "north": { "texture": "#casing" },
+        "south": { "texture": "#casing" },
+        "west": { "texture": "#casing" },
+        "east": { "texture": "#casing" }
       }
     },
     {
-      "from": [
-        3,
-        3,
-        13
-      ],
-      "to": [
-        13,
-        13,
-        16
-      ],
+      "from": [3, 3, 13],
+      "to": [13, 13, 16],
       "faces": {
-        "down": {
-          "texture": "#casing"
-        },
-        "up": {
-          "texture": "#casing"
-        },
-        "north": {
-          "texture": "#casing"
-        },
-        "south": {
-          "texture": "#casing"
-        },
-        "west": {
-          "texture": "#casing"
-        },
-        "east": {
-          "texture": "#casing"
-        }
+        "down": { "texture": "#casing" },
+        "up": { "texture": "#casing" },
+        "north": { "texture": "#casing" },
+        "south": { "texture": "#casing" },
+        "west": { "texture": "#casing" },
+        "east": { "texture": "#casing" }
       }
     },
     {
-      "from": [
-        3,
-        3,
-        3
-      ],
-      "to": [
-        7,
-        11,
-        12
-      ],
+      "from": [3, 3, 0.5],
+      "to": [13, 13, 1],
       "faces": {
-        "down": {
-          "texture": "#water"
-        },
-        "up": {
-          "texture": "#water"
-        },
-        "north": {
-          "texture": "#water"
-        },
-        "south": {
-          "texture": "#water"
-        },
-        "west": {
-          "texture": "#water"
-        },
-        "east": {
-          "texture": "#water"
-        }
-      }
-    },
-    {
-      "from": [
-        9,
-        3,
-        3
-      ],
-      "to": [
-        13,
-        11,
-        12
-      ],
-      "faces": {
-        "down": {
-          "texture": "#lava"
-        },
-        "up": {
-          "texture": "#lava"
-        },
-        "north": {
-          "texture": "#lava"
-        },
-        "south": {
-          "texture": "#lava"
-        },
-        "west": {
-          "texture": "#lava"
-        },
-        "east": {
-          "texture": "#lava"
-        }
-      }
-    },
-    {
-      "from": [
-        3,
-        3,
-        0.5
-      ],
-      "to": [
-        13,
-        13,
-        1
-      ],
-      "faces": {
-        "north": {
-          "texture": "#glass"
-        },
-        "south": {
-          "texture": "#glass"
-        }
+        "north": { "texture": "#glass" },
+        "south": { "texture": "#glass" }
       }
     }
   ]

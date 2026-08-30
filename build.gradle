@@ -13,7 +13,14 @@ dependencies {
 neoForge {
  version = neoforge_version
  runs {
-  client { client(); gameDirectory = project.file('run-client') }
+  client {
+   client()
+   gameDirectory = project.file('run-client')
+   if (providers.gradleProperty('quickPlayMultiplayer').isPresent()) {
+    programArgument '--quickPlayMultiplayer'
+    programArgument providers.gradleProperty('quickPlayMultiplayer').get()
+   }
+  }
   server { server(); programArgument '--nogui'; gameDirectory = project.file('run-server') }
   gameTestServer { type='gameTestServer'; gameDirectory=project.file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives' }
  }
