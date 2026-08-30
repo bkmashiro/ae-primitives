@@ -1,11 +1,32 @@
 {
-  "parent": "minecraft:block/cube",
   "textures": {
-    "down": "aeprimitives:block/casing",
-    "up": "aeprimitives:block/casing_top",
-    "north": "aeprimitives:block/fortune_front",
-    "south": "aeprimitives:block/casing",
-    "west": "aeprimitives:block/casing",
-    "east": "aeprimitives:block/casing"
-  }
+    "particle": "aeprimitives:block/casing",
+    "casing": "aeprimitives:block/casing",
+    "top": "aeprimitives:block/casing_top",
+    "glass": "aeprimitives:block/glass",
+    "back": "aeprimitives:block/chamber_back",
+    "ore": "aeprimitives:block/fortune_ore",
+    "beam": "aeprimitives:block/fortune_beam"
+  },
+  "render_type": "minecraft:translucent",
+  "elements": [
+    { "from": [0, 0, 1], "to": [16, 16, 16], "faces": {
+      "down": {"texture":"#casing"}, "up": {"texture":"#top"},
+      "north": {"texture":"#back"}, "south": {"texture":"#casing"},
+      "west": {"texture":"#casing"}, "east": {"texture":"#casing"}
+    }},
+    { "from": [0, 0, 0], "to": [16, 3, 2], "faces": {"north":{"texture":"#casing"},"up":{"texture":"#casing"}}},
+    { "from": [0, 13, 0], "to": [16, 16, 2], "faces": {"north":{"texture":"#casing"},"down":{"texture":"#casing"},"up":{"texture":"#top"}}},
+    { "from": [0, 3, 0], "to": [3, 13, 2], "faces": {"north":{"texture":"#casing"},"east":{"texture":"#casing"}}},
+    { "from": [13, 3, 0], "to": [16, 13, 2], "faces": {"north":{"texture":"#casing"},"west":{"texture":"#casing"}}},
+    { "from": [5, 4, 5], "to": [11, 10, 11], "faces": {
+      "down":{"texture":"#ore"},"up":{"texture":"#ore"},"north":{"texture":"#ore"},
+      "south":{"texture":"#ore"},"west":{"texture":"#ore"},"east":{"texture":"#ore"}
+    }},
+    { "from": [4, 10, 6], "to": [12, 12, 8], "rotation": {"origin":[8,11,7],"axis":"z","angle":-22.5}, "faces": {
+      "down":{"texture":"#beam"},"up":{"texture":"#beam"},"north":{"texture":"#beam"},
+      "south":{"texture":"#beam"},"west":{"texture":"#beam"},"east":{"texture":"#beam"}
+    }},
+    { "from": [3, 3, 0.25], "to": [13, 13, 0.5], "faces": {"north":{"texture":"#glass"},"south":{"texture":"#glass"}}}
+  ]
 }

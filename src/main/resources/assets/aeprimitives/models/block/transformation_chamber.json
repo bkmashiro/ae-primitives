@@ -1,11 +1,31 @@
 {
-  "parent": "minecraft:block/cube",
   "textures": {
-    "down": "aeprimitives:block/casing",
-    "up": "aeprimitives:block/casing_top",
-    "north": "aeprimitives:block/transform_front",
-    "south": "aeprimitives:block/casing",
-    "west": "aeprimitives:block/casing",
-    "east": "aeprimitives:block/casing"
-  }
+    "particle": "aeprimitives:block/casing",
+    "casing": "aeprimitives:block/casing",
+    "top": "aeprimitives:block/casing_top",
+    "glass": "aeprimitives:block/glass",
+    "back": "aeprimitives:block/chamber_back",
+    "core": "aeprimitives:block/transform_core",
+    "matter": "aeprimitives:block/transform_matter"
+  },
+  "render_type": "minecraft:translucent",
+  "elements": [
+    { "from": [0, 0, 1], "to": [16, 16, 16], "faces": {
+      "down": {"texture":"#casing"}, "up": {"texture":"#top"},
+      "north": {"texture":"#back"}, "south": {"texture":"#casing"},
+      "west": {"texture":"#casing"}, "east": {"texture":"#casing"}
+    }},
+    { "from": [0, 0, 0], "to": [16, 3, 2], "faces": {"north":{"texture":"#casing"},"up":{"texture":"#casing"}}},
+    { "from": [0, 13, 0], "to": [16, 16, 2], "faces": {"north":{"texture":"#casing"},"down":{"texture":"#casing"},"up":{"texture":"#top"}}},
+    { "from": [0, 3, 0], "to": [3, 13, 2], "faces": {"north":{"texture":"#casing"},"east":{"texture":"#casing"}}},
+    { "from": [13, 3, 0], "to": [16, 13, 2], "faces": {"north":{"texture":"#casing"},"west":{"texture":"#casing"}}},
+    { "from": [5, 5, 5], "to": [11, 11, 9], "faces": {
+      "down":{"texture":"#core"},"up":{"texture":"#core"},"north":{"texture":"#core"},
+      "south":{"texture":"#core"},"west":{"texture":"#core"},"east":{"texture":"#core"}
+    }},
+    { "from": [2, 5, 6], "to": [5, 8, 9], "faces": {"north":{"texture":"#matter"},"south":{"texture":"#matter"},"west":{"texture":"#matter"},"east":{"texture":"#matter"},"up":{"texture":"#matter"},"down":{"texture":"#matter"}}},
+    { "from": [11, 5, 6], "to": [14, 8, 9], "faces": {"north":{"texture":"#matter"},"south":{"texture":"#matter"},"west":{"texture":"#matter"},"east":{"texture":"#matter"},"up":{"texture":"#matter"},"down":{"texture":"#matter"}}},
+    { "from": [6.5, 11, 6], "to": [9.5, 14, 9], "faces": {"north":{"texture":"#matter"},"south":{"texture":"#matter"},"west":{"texture":"#matter"},"east":{"texture":"#matter"},"up":{"texture":"#matter"},"down":{"texture":"#matter"}}},
+    { "from": [3, 3, 0.25], "to": [13, 13, 0.5], "faces": {"north":{"texture":"#glass"},"south":{"texture":"#glass"}}}
+  ]
 }
