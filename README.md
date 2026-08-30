@@ -44,14 +44,15 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
 ## Visual gallery
 
-Generate an interactive preview directly from the shipped block models and textures:
+Export the gallery and one PNG per machine without opening a browser window:
 
 ```bash
-./gradlew visualGallery
-open build/visual-gallery/index.html
+./gradlew exportVisualGallery
 ```
 
-Use the gallery for fast geometry, UV and texture review. Minecraft remains the final check for lighting, transparency and dynamic contents.
+Images are written to `build/visual-gallery/images/`. The exporter runs its renderer headlessly and exits when the PNGs are ready.
+
+For interactive inspection, generate `build/visual-gallery/index.html` with `./gradlew visualGallery` and open it manually. Use these previews for fast geometry, UV and texture review; Minecraft remains the final check for lighting, transparency and dynamic contents.
 
 ## License
 

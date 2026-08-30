@@ -38,6 +38,15 @@ tasks.register('visualGallery', Exec) {
  inputs.file project.file('tools/render_block_gallery.py')
  outputs.file layout.buildDirectory.file('visual-gallery/index.html')
 }
+tasks.register('exportVisualGallery', Exec) {
+ group='verification'
+ description='Export the block gallery and individual machine previews to PNG without opening a browser.'
+ dependsOn tasks.named('visualGallery')
+ commandLine 'python3', project.file('tools/export_block_gallery.py')
+ inputs.file project.file('tools/export_block_gallery.py')
+ inputs.file layout.buildDirectory.file('visual-gallery/index.html')
+ outputs.dir layout.buildDirectory.dir('visual-gallery/images')
+}
 test { useJUnitPlatform() }
 def expandedModVersion=providers.gradleProperty('mod_version').get()
 processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }
