@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "animations": {
+    "work": {
+      "clock": "world",
+      "loop": "repeat",
+      "duration": 1.0,
+      "tracks": [
+        {
+          "target": "runtime:input",
+          "property": "translate_y",
+          "easing": "smoothstep",
+          "keyframes": [
+            [
+              0.0,
+              0.12
+            ],
+            [
+              0.75,
+              -0.18
+            ],
+            [
+              0.9,
+              -0.18
+            ],
+            [
+              1.0,
+              0.12
+            ]
+          ]
+        }
+      ]
+    }
+  }
+}

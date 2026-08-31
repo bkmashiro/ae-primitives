@@ -3,6 +3,7 @@
   "block.aeprimitives.transformation_chamber": "ME 转化舱",
   "block.aeprimitives.resource_generator": "ME 资源发生器",
   "block.aeprimitives.growth_chamber": "ME 晶体生长舱",
+  "block.aeprimitives.compost_chamber": "ME 堆肥舱",
   "block.aeprimitives.resonance_controller": "ME 共振铸造厂控制器",
   "block.aeprimitives.resonance_casing": "共振外壳",
   "block.aeprimitives.resonance_coil": "共振线圈",

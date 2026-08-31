@@ -52,6 +52,14 @@ public final class PrimitiveMachineGameTests {
                 "growth chamber produced no certus quartz"));
     }
 
+    @GameTest(template = "empty", timeoutTicks = 260)
+    public static void compostChamberPreservesVanillaCompostYield(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.COMPOST_CHAMBER.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.CAKE, 7));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.BONE_MEAL),
+                "compost chamber produced no bone meal"));
+    }
+
     @GameTest(template = "empty", timeoutTicks = 220)
     public static void resonanceFoundryFormsAndProcessesInParallel(GameTestHelper helper) {
         var machine = setupFoundry(helper);

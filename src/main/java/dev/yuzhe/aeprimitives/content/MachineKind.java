@@ -5,6 +5,7 @@ public enum MachineKind {
     TRANSFORMATION("transformation_chamber", 20),
     GENERATOR("resource_generator", 40),
     GROWTH("growth_chamber", 80),
+    COMPOST("compost_chamber", 20),
     FOUNDRY("resonance_controller", 20);
 
     private final String id;

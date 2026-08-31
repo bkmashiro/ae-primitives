@@ -1,0 +1,6 @@
+[
+  {
+    "block": "aeprimitives:compost_chamber",
+    "blockEntitySnbt": "{inventory:{Size:12,Items:[{Slot:0,id:\"minecraft:cake\",count:7}]},compostProgress:4.0f,progress:10}"
+  }
+]

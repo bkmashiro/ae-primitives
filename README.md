@@ -22,6 +22,10 @@ Generates cobblestone without placing water, lava or blocks in the world. Its tr
 
 Grows Certus Quartz or Fluix crystals from their dust and sand. The crystal rises through the chamber as the cycle progresses.
 
+### ME Compost Chamber
+
+Turns vanilla compostable items into bone meal without Export Buses, hoppers or a world composter. It uses each item's vanilla composting value, so compacting the setup does not improve its long-run yield.
+
 ### ME Resonance Foundry
 
 A 3×2×3 multiblock for high-throughput AE2 transform recipes. Its four coil columns run up to four transformations per cycle through one controller and shared inventory.

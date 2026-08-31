@@ -1,6 +1,7 @@
 package dev.yuzhe.aeprimitives.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.yuzhe.aeprimitives.content.MachineKind;
 import dev.yuzhe.aeprimitives.content.PrimitiveMachineBlockEntity;
@@ -15,6 +16,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
@@ -36,6 +38,7 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
             case GROWTH -> {
                 if (be.getLevel() != null) renderGrowth(be, partialTick, pose, buffers, light, overlay);
             }
+            case COMPOST -> renderCompost(be, partialTick, pose, buffers, light, overlay);
             case FOUNDRY -> {}
         }
     }
@@ -94,6 +97,30 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
         float scale = 0.18f + phase * 0.16f;
         renderItem(be, input, pose, buffers, light, overlay, 0.5, 0.38 + phase * 0.18, 0.34,
                 scale, (be.getLevel().getGameTime() + partialTick) * 1.2f);
+    }
+
+    private static void renderCompost(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
+                                      MultiBufferSource buffers, int light, int overlay) {
+        float clock = be.getLevel() == null ? 0 : (be.getLevel().getGameTime() + partialTick) / 80f;
+        renderComposterBlock(pose, buffers, light, overlay);
+
+        var input = be.inventory().getStackInSlot(0);
+        if (input.isEmpty()) return;
+        float bob = SimpleMachineAnimations.sample(
+                be.kind(), "work", "runtime:input", "translate_y", clock, 0);
+        renderItem(be, input, pose, buffers, light, overlay,
+                0.56, 0.74 + bob, 0.16, 0.25f, -20);
+    }
+
+    private static void renderComposterBlock(PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        pose.pushPose();
+        pose.translate(0.5, 0.47, 0.46);
+        pose.mulPose(Axis.YP.rotationDegrees(35));
+        pose.scale(0.54f, 0.54f, 0.54f);
+        pose.translate(-0.5, -0.5, -0.5);
+        Minecraft.getInstance().getBlockRenderer().renderSingleBlock(
+                Blocks.COMPOSTER.defaultBlockState(), pose, buffers, light, overlay);
+        pose.popPose();
     }
 
     private static void renderItem(PrimitiveMachineBlockEntity be, ItemStack stack, PoseStack pose,

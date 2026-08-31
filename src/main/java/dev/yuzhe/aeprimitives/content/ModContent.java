@@ -33,6 +33,7 @@ public final class ModContent {
     public static final DeferredBlock<PrimitiveMachineBlock> TRANSFORMATION_CHAMBER = block(MachineKind.TRANSFORMATION);
     public static final DeferredBlock<PrimitiveMachineBlock> RESOURCE_GENERATOR = block(MachineKind.GENERATOR);
     public static final DeferredBlock<PrimitiveMachineBlock> GROWTH_CHAMBER = block(MachineKind.GROWTH);
+    public static final DeferredBlock<PrimitiveMachineBlock> COMPOST_CHAMBER = block(MachineKind.COMPOST);
     public static final DeferredBlock<PrimitiveMachineBlock> RESONANCE_CONTROLLER = block(MachineKind.FOUNDRY);
     public static final DeferredBlock<ResonancePartBlock> RESONANCE_CASING = part("resonance_casing");
     public static final DeferredBlock<ResonancePartBlock> RESONANCE_COIL = part("resonance_coil");
@@ -42,6 +43,7 @@ public final class ModContent {
     public static final DeferredItem<BlockItem> TRANSFORMATION_CHAMBER_ITEM = item(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER);
     public static final DeferredItem<BlockItem> RESOURCE_GENERATOR_ITEM = item(MachineKind.GENERATOR, RESOURCE_GENERATOR);
     public static final DeferredItem<BlockItem> GROWTH_CHAMBER_ITEM = item(MachineKind.GROWTH, GROWTH_CHAMBER);
+    public static final DeferredItem<BlockItem> COMPOST_CHAMBER_ITEM = item(MachineKind.COMPOST, COMPOST_CHAMBER);
     public static final DeferredItem<BlockItem> RESONANCE_CONTROLLER_ITEM = item(MachineKind.FOUNDRY, RESONANCE_CONTROLLER);
     public static final DeferredItem<BlockItem> RESONANCE_CASING_ITEM = simpleItem("resonance_casing", RESONANCE_CASING);
     public static final DeferredItem<BlockItem> RESONANCE_COIL_ITEM = simpleItem("resonance_coil", RESONANCE_COIL);
@@ -51,11 +53,12 @@ public final class ModContent {
             BLOCK_ENTITIES.register("primitive_machine", () -> {
                 var type = BlockEntityType.Builder.of(PrimitiveMachineBlockEntity::new,
                         FORTUNE_CHAMBER.get(), TRANSFORMATION_CHAMBER.get(), RESOURCE_GENERATOR.get(),
-                        GROWTH_CHAMBER.get(), RESONANCE_CONTROLLER.get()).build(null);
+                        GROWTH_CHAMBER.get(), COMPOST_CHAMBER.get(), RESONANCE_CONTROLLER.get()).build(null);
                 FORTUNE_CHAMBER.get().bind(type);
                 TRANSFORMATION_CHAMBER.get().bind(type);
                 RESOURCE_GENERATOR.get().bind(type);
                 GROWTH_CHAMBER.get().bind(type);
+                COMPOST_CHAMBER.get().bind(type);
                 RESONANCE_CONTROLLER.get().bind(type);
                 AEBaseBlockEntity.registerBlockEntityItem(type, FORTUNE_CHAMBER_ITEM.get());
                 return type;
@@ -72,6 +75,7 @@ public final class ModContent {
                         output.accept(TRANSFORMATION_CHAMBER_ITEM.get());
                         output.accept(RESOURCE_GENERATOR_ITEM.get());
                         output.accept(GROWTH_CHAMBER_ITEM.get());
+                        output.accept(COMPOST_CHAMBER_ITEM.get());
                         output.accept(RESONANCE_CONTROLLER_ITEM.get());
                         output.accept(RESONANCE_CASING_ITEM.get());
                         output.accept(RESONANCE_COIL_ITEM.get());

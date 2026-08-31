@@ -27,6 +27,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -42,6 +43,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     };
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private int progress;
+    private float compostProgress;
     private boolean structureDirty = true;
     private boolean formed;
 
@@ -57,6 +59,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     public ItemStackHandler inventory() { return inventory; }
     public MachineKind kind() { return ((PrimitiveMachineBlock) getBlockState().getBlock()).kind(); }
     public int progress() { return progress; }
+    public float compostProgress() { return compostProgress; }
     public boolean isFormed() { return formed; }
     public void markStructureDirty() { structureDirty = true; }
 
@@ -79,6 +82,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
             case TRANSFORMATION -> processTransformation(server);
             case GENERATOR -> queueAll(List.of(new ItemStack(Items.COBBLESTONE)));
             case GROWTH -> processGrowth();
+            case COMPOST -> processCompost();
             case FOUNDRY -> {
                 for (int parallel = 0; parallel < 4 && processTransformation(server); parallel++) {}
             }
@@ -147,6 +151,18 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         dust.shrink(1);
         sand.shrink(1);
         queueAll(List.of(result));
+    }
+
+    private void processCompost() {
+        var input = inventory.getStackInSlot(0);
+        if (input.isEmpty()) return;
+        float chance = ComposterBlock.COMPOSTABLES.getFloat(input.getItem());
+        if (chance <= 0) return;
+        var result = CompostAccumulator.add(compostProgress, chance);
+        if (result.completed() && !canQueueAll(List.of(new ItemStack(Items.BONE_MEAL)))) return;
+        input.shrink(1);
+        compostProgress = result.progress();
+        if (result.completed()) queueAll(List.of(new ItemStack(Items.BONE_MEAL)));
     }
 
     private void updateFoundryStructure(ServerLevel server) {
@@ -234,12 +250,14 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putInt("progress", progress);
+        tag.putFloat("compostProgress", compostProgress);
         tag.putBoolean("formed", formed);
     }
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadTag(tag, registries);
         if (tag.contains("inventory")) inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         progress = tag.getInt("progress");
+        compostProgress = tag.getFloat("compostProgress");
         formed = tag.getBoolean("formed");
         structureDirty = true;
     }
