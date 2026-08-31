@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BPB",
+    "CFC",
+    "BPB"
+  ],
+  "key": {
+    "B": { "item": "ae2:blank_pattern" },
+    "P": { "item": "ae2:pattern_provider" },
+    "C": { "item": "ae2:calculation_processor" },
+    "F": { "item": "aeprimitives:basic_machine_frame" }
+  },
+  "result": {
+    "id": "aeprimitives:pattern_provider_card",
+    "count": 1
+  }
+}

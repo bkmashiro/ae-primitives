@@ -21,5 +21,6 @@
   "item.aeprimitives.basic_machine_frame": "Basic Machine Frame",
   "item.aeprimitives.advanced_machine_frame": "Advanced Machine Frame",
   "item.aeprimitives.ultimate_machine_frame": "Ultimate Machine Frame",
+  "item.aeprimitives.pattern_provider_card": "Pattern Provider Card",
   "itemGroup.aeprimitives": "AE Primitives"
 }

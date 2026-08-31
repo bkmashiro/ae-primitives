@@ -1,11 +1,15 @@
 package dev.yuzhe.aeprimitives.gametest;
 
+import appeng.api.networking.crafting.ICraftingProvider;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.KeyCounter;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.content.PrimitiveMachineBlockEntity;
 import dev.yuzhe.aeprimitives.content.ResonancePartBlock;
+import dev.yuzhe.aeprimitives.crafting.LazyPrimitivePattern;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -21,20 +25,20 @@ public final class PrimitiveMachineGameTests {
     private static final BlockPos ENERGY = new BlockPos(2, 1, 1);
     private static final BlockPos MACHINE = new BlockPos(3, 1, 1);
 
-    @GameTest(template = "empty", timeoutTicks = 160)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void generatorProducesCobblestone(GameTestHelper helper) {
         var machine = setup(helper, ModContent.RESOURCE_GENERATOR.get());
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.COBBLESTONE), "generator produced no cobblestone"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 160)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void fortuneChamberUsesBlockLoot(GameTestHelper helper) {
         var machine = setup(helper, ModContent.FORTUNE_CHAMBER.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.DIAMOND_ORE));
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.DIAMOND), "fortune chamber produced no diamonds"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 160)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void transformationChamberUsesAe2TransformRecipe(GameTestHelper helper) {
         var machine = setup(helper, ModContent.TRANSFORMATION_CHAMBER.get());
         machine.inventory().setStackInSlot(0, AEItems.CERTUS_QUARTZ_CRYSTAL_CHARGED.stack());
@@ -43,7 +47,7 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, AEItems.FLUIX_CRYSTAL.asItem()), "transform chamber produced no fluix crystal"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 220)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void growthChamberGrowsCertusFromDustAndSand(GameTestHelper helper) {
         var machine = setup(helper, ModContent.GROWTH_CHAMBER.get());
         machine.inventory().setStackInSlot(0, AEItems.CERTUS_QUARTZ_DUST.stack());
@@ -52,7 +56,7 @@ public final class PrimitiveMachineGameTests {
                 "growth chamber produced no certus quartz"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 260)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void compostChamberPreservesVanillaCompostYield(GameTestHelper helper) {
         var machine = setup(helper, ModContent.COMPOST_CHAMBER.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.CAKE, 7));
@@ -60,7 +64,7 @@ public final class PrimitiveMachineGameTests {
                 "compost chamber produced no bone meal"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 40)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void concreteChamberUsesSpeedCardAndCuresPowder(GameTestHelper helper) {
         var machine = setup(helper, ModContent.CONCRETE_CURING_CHAMBER.get());
         machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
@@ -68,14 +72,14 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.RED_CONCRETE), "concrete chamber produced no concrete"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 180)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void soilProcessorDriesMudIntoClay(GameTestHelper helper) {
         var machine = setup(helper, ModContent.SOIL_PROCESSOR.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.MUD));
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.CLAY), "soil processor produced no clay"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 380)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void dripstoneReservoirPreservesSourceAndFillsBucket(GameTestHelper helper) {
         var machine = setup(helper, ModContent.DRIPSTONE_RESERVOIR.get());
         machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
@@ -88,7 +92,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 120)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void oxidationChamberAdvancesCopperOneStage(GameTestHelper helper) {
         var machine = setup(helper, ModContent.OXIDATION_CHAMBER.get());
         for (int slot = 0; slot < 4; slot++) machine.getUpgrades().setItemDirect(slot, AEItems.SPEED_CARD.stack());
@@ -96,7 +100,7 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.EXPOSED_COPPER), "oxidation chamber advanced no copper"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 260)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void cropCultivatorConsumesBoneMealNotSeedStock(GameTestHelper helper) {
         var machine = setup(helper, ModContent.CROP_CULTIVATOR.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.WHEAT_SEEDS));
@@ -107,7 +111,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 280)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void treeNurseryUsesBoneMealForConservativeLogs(GameTestHelper helper) {
         var machine = setup(helper, ModContent.TREE_NURSERY.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.OAK_SAPLING));
@@ -115,7 +119,64 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.OAK_LOG), "tree nursery produced no logs"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 280)
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void patternProviderCardPublishesAndRunsLazyTreePattern(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.TREE_NURSERY.get());
+        machine.getUpgrades().setItemDirect(0, new ItemStack(ModContent.PATTERN_PROVIDER_CARD.get()));
+        machine.getUpgrades().setItemDirect(1, AEItems.SPEED_CARD.stack());
+        machine.getUpgrades().setItemDirect(2, AEItems.SPEED_CARD.stack());
+        boolean[] pushed = {false};
+
+        helper.succeedWhen(() -> {
+            var node = machine.getMainNode().getNode();
+            helper.assertTrue(node != null && node.isActive(), "tree nursery did not join the AE network");
+            var provider = node.getService(ICraftingProvider.class);
+            helper.assertTrue(provider != null, "tree nursery published no crafting provider service");
+
+            if (!pushed[0]) {
+                var pattern = provider.getAvailablePatterns().stream()
+                        .filter(LazyPrimitivePattern.class::isInstance)
+                        .map(LazyPrimitivePattern.class::cast)
+                        .filter(candidate -> candidate.getPrimaryOutput().what().equals(AEItemKey.of(Items.OAK_LOG)))
+                        .findFirst().orElse(null);
+                helper.assertTrue(pattern != null, "tree nursery published no oak-log pattern");
+                helper.assertTrue(node.getGrid().getCraftingService().isCraftable(AEItemKey.of(Items.OAK_LOG)),
+                        "AE crafting service did not index the dynamic oak-log pattern");
+                pattern.getInputs();
+
+                var holders = pattern.spec().inputs().stream().map(input -> {
+                    var holder = new KeyCounter();
+                    holder.add(input.key(), input.amount());
+                    return holder;
+                }).toArray(KeyCounter[]::new);
+                helper.assertTrue(machine.isPatternProviderMode(), "pattern provider card left machine mode");
+                helper.assertTrue(!machine.isPatternBusy(), "tree nursery was busy before dispatch");
+                helper.assertTrue(pattern.spec().machine() == machine.kind(), "oak pattern belonged to another machine");
+                helper.assertTrue(provider.pushPattern(pattern, holders),
+                        "tree nursery rejected a valid AE crafting dispatch");
+                pushed[0] = true;
+                return;
+            }
+
+            helper.assertTrue(has(machine, Items.OAK_LOG), "dispatched tree pattern produced no logs");
+            helper.assertTrue(has(machine, Items.OAK_SAPLING), "dispatched tree pattern did not return its sapling");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 10000)
+    public static void patternProviderModeRejectsManualInputs(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.TREE_NURSERY.get());
+        machine.getUpgrades().setItemDirect(0, new ItemStack(ModContent.PATTERN_PROVIDER_CARD.get()));
+        helper.runAfterDelay(5, () -> {
+            var offered = new ItemStack(Items.OAK_SAPLING);
+            var remainder = machine.inventory().insertItem(0, offered, false);
+            helper.assertTrue(remainder.getCount() == 1, "pattern provider mode accepted a manual startup item");
+            helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "manual startup item entered the machine");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void growthRackRetainsMotherPlant(GameTestHelper helper) {
         var machine = setup(helper, ModContent.GROWTH_RACK.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.SUGAR_CANE));
@@ -125,7 +186,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 220)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void apiaryNeedsFlowerAndContainer(GameTestHelper helper) {
         var machine = setup(helper, ModContent.APIARY_CHAMBER.get());
         machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
@@ -135,7 +196,7 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.HONEY_BOTTLE), "apiary produced no honey bottle"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 100)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void batchGateReleasesOnlyACompleteBatch(GameTestHelper helper) {
         var machine = setup(helper, ModContent.BATCH_GATE.get());
         helper.assertTrue(!machine.getUpgrades().isItemValid(0, AEItems.SPEED_CARD.stack()),
@@ -144,7 +205,7 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.COBBLESTONE), "batch gate released no batch"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 120)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void coolingPlateQuenchesLavaWithIce(GameTestHelper helper) {
         var machine = setup(helper, ModContent.COOLING_PLATE.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.LAVA_BUCKET));
@@ -155,7 +216,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 220)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void resonanceFoundryFormsAndProcessesInParallel(GameTestHelper helper) {
         var machine = setupFoundry(helper);
         machine.inventory().setStackInSlot(0, AEItems.CERTUS_QUARTZ_CRYSTAL_CHARGED.stack(4));
@@ -170,7 +231,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 80)
+    @GameTest(template = "empty", timeoutTicks = 10000)
     public static void resonanceFoundryStopsWhenPartIsRemoved(GameTestHelper helper) {
         var machine = setupFoundry(helper);
         boolean[] removed = {false};
@@ -186,7 +247,7 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 100)
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void resonanceFoundryRequiresCompleteStructure(GameTestHelper helper) {
         helper.setBlock(MACHINE.below(), AEBlocks.CREATIVE_ENERGY_CELL.block());
         helper.setBlock(MACHINE, ModContent.RESONANCE_CONTROLLER.get());

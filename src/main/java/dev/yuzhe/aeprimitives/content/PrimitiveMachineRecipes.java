@@ -1,8 +1,7 @@
 package dev.yuzhe.aeprimitives.content;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import dev.yuzhe.aeprimitives.crafting.LazyPatternRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
@@ -16,27 +15,6 @@ import net.minecraft.world.level.block.WeatheringCopper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 final class PrimitiveMachineRecipes {
-    private static final Map<Item, Item> CROPS = Map.of(
-            Items.WHEAT_SEEDS, Items.WHEAT,
-            Items.CARROT, Items.CARROT,
-            Items.POTATO, Items.POTATO,
-            Items.BEETROOT_SEEDS, Items.BEETROOT);
-    private static final Map<Item, Item> TREES = Map.ofEntries(
-            Map.entry(Items.OAK_SAPLING, Items.OAK_LOG),
-            Map.entry(Items.BIRCH_SAPLING, Items.BIRCH_LOG),
-            Map.entry(Items.SPRUCE_SAPLING, Items.SPRUCE_LOG),
-            Map.entry(Items.JUNGLE_SAPLING, Items.JUNGLE_LOG),
-            Map.entry(Items.ACACIA_SAPLING, Items.ACACIA_LOG),
-            Map.entry(Items.DARK_OAK_SAPLING, Items.DARK_OAK_LOG),
-            Map.entry(Items.CHERRY_SAPLING, Items.CHERRY_LOG),
-            Map.entry(Items.MANGROVE_PROPAGULE, Items.MANGROVE_LOG),
-            Map.entry(Items.AZALEA, Items.OAK_LOG),
-            Map.entry(Items.FLOWERING_AZALEA, Items.OAK_LOG));
-    private static final Set<Item> FLOWERS = Set.of(
-            Items.DANDELION, Items.POPPY, Items.BLUE_ORCHID, Items.ALLIUM, Items.AZURE_BLUET,
-            Items.RED_TULIP, Items.ORANGE_TULIP, Items.WHITE_TULIP, Items.PINK_TULIP,
-            Items.OXEYE_DAISY, Items.CORNFLOWER, Items.LILY_OF_THE_VALLEY, Items.SUNFLOWER,
-            Items.LILAC, Items.ROSE_BUSH, Items.PEONY, Items.TORCHFLOWER);
 
     record Plan(int[] consumed, int[] damaged, List<ItemStack> outputs) {
         void apply(ItemStackHandler inventory) {
@@ -108,14 +86,14 @@ final class PrimitiveMachineRecipes {
 
     private static Plan crop(ItemStackHandler inventory) {
         var starter = inventory.getStackInSlot(0);
-        Item result = CROPS.get(starter.getItem());
+        Item result = LazyPatternRegistry.CROPS.get(starter.getItem());
         if (result == null || inventory.getStackInSlot(1).getCount() < 3
                 || !inventory.getStackInSlot(1).is(Items.BONE_MEAL)) return null;
         return plan(new int[]{0, 3, 0}, new ItemStack(result));
     }
 
     private static Plan tree(ItemStackHandler inventory) {
-        Item log = TREES.get(inventory.getStackInSlot(0).getItem());
+        Item log = LazyPatternRegistry.TREES.get(inventory.getStackInSlot(0).getItem());
         if (log == null || inventory.getStackInSlot(1).getCount() < 8
                 || !inventory.getStackInSlot(1).is(Items.BONE_MEAL)) return null;
         return plan(new int[]{0, 8, 0}, new ItemStack(log, 4));
@@ -123,8 +101,7 @@ final class PrimitiveMachineRecipes {
 
     private static Plan growthRack(ItemStackHandler inventory) {
         var plant = inventory.getStackInSlot(0);
-        if (!plant.is(Items.SUGAR_CANE) && !plant.is(Items.CACTUS) && !plant.is(Items.BAMBOO)
-                && !plant.is(Items.KELP) && !plant.is(Items.WEEPING_VINES) && !plant.is(Items.TWISTING_VINES)) {
+        if (!LazyPatternRegistry.GROWTH_PLANTS.contains(plant.getItem())) {
             return null;
         }
         return plan(new int[]{0, 0, 0}, plant.copyWithCount(1));
@@ -132,7 +109,7 @@ final class PrimitiveMachineRecipes {
 
     private static Plan bee(ItemStackHandler inventory) {
         var flower = inventory.getStackInSlot(0);
-        if (!FLOWERS.contains(flower.getItem())) return null;
+        if (!LazyPatternRegistry.FLOWERS.contains(flower.getItem())) return null;
         var tool = inventory.getStackInSlot(1);
         if (tool.is(Items.GLASS_BOTTLE)) {
             return plan(new int[]{0, 1, 0}, new ItemStack(Items.HONEY_BOTTLE));

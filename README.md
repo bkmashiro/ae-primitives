@@ -57,10 +57,18 @@ Machines share a three-step construction line instead of repeating the same AE2 
 
 Each final recipe combines the appropriate frame with parts that describe the machine's job, such as a hopper and comparator for the Batch Gate or a cauldron and pointed dripstone for the Dripstone Reservoir.
 
+## Pattern Provider Card
+
+Install a **Pattern Provider Card** in a compatible machine to make its operations available as AE crafting patterns. In this mode the machine only runs jobs dispatched by the crafting network; its input slots stop accepting manual startup stock.
+
+The card covers deterministic machines such as the Tree Nursery, Crop Cultivator, Growth Rack, Apiary Chamber, Concrete Curing Chamber and Cooling Plate. Retained inputs such as saplings, flowers and source buckets are returned when the job finishes. Random-yield and zero-input machines remain autonomous.
+
+Dynamic families use one concrete-output index shared by every machine on the server. AE2 can therefore plan exact outputs without generating encoded patterns per block; catalog entries and their resolved input objects are reused globally and rebuilt only on data reload.
+
 ## Using the machines
 
 1. Connect the machine to a powered AE network. Each machine uses one channel.
-2. Feed inputs from any side or with a Pattern Provider.
+2. Feed inputs from any side, or install a Pattern Provider Card and request the output through AE crafting.
 3. Right-click the machine to inspect its input, output and upgrade slots.
 4. Processing machines accept AE2 Speed Cards. Most accept four; passive generators and the Resonance Foundry accept two. Each card doubles speed, while idle power rises with the square of that multiplier.
 5. Outputs are inserted into the same AE network. If the network cannot accept them, they remain in the machine.

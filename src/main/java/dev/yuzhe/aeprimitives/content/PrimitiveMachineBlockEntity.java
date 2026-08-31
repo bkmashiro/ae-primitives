@@ -2,7 +2,9 @@ package dev.yuzhe.aeprimitives.content;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
+import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageHelper;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
@@ -12,10 +14,14 @@ import appeng.me.helpers.MachineSource;
 import appeng.recipes.transform.TransformRecipe;
 import appeng.recipes.transform.TransformRecipeInput;
 import appeng.core.definitions.AEItems;
+import dev.yuzhe.aeprimitives.crafting.DynamicPatternProvider;
+import dev.yuzhe.aeprimitives.crafting.LazyPrimitivePattern;
 import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -39,17 +45,27 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     private static final int OUTPUT_START = 3;
     private static final int OUTPUT_END = 12;
     private final ItemStackHandler inventory = new ItemStackHandler(12) {
+        @Override public boolean isItemValid(int slot, ItemStack stack) {
+            return slot >= OUTPUT_START || acceptingPatternInputs || !isPatternProviderMode();
+        }
+        @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (slot < OUTPUT_START && isPatternProviderMode() && !acceptingPatternInputs) return stack;
+            return super.insertItem(slot, stack, simulate);
+        }
         @Override protected void onContentsChanged(int slot) {
             setChanged();
             if (level != null) markForUpdate();
         }
     };
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
+    private final DynamicPatternProvider patternProvider = new DynamicPatternProvider(this);
     private final IUpgradeInventory upgrades;
     private int progress;
     private float compostProgress;
     private boolean structureDirty = true;
     private boolean formed;
+    private boolean patternJobActive;
+    private boolean acceptingPatternInputs;
 
     public PrimitiveMachineBlockEntity(BlockPos pos, BlockState state) {
         this(ModContent.MACHINE_ENTITY.get(), pos, state);
@@ -58,7 +74,10 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     public PrimitiveMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
         upgrades = UpgradeInventories.forMachine(state.getBlock(), 4, this::onUpgradesChanged);
-        getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(2.0);
+        getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL)
+                .setExposedOnSides(EnumSet.allOf(Direction.class))
+                .setIdlePowerUsage(2.0)
+                .addService(ICraftingProvider.class, patternProvider);
     }
 
     public ItemStackHandler inventory() { return inventory; }
@@ -66,12 +85,21 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     public int progress() { return progress; }
     public float compostProgress() { return compostProgress; }
     public boolean isFormed() { return formed; }
+    public boolean isPatternProviderMode() {
+        return kind().supportsPatternProvider() && getInstalledUpgrades(ModContent.PATTERN_PROVIDER_CARD.get()) > 0;
+    }
+    public boolean isPatternBusy() {
+        if (patternJobActive) return true;
+        for (int slot = 0; slot < OUTPUT_END; slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return true;
+        return false;
+    }
     @Override public IUpgradeInventory getUpgrades() { return upgrades; }
     public void markStructureDirty() { structureDirty = true; }
 
     private void onUpgradesChanged() {
         progress = 0;
         getMainNode().setIdlePowerUsage(2.0 * speedMultiplier() * speedMultiplier());
+        refreshPatternProvider();
         setChanged();
         if (level != null) markForUpdate();
     }
@@ -88,6 +116,11 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         }
         if (!getMainNode().isActive()) return;
         flushOutputs();
+        if (isPatternProviderMode() && !patternJobActive) {
+            evacuateInputs();
+            progress = 0;
+            return;
+        }
         if (!hasOutputRoom()) return;
         progress += speedMultiplier();
         if (progress < kind().processingTicks()) {
@@ -95,7 +128,15 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
             return;
         }
         progress = 0;
-        switch (kind()) {
+        if (patternJobActive) {
+            boolean completed = switch (kind()) {
+                case GROWTH -> processGrowth();
+                case CONCRETE, SOIL, DRIPSTONE, OXIDATION, CROP, TREE, GROWTH_RACK, BEE, COOLING ->
+                        processPrimitiveRecipe();
+                default -> false;
+            };
+            if (completed) finishPatternJob();
+        } else switch (kind()) {
             case FORTUNE -> processFortune(server);
             case TRANSFORMATION -> processTransformation(server);
             case GENERATOR -> queueAll(List.of(new ItemStack(Items.COBBLESTONE)));
@@ -110,11 +151,12 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         markForUpdate();
     }
 
-    private void processPrimitiveRecipe() {
+    private boolean processPrimitiveRecipe() {
         var plan = PrimitiveMachineRecipes.find(kind(), inventory);
-        if (plan == null || !canQueueAll(plan.outputs())) return;
+        if (plan == null || !canQueueAll(plan.outputs())) return false;
         plan.apply(inventory);
         queueAll(plan.outputs());
+        return true;
     }
 
     private void processFortune(ServerLevel server) {
@@ -162,22 +204,76 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         return false;
     }
 
-    private void processGrowth() {
+    private boolean processGrowth() {
         var dust = inventory.getStackInSlot(0);
         var sand = inventory.getStackInSlot(1);
-        if (!sand.is(Items.SAND)) return;
+        if (!sand.is(Items.SAND)) return false;
         ItemStack result;
         if (dust.is(AEItems.CERTUS_QUARTZ_DUST.asItem())) {
             result = new ItemStack(AEItems.CERTUS_QUARTZ_CRYSTAL.asItem(), 2);
         } else if (dust.is(AEItems.FLUIX_DUST.asItem())) {
             result = new ItemStack(AEItems.FLUIX_CRYSTAL.asItem(), 2);
         } else {
-            return;
+            return false;
         }
-        if (!canQueueAll(List.of(result))) return;
+        if (!canQueueAll(List.of(result))) return false;
         dust.shrink(1);
         sand.shrink(1);
         queueAll(List.of(result));
+        return true;
+    }
+
+    public boolean acceptPattern(LazyPrimitivePattern pattern, KeyCounter[] inputHolder) {
+        if (!isPatternProviderMode() || pattern.spec().machine() != kind() || isPatternBusy()) return false;
+        var expected = pattern.spec().inputs();
+        if (inputHolder.length != expected.size() || expected.size() > OUTPUT_START) return false;
+        var stacks = new ArrayList<ItemStack>(expected.size());
+        for (int slot = 0; slot < expected.size(); slot++) {
+            var counter = inputHolder[slot];
+            var input = expected.get(slot);
+            if (counter == null || counter.size() != 1 || counter.get(input.key()) != input.amount()
+                    || input.amount() > input.key().getMaxStackSize()) return false;
+            stacks.add(input.key().toStack((int) input.amount()));
+        }
+        acceptingPatternInputs = true;
+        try {
+            for (int slot = 0; slot < stacks.size(); slot++) inventory.setStackInSlot(slot, stacks.get(slot));
+        } finally {
+            acceptingPatternInputs = false;
+        }
+        patternJobActive = true;
+        progress = 0;
+        setChanged();
+        markForUpdate();
+        return true;
+    }
+
+    public void refreshPatternProvider() {
+        if (getMainNode().isReady()) ICraftingProvider.requestUpdate(getMainNode());
+    }
+
+    private void finishPatternJob() {
+        var catalysts = new ArrayList<ItemStack>();
+        for (int slot = 0; slot < OUTPUT_START; slot++) {
+            var stack = inventory.getStackInSlot(slot);
+            if (!stack.isEmpty()) catalysts.add(stack.copy());
+        }
+        if (!canQueueAll(catalysts)) return;
+        for (int slot = 0; slot < OUTPUT_START; slot++) inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        queueAll(catalysts);
+        patternJobActive = false;
+        progress = 0;
+    }
+
+    private void evacuateInputs() {
+        var pending = new ArrayList<ItemStack>();
+        for (int slot = 0; slot < OUTPUT_START; slot++) {
+            var stack = inventory.getStackInSlot(slot);
+            if (!stack.isEmpty()) pending.add(stack.copy());
+        }
+        if (pending.isEmpty() || !canQueueAll(pending)) return;
+        for (int slot = 0; slot < OUTPUT_START; slot++) inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        queueAll(pending);
     }
 
     private void processCompost() {
@@ -279,6 +375,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         tag.putInt("progress", progress);
         tag.putFloat("compostProgress", compostProgress);
         tag.putBoolean("formed", formed);
+        tag.putBoolean("patternJobActive", patternJobActive);
         upgrades.writeToNBT(tag, "upgrades", registries);
     }
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
@@ -287,6 +384,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         progress = tag.getInt("progress");
         compostProgress = tag.getFloat("compostProgress");
         formed = tag.getBoolean("formed");
+        patternJobActive = tag.getBoolean("patternJobActive");
         upgrades.readFromNBT(tag, "upgrades", registries);
         getMainNode().setIdlePowerUsage(2.0 * speedMultiplier() * speedMultiplier());
         structureDirty = true;

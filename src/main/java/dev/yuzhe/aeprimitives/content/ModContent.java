@@ -74,6 +74,8 @@ public final class ModContent {
     public static final DeferredItem<Item> BASIC_MACHINE_FRAME = machineFrame("basic_machine_frame");
     public static final DeferredItem<Item> ADVANCED_MACHINE_FRAME = machineFrame("advanced_machine_frame");
     public static final DeferredItem<Item> ULTIMATE_MACHINE_FRAME = machineFrame("ultimate_machine_frame");
+    public static final DeferredItem<Item> PATTERN_PROVIDER_CARD = ITEMS.register("pattern_provider_card",
+            () -> Upgrades.createUpgradeCardItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -132,6 +134,7 @@ public final class ModContent {
                         output.accept(BASIC_MACHINE_FRAME.get());
                         output.accept(ADVANCED_MACHINE_FRAME.get());
                         output.accept(ULTIMATE_MACHINE_FRAME.get());
+                        output.accept(PATTERN_PROVIDER_CARD.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {
@@ -174,10 +177,29 @@ public final class ModContent {
             registerSpeed(MachineKind.BEE, APIARY_CHAMBER.get());
             registerSpeed(MachineKind.BATCH, BATCH_GATE.get());
             registerSpeed(MachineKind.COOLING, COOLING_PLATE.get());
+            registerPatternProvider(MachineKind.FORTUNE, FORTUNE_CHAMBER.get());
+            registerPatternProvider(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER.get());
+            registerPatternProvider(MachineKind.GENERATOR, RESOURCE_GENERATOR.get());
+            registerPatternProvider(MachineKind.GROWTH, GROWTH_CHAMBER.get());
+            registerPatternProvider(MachineKind.COMPOST, COMPOST_CHAMBER.get());
+            registerPatternProvider(MachineKind.FOUNDRY, RESONANCE_CONTROLLER.get());
+            registerPatternProvider(MachineKind.CONCRETE, CONCRETE_CURING_CHAMBER.get());
+            registerPatternProvider(MachineKind.SOIL, SOIL_PROCESSOR.get());
+            registerPatternProvider(MachineKind.DRIPSTONE, DRIPSTONE_RESERVOIR.get());
+            registerPatternProvider(MachineKind.OXIDATION, OXIDATION_CHAMBER.get());
+            registerPatternProvider(MachineKind.CROP, CROP_CULTIVATOR.get());
+            registerPatternProvider(MachineKind.TREE, TREE_NURSERY.get());
+            registerPatternProvider(MachineKind.GROWTH_RACK, GROWTH_RACK.get());
+            registerPatternProvider(MachineKind.BEE, APIARY_CHAMBER.get());
+            registerPatternProvider(MachineKind.BATCH, BATCH_GATE.get());
+            registerPatternProvider(MachineKind.COOLING, COOLING_PLATE.get());
         });
     }
     private static void registerSpeed(MachineKind kind, Block machine) {
         if (kind.maxSpeedCards() > 0) Upgrades.add(AEItems.SPEED_CARD, machine, kind.maxSpeedCards());
+    }
+    private static void registerPatternProvider(MachineKind kind, Block machine) {
+        if (kind.supportsPatternProvider()) Upgrades.add(PATTERN_PROVIDER_CARD.get(), machine, 1);
     }
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ENTITY.get(),

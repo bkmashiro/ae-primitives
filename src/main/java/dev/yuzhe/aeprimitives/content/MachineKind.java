@@ -31,4 +31,7 @@ public enum MachineKind {
     public int processingTicks() { return definition.processingTicks(); }
     public int maxSpeedCards() { return definition.maxSpeedCards(); }
     public MachineTier tier() { return definition.tier(); }
+    public boolean supportsPatternProvider() {
+        return dev.yuzhe.aeprimitives.crafting.LazyPatternRegistry.supports(this);
+    }
 }
