@@ -6,6 +6,7 @@ import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.GraphView;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
@@ -51,11 +52,12 @@ public final class ProcessAnalyzerClient {
 
     private static ModularUI build(GraphView graph, ProcessDiagnosticSnapshot snapshot) {
         var root = panel(0xff111820, 0xff3b6572);
-        root.layout(layout -> layout.width(430).height(260).paddingAll(8).gapAll(5));
+        root.layout(layout -> layout.width(400).height(220).paddingAll(8).gapAll(5));
 
         var title = new Label();
         title.setText(Component.translatable("screen.aeprimitives.process_analyzer.title",
                 snapshot.sequences().size(), snapshot.revision()));
+        title.layout(layout -> layout.height(16));
         title.textStyle(style -> style.fontSize(13).textColor(0xff9fe7e5).textShadow(true).adaptiveHeight(true));
 
         var tabs = new UIElement();
@@ -63,11 +65,11 @@ public final class ProcessAnalyzerClient {
 
         var detail = new Label();
         detail.setText(Component.translatable("screen.aeprimitives.process_analyzer.hint"));
-        detail.layout(layout -> layout.height(34).paddingAll(4));
+        detail.layout(layout -> layout.height(24).paddingAll(4));
         detail.textStyle(style -> style.fontSize(9).textColor(0xffc6d6db).adaptiveHeight(true));
         detail.style(style -> style.background(new ColorRectTexture(0xff18242e)));
 
-        graph.layout(layout -> layout.width(414).height(177));
+        graph.layout(layout -> layout.width(384).height(125));
         graph.style(style -> style.background(new ColorRectTexture(0xff0d1319)));
         graph.graphViewStyle(style -> style
                 .allowPan(true).allowZoom(true)
@@ -79,12 +81,18 @@ public final class ProcessAnalyzerClient {
             detail.setText(Component.translatable("screen.aeprimitives.process_analyzer.empty"));
         } else {
             for (var sequence : snapshot.sequences()) {
-                var tab = new Label();
-                tab.setText(Component.literal(sequence.id().getPath()));
-                tab.layout(layout -> layout.height(16).paddingHorizontal(5));
+                var tab = new Button();
+                String tabName = sequence.id().getPath();
+                tab.setText(Component.literal(tabName));
+                tab.layout(layout -> layout.width(Math.min(140, 12 + tabName.length() * 6)).height(16).paddingHorizontal(5));
                 tab.textStyle(style -> style.fontSize(9).textColor(sequence.blocked() ? 0xffffa2a7 : 0xff9fe7e5));
-                tab.style(style -> style.background(new ColorRectTexture(0xff23313d)));
-                tab.addEventListener(UIEvents.CLICK, event -> {
+                tab.buttonStyle(style -> style
+                        .baseTexture(new ColorRectTexture(0xff23313d))
+                        .hoverTexture(new ColorRectTexture(0xff304554))
+                        .pressedTexture(new ColorRectTexture(0xff18242e)));
+                tab.style(style -> style.zIndex(2));
+                tab.setOnClick(event -> {
+                    event.stopLaterPropagation();
                     renderSequence(graph, detail, sequence);
                     graph.fitToChildren(20, 0.55f);
                 });

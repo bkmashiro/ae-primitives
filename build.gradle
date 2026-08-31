@@ -43,6 +43,10 @@ neoForge {
     programArgument '--quickPlayMultiplayer'
     programArgument providers.gradleProperty('quickPlayMultiplayer').get()
    }
+   if (providers.gradleProperty('quickPlaySingleplayer').isPresent()) {
+    programArgument '--quickPlaySingleplayer'
+    programArgument providers.gradleProperty('quickPlaySingleplayer').get()
+   }
   }
   server { server(); programArgument '--nogui'; gameDirectory = project.file('run-server') }
   gameTestServer { type='gameTestServer'; gameDirectory=project.file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives' }
