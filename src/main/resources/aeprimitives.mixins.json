@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.yuzhe.aeprimitives.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "PatternProviderLogicMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

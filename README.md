@@ -1,110 +1,98 @@
 # AE Primitives
 
-Compact AE2 machines for common world-interaction contraptions.
-
-AE Primitives adds compact machines for common AE2 processing setups. Single-block machines connect directly to the network, use one channel and keep blocked outputs inside the machine.
+Compact AE2-native machines and reusable processing patterns for common automation jobs.
 
 ## Machines
 
-### ME Fortune Chamber
+Every machine connects directly to a powered ME network, uses one channel and keeps blocked output in its local buffer.
 
-Processes block items through their block loot table with a Fortune III diamond pickaxe. It replaces the usual Formation Plane and enchanted Annihilation Plane ore-fortuning setup.
+- **ME Fortune Chamber** replaces a Formation Plane and Fortune III Annihilation Plane setup.
+- **ME Transformation Chamber** runs AE2 transform recipes.
+- **ME Resource Generator** produces cobblestone without placing water or lava in the world.
+- **ME Crystal Growth Chamber** grows Certus Quartz and Fluix crystals.
+- **ME Compost Chamber** converts vanilla compostables into bone meal at vanilla-equivalent yield.
+- **ME Concrete Curing Chamber** cures concrete powder.
+- **ME Soil Processor** turns dirt into mud or dries mud into clay.
+- **ME Dripstone Reservoir** slowly fills buckets from a retained water or lava source.
+- **ME Oxidation Chamber** advances unwaxed copper by one weathering stage.
+- **ME Crop Cultivator**, **Tree Nursery** and **Growth Rack** compact common crop, tree and plant farms.
+- **ME Apiary Chamber** produces honey bottles or honeycomb from flowers and containers.
+- **ME Batch Gate** releases items in complete batches.
+- **ME Cooling Plate** handles obsidian and basalt conversion.
 
-### ME Transformation Chamber
-
-Runs AE2 `transform` recipes directly. Place the recipe ingredients in the three input slots; completed output is returned to the connected network or held in the output buffer.
-
-### ME Resource Generator
-
-Generates cobblestone without placing water, lava or blocks in the world. Its transparent front shows the two media and the current product.
-
-### ME Crystal Growth Chamber
-
-Grows Certus Quartz or Fluix crystals from their dust and sand. The crystal rises through the chamber as the cycle progresses.
-
-### ME Compost Chamber
-
-Turns vanilla compostable items into bone meal without Export Buses, hoppers or a world composter. It uses each item's vanilla composting value, so compacting the setup does not improve its long-run yield.
-
-### World-processing machines
-
-- **ME Concrete Curing Chamber** turns any vanilla concrete powder into its matching concrete block.
-- **ME Soil Processor** wets dirt into mud with a water bucket, or slowly dries mud into clay.
-- **ME Dripstone Reservoir** keeps a water or lava source bucket and slowly fills empty buckets at a deliberately low rate.
-- **ME Oxidation Chamber** advances unwaxed copper blocks through one vanilla weathering stage at a time.
-- **ME Crop Cultivator** grows wheat, carrots, potatoes or beetroot from retained planting stock and bone meal.
-- **ME Tree Nursery** converts bone meal into a conservative four-log harvest while retaining the sapling stock.
-- **ME Growth Rack** grows sugar cane, cactus, bamboo, kelp and vines slowly from a retained mother plant.
-- **ME Apiary Chamber** needs a flower plus bottles or shears to produce honey bottles or honeycomb.
-- **ME Batch Gate** releases stackable input to the network only in batches of eight.
-- **ME Cooling Plate** quenches lava and ice into obsidian, or combines lava, blue ice and soul soil into basalt.
-
-These machines replace block placement, random ticking and small entity contraptions; they do not multiply the inputs of ordinary crafting or processing recipes.
-
-### ME Resonance Foundry
-
-A 3×2×3 multiblock for high-throughput AE2 transform recipes. Its four coil columns run up to four transformations per cycle through one controller and shared inventory.
-
-Build it with the controller in the middle of the front edge. The four corners are two-block Resonance Coil columns, the two center blocks are Resonance Cores, and every remaining position is Resonance Casing. The foundry reacts immediately when a required part is added or removed.
+The **ME Resonance Foundry** is a 3×2×3 multiblock that processes up to four AE2 transform recipes per cycle through one controller and shared inventory.
 
 ## Machine frames
 
-Machines share a three-step construction line instead of repeating the same AE2 components in every recipe:
+Recipes share three construction tiers:
 
-- **Basic Machine Frame** uses iron, quartz glass, Fluix and a Logic Processor. It builds simple processors, growers and routing machines.
-- **Advanced Machine Frame** upgrades the basic frame with an Engineering Processor, diamond and more AE materials. It builds passive resource machines and heavier world processors.
-- **Ultimate Machine Frame** upgrades the advanced frame with Fluix blocks, a Dense Energy Cell, Engineering Processors and a Singularity. It is reserved for genuinely expensive machinery; currently it is used by the Resonance Foundry Controller.
+- **Basic Machine Frame** for simple processing and routing machines.
+- **Advanced Machine Frame** for passive resource and heavier world-processing machines.
+- **Ultimate Machine Frame** for expensive multiblocks and late-game machines.
 
-Each final recipe combines the appropriate frame with parts that describe the machine's job, such as a hopper and comparator for the Batch Gate or a cauldron and pointed dripstone for the Dripstone Reservoir.
+Final recipes combine a frame with parts that describe the machine's job.
 
 ## Pattern Provider Card
 
-Install a **Pattern Provider Card** in a compatible machine to make its operations available as AE crafting patterns. In this mode the machine only runs jobs dispatched by the crafting network; its input slots stop accepting manual startup stock.
+Install a **Pattern Provider Card** in a compatible machine to expose its deterministic jobs to AE crafting. The machine then accepts work from the crafting network instead of running from manually supplied startup items.
 
-The card covers deterministic machines such as the Tree Nursery, Crop Cultivator, Growth Rack, Apiary Chamber, Concrete Curing Chamber and Cooling Plate. Retained inputs such as saplings, flowers and source buckets are returned when the job finishes. Random-yield and zero-input machines remain autonomous.
+Dynamic recipe families are resolved only when AE asks for a concrete output. One tree capability can therefore cover every supported sapling without creating and indexing a permanent encoded pattern for every tree.
 
-Dynamic families use one concrete-output index shared by every machine on the server. AE2 can therefore plan exact outputs without generating encoded patterns per block; catalog entries and their resolved input objects are reused globally and rebuilt only on data reload.
+## Operation and sequence patterns
 
-## Using the machines
+AE Primitives can also describe capabilities supplied by ordinary external machines.
 
-1. Connect the machine to a powered AE network. Each machine uses one channel.
-2. Feed inputs from any side, or install a Pattern Provider Card and request the output through AE crafting.
-3. Right-click the machine to inspect its input, output and upgrade slots.
-4. Processing machines accept AE2 Speed Cards. Most accept four; passive generators and the Resonance Foundry accept two. Each card doubles speed, while idle power rises with the square of that multiplier.
-5. Outputs are inserted into the same AE network. If the network cannot accept them, they remain in the machine.
+An **Operation Pattern** means that the attached machine can perform an operation such as pressing, crushing, filling or deploying. It can represent one exact recipe or the whole operation family. Put it in a normal AE Pattern Provider facing the appropriate machine.
 
-Both client and server need AE Primitives installed.
+A **Sequence Pattern** imports a complete Create Sequenced Assembly recipe. It expands the sequence into concrete intermediate processing steps, while AE's Crafting CPU remains responsible for ingredient accounting, ordering and dispatch. Install the Sequence Pattern in any powered Pattern Provider and install matching Operation Patterns beside the machines that perform its steps.
+
+This keeps the number of registered patterns proportional to the sequences actually in use. Intermediate patterns are created only for live Sequence Patterns, and disappear when the sequence is removed.
+
+### Importing from JEI
+
+With Create and JEI installed:
+
+1. Craft an empty Operation Pattern or Sequence Pattern.
+2. Open a supported Create recipe in JEI.
+3. Click the AE Primitives button beside the recipe.
+4. For ordinary processing recipes, click to encode that exact recipe or Shift-click to encode the whole operation family.
+5. For Sequenced Assembly, the button imports the complete sequence.
+
+The server validates the selected recipe before encoding the item. Probabilistic sequence result pools are not converted into deterministic AE jobs.
+
+## Usage
+
+1. Connect machines and Pattern Providers to a powered ME network.
+2. Feed a machine directly, or install a Pattern Provider Card and request its output through AE crafting.
+3. Use AE2 Speed Cards where supported. Each card doubles processing speed; idle power rises with the square of the speed multiplier.
+4. If the ME network cannot accept an output, it remains inside the machine.
+
+Both client and server need AE Primitives.
 
 ## Requirements
 
 - Minecraft 1.21.1
-- NeoForge 21.1.x
+- NeoForge 21.1.243 or newer
 - Applied Energistics 2 19.2.x
 - GuideME
 - Java 21
 
-## Build
+Create 6.0.10 and JEI 19.39 are optional and enable sequence import and JEI pattern encoding.
+
+## Development
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 ./gradlew verifyAll
 ```
 
-## Visual gallery
-
-Export the gallery and one PNG per machine without opening a browser window:
+Generate PNG previews without opening a browser:
 
 ```bash
 ./gradlew exportVisualGallery
 ```
 
-Images are written to `build/visual-gallery/images/`. The exporter runs its renderer headlessly and exits when the PNGs are ready.
-
-For interactive inspection, generate `build/visual-gallery/index.html` with `./gradlew visualGallery` and open it manually. Use these previews for fast geometry, UV and texture review; Minecraft remains the final check for lighting, transparency and dynamic contents.
-
-Machine models can also be generated from the repository's tree-shaped CSG and procedural texture format. See [Machine asset pipeline](docs/machine-assets.md).
-
-During a visual-harness client run, regenerate changed assets and call `reload-resources`; block models, textures and declarative animation tracks update without restarting Minecraft. Java renderer changes still require a client restart.
+The declarative model and texture pipeline is documented in [Machine asset pipeline](docs/machine-assets.md).
 
 ## License
 

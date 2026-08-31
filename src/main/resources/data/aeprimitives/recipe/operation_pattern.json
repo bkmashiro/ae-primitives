@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "ae2:blank_pattern" },
+    { "item": "ae2:engineering_processor" }
+  ],
+  "result": { "id": "aeprimitives:operation_pattern", "count": 1 }
+}

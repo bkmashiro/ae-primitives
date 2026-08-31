@@ -7,6 +7,8 @@ version="${version}"
 displayName="AE Primitives"
 authors="Yuzhe"
 description='Compact AE2-native machines for common world-interaction processing.'
+[[mixins]]
+config="aeprimitives.mixins.json"
 [[dependencies.aeprimitives]]
 modId="neoforge"
 type="required"
@@ -25,3 +27,15 @@ type="required"
 versionRange="[19.2,20.0)"
 ordering="AFTER"
 side="BOTH"
+[[dependencies.aeprimitives]]
+modId="create"
+type="optional"
+versionRange="[6.0.10,6.1)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.aeprimitives]]
+modId="jei"
+type="optional"
+versionRange="[19.39,20.0)"
+ordering="AFTER"
+side="CLIENT"

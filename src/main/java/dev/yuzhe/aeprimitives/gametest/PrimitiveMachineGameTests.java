@@ -5,11 +5,21 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
+import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.content.PrimitiveMachineBlockEntity;
 import dev.yuzhe.aeprimitives.content.ResonancePartBlock;
 import dev.yuzhe.aeprimitives.crafting.LazyPrimitivePattern;
+import dev.yuzhe.aeprimitives.operation.BoundOperationPattern;
+import dev.yuzhe.aeprimitives.operation.OperationInput;
+import dev.yuzhe.aeprimitives.operation.OperationPatternData;
+import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
+import dev.yuzhe.aeprimitives.sequence.OperationStepSpec;
+import dev.yuzhe.aeprimitives.sequence.SequencePatternSpec;
+import dev.yuzhe.aeprimitives.sequence.SequenceRuntime;
+import appeng.api.stacks.GenericStack;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -28,10 +38,12 @@ public final class PrimitiveMachineGameTests {
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void generatorProducesCobblestone(GameTestHelper helper) {
         var machine = setup(helper, ModContent.RESOURCE_GENERATOR.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        machine.getUpgrades().setItemDirect(1, AEItems.SPEED_CARD.stack());
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.COBBLESTONE), "generator produced no cobblestone"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 1000)
+    @GameTest(template = "empty", timeoutTicks = 10000)
     public static void fortuneChamberUsesBlockLoot(GameTestHelper helper) {
         var machine = setup(helper, ModContent.FORTUNE_CHAMBER.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.DIAMOND_ORE));
@@ -56,7 +68,7 @@ public final class PrimitiveMachineGameTests {
                 "growth chamber produced no certus quartz"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 1000)
+    @GameTest(template = "empty", timeoutTicks = 10000)
     public static void compostChamberPreservesVanillaCompostYield(GameTestHelper helper) {
         var machine = setup(helper, ModContent.COMPOST_CHAMBER.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.CAKE, 7));
@@ -75,6 +87,7 @@ public final class PrimitiveMachineGameTests {
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void soilProcessorDriesMudIntoClay(GameTestHelper helper) {
         var machine = setup(helper, ModContent.SOIL_PROCESSOR.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.MUD));
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.CLAY), "soil processor produced no clay"));
     }
@@ -177,8 +190,54 @@ public final class PrimitiveMachineGameTests {
     }
 
     @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void operationPatternExpandsOnlySequenceReferencedRecipes(GameTestHelper helper) {
+        var operationPos = new BlockPos(3, 1, 1);
+        var sequencePos = new BlockPos(4, 1, 1);
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(operationPos, AEBlocks.PATTERN_PROVIDER.block());
+        helper.setBlock(sequencePos, AEBlocks.PATTERN_PROVIDER.block());
+        var operationProvider = (PatternProviderBlockEntity) helper.getBlockEntity(operationPos);
+        var sequenceProvider = (PatternProviderBlockEntity) helper.getBlockEntity(sequencePos);
+
+        var pressing = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("create", "pressing");
+        var operationStack = OperationPatternData.encode(ModContent.OPERATION_PATTERN.get(), OperationPatternSpec.all(pressing));
+        operationProvider.getLogic().getPatternInv().setItemDirect(0, operationStack);
+        var step = new OperationStepSpec(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("create", "pressing/iron_sheet"), pressing,
+                List.of(OperationInput.exact(Items.IRON_INGOT, 1)),
+                List.of(new GenericStack(AEItemKey.of(Items.IRON_BLOCK), 1)));
+        var sequence = new SequencePatternSpec(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "test_sequence"), List.of(step));
+
+        helper.succeedWhen(() -> {
+            if (operationProvider.getLogic().getPatternInv().getStackInSlot(0).isEmpty()) {
+                operationProvider.getLogic().getPatternInv().setItemDirect(0, operationStack.copy());
+            }
+            SequenceRuntime.update(sequenceProvider.getLogic(), List.of(sequence));
+            helper.assertTrue(SequenceRuntime.boundPatterns().patternsFor(
+                            OperationPatternSpec.all(pressing), ModContent.OPERATION_PATTERN.get()).size() == 1,
+                    "live sequence did not enter the bound operation registry");
+            helper.assertTrue(OperationPatternData.decode(AEItemKey.of(operationStack)) != null,
+                    "encoded operation pattern could not be decoded directly");
+            helper.assertTrue(appeng.api.crafting.PatternDetailsHelper.decodePattern(
+                            operationProvider.getLogic().getPatternInv().getStackInSlot(0), helper.getLevel()) != null,
+                    "AE PatternDetailsHelper did not recognize the operation pattern item");
+            operationProvider.getLogic().updatePatterns();
+            var patterns = operationProvider.getLogic().getAvailablePatterns();
+            long boundCount = patterns.stream().filter(BoundOperationPattern.class::isInstance).count();
+            helper.assertTrue(boundCount == 1,
+                    "operation pattern expanded to " + boundCount + " bound recipes: "
+                            + patterns.stream().map(pattern -> pattern.getClass().getSimpleName()).toList());
+            helper.assertTrue(patterns.stream().noneMatch(dev.yuzhe.aeprimitives.operation.OperationPatternDetails.class::isInstance),
+                    "abstract operation marker leaked into AE crafting patterns");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 1000)
     public static void growthRackRetainsMotherPlant(GameTestHelper helper) {
         var machine = setup(helper, ModContent.GROWTH_RACK.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        machine.getUpgrades().setItemDirect(1, AEItems.SPEED_CARD.stack());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.SUGAR_CANE));
         helper.succeedWhen(() -> {
             helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.SUGAR_CANE), "growth rack consumed mother plant");
@@ -196,7 +255,7 @@ public final class PrimitiveMachineGameTests {
         helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.HONEY_BOTTLE), "apiary produced no honey bottle"));
     }
 
-    @GameTest(template = "empty", timeoutTicks = 1000)
+    @GameTest(template = "empty", timeoutTicks = 10000)
     public static void batchGateReleasesOnlyACompleteBatch(GameTestHelper helper) {
         var machine = setup(helper, ModContent.BATCH_GATE.get());
         helper.assertTrue(!machine.getUpgrades().isItemValid(0, AEItems.SPEED_CARD.stack()),

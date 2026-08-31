@@ -22,5 +22,12 @@
   "item.aeprimitives.advanced_machine_frame": "Advanced Machine Frame",
   "item.aeprimitives.ultimate_machine_frame": "Ultimate Machine Frame",
   "item.aeprimitives.pattern_provider_card": "Pattern Provider Card",
+  "item.aeprimitives.operation_pattern": "Operation Pattern",
+  "item.aeprimitives.sequence_pattern": "Sequence Pattern",
+  "jei.aeprimitives.import_sequence": "Encode this sequence (requires a blank Sequence Pattern)",
+  "jei.aeprimitives.import_operation": "Encode this recipe as an Operation Pattern",
+  "jei.aeprimitives.import_operation_family": "Shift-click: encode the whole operation family",
+  "message.aeprimitives.pattern_import.no_blank": "A blank matching pattern is required",
+  "message.aeprimitives.pattern_import.success": "Pattern encoded",
   "itemGroup.aeprimitives": "AE Primitives"
 }
