@@ -12,8 +12,6 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
-import com.simibubi.create.content.kinetics.fan.processing.FanProcessingType;
-import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystDefinition;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystVisual;
@@ -28,7 +26,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -148,39 +145,15 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     }
 
     private boolean hasRecipe(ServerLevel server, ItemStack input) {
-        if (kind() != KineticMachineKind.FAN) return findRecipe(server, input) != null;
-        var type = fanProcessingType();
-        return type != null && type.canProcess(input.copyWithCount(1), server);
+        return KineticProcessBehavior.forKind(kind()).canProcess(this, server, input);
     }
 
     private List<ItemStack> rollOutputs(ServerLevel server, ItemStack input) {
-        if (kind() == KineticMachineKind.FAN) {
-            var type = fanProcessingType();
-            if (type == null || !type.canProcess(input.copyWithCount(1), server)) return null;
-            return type.process(input.copyWithCount(1), server);
-        }
-        var recipe = findRecipe(server, input);
-        return recipe == null ? null : recipe.rollResults(server.random);
+        return KineticProcessBehavior.forKind(kind()).process(this, server, input);
     }
 
-    private FanProcessingType fanProcessingType() {
-        if (catalystId == null) return null;
-        var definition = CatalystRegistry.get(catalystId).orElse(null);
-        if (definition == null) return null;
-        try {
-            return FanProcessingType.parse(definition.fanProcessingType());
-        } catch (RuntimeException ignored) {
-            return null;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private ProcessingRecipe<SingleRecipeInput, ?> findRecipe(ServerLevel server, ItemStack input) {
-        if (kind().recipeType() == null) return null;
-        return (ProcessingRecipe<SingleRecipeInput, ?>) kind().recipeType()
-                .find(new SingleRecipeInput(input.copyWithCount(1)), server)
-                .map(holder -> holder.value())
-                .orElse(null);
+    Optional<CatalystDefinition> catalystDefinition() {
+        return catalystId == null ? Optional.empty() : CatalystRegistry.get(catalystId);
     }
 
     private void flushOutputs() {
