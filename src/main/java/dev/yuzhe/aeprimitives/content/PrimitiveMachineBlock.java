@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,5 +27,14 @@ public final class PrimitiveMachineBlock extends AEBaseEntityBlock<PrimitiveMach
             if (be != null) serverPlayer.openMenu(be, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
+                                   BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        if (!level.isClientSide() && kind == MachineKind.FOUNDRY
+                && getBlockEntity(level, pos) instanceof PrimitiveMachineBlockEntity machine) {
+            machine.markStructureDirty();
+        }
     }
 }

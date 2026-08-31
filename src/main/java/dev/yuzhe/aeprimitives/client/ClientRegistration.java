@@ -22,7 +22,12 @@ public final class ClientRegistration {
         bus.addListener(ClientRegistration::renderers);
     }
     private static void setup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(ModContent.RESOURCE_GENERATOR.get(), RenderType.translucent()));
+        event.enqueueWork(() -> {
+            ItemBlockRenderTypes.setRenderLayer(ModContent.RESOURCE_GENERATOR.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModContent.GROWTH_CHAMBER.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModContent.RESONANCE_COIL.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModContent.RESONANCE_CORE.get(), RenderType.translucent());
+        });
     }
     private static void screens(RegisterMenuScreensEvent event) {
         event.register(ModContent.MACHINE_MENU.get(), PrimitiveMachineScreen::new);

@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "QPQ",
+    "CRC",
+    "QPQ"
+  ],
+  "key": {
+    "Q": {
+      "item": "ae2:quartz_glass"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    },
+    "C": {
+      "item": "aeprimitives:resonance_casing"
+    },
+    "R": {
+      "item": "aeprimitives:resonance_core"
+    }
+  },
+  "result": {
+    "id": "aeprimitives:resonance_controller",
+    "count": 1
+  }
+}

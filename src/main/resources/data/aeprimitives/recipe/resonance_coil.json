@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FCF",
+    "CEC",
+    "FCF"
+  ],
+  "key": {
+    "F": {
+      "item": "ae2:fluix_crystal"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "E": {
+      "item": "ae2:energy_acceptor"
+    }
+  },
+  "result": {
+    "id": "aeprimitives:resonance_coil",
+    "count": 2
+  }
+}

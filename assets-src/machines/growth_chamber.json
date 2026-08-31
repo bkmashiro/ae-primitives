@@ -1,0 +1,38 @@
+{
+  "id": "growth_chamber",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {"texture": "casing"},
+    "top": {"texture": "casing_top"},
+    "glass": {"texture": "glass"},
+    "bed": {
+      "texture": "growth_bed",
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8c68b", "bottom": "#78683f"}, {"type": "noise", "amount": 8, "seed": 57}]}
+    },
+    "crystal": {
+      "texture": "growth_crystal",
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8ffff", "bottom": "#3195a6"}, {"type": "border", "width": 2, "color": "#83f4ff"}, {"type": "noise", "amount": 4, "seed": 61}]}
+    },
+    "energy": {
+      "texture": "growth_energy",
+      "texture_spec": {"size": 16, "layers": [{"type": "fill", "color": "#2fbab5"}, {"type": "border", "width": 3, "color": "#adfff1"}]}
+    }
+  },
+  "root": {
+    "type": "group",
+    "children": [
+      {"type": "box", "bounds": [0, 0, 0, 16, 3, 16], "material": "casing"},
+      {"type": "frame", "bounds": [0, 13, 0, 16, 16, 16], "material": "top", "width": 3},
+      {"type": "box", "bounds": [0, 3, 0, 3, 13, 16], "material": "casing"},
+      {"type": "box", "bounds": [13, 3, 0, 16, 13, 16], "material": "casing"},
+      {"type": "box", "bounds": [3, 3, 13, 13, 13, 16], "material": "casing"},
+      {"id": "bed", "type": "box", "composition": "overlay", "bounds": [3, 3, 3, 13, 5, 13], "material": "bed", "allow_overlap_with": ["solid"]},
+      {"id": "crystal", "type": "crystal", "composition": "overlay", "bounds": [5, 5, 5, 11, 12, 11], "material": "crystal", "axis": "y", "angle": 45},
+      {"id": "ring_low", "type": "frame", "composition": "overlay", "bounds": [3.5, 6, 3.5, 12.5, 7, 12.5], "material": "energy", "width": 1, "allow_overlap_with": ["crystal"]},
+      {"id": "ring_high", "type": "frame", "composition": "overlay", "bounds": [3.5, 10, 3.5, 12.5, 11, 12.5], "material": "energy", "width": 1, "allow_overlap_with": ["crystal"]},
+      {"id": "glass", "type": "box", "composition": "overlay", "bounds": [3, 3, 0.5, 13, 13, 1], "material": "glass"}
+    ]
+  }
+}

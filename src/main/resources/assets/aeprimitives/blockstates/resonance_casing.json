@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "active=false": {"model": "aeprimitives:block/resonance_casing"},
+    "active=true": {"model": "aeprimitives:block/resonance_casing"}
+  }
+}

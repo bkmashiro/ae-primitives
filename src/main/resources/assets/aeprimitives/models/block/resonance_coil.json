@@ -1,0 +1,14 @@
+{
+  "textures": {
+    "particle": "aeprimitives:block/casing",
+    "casing": "aeprimitives:block/casing",
+    "coil": "aeprimitives:block/foundry_coil",
+    "energy": "aeprimitives:block/foundry_energy"
+  },
+  "render_type": "minecraft:translucent",
+  "elements": [
+    {"from":[0,0,0],"to":[16,3,16],"faces":{"down":{"texture":"#casing"},"up":{"texture":"#casing"},"north":{"texture":"#casing"},"south":{"texture":"#casing"},"west":{"texture":"#casing"},"east":{"texture":"#casing"}}},
+    {"from":[5,3,5],"to":[11,16,11],"faces":{"down":{"texture":"#coil"},"up":{"texture":"#coil"},"north":{"texture":"#coil"},"south":{"texture":"#coil"},"west":{"texture":"#coil"},"east":{"texture":"#coil"}}},
+    {"from":[3,7,3],"to":[13,9,13],"faces":{"down":{"texture":"#energy"},"up":{"texture":"#energy"},"north":{"texture":"#energy"},"south":{"texture":"#energy"},"west":{"texture":"#energy"},"east":{"texture":"#energy"}}}
+  ]
+}

@@ -1,6 +1,11 @@
 {
-  "block.aeprimitives.fortune_chamber":"ME Fortune Chamber",
-  "block.aeprimitives.transformation_chamber":"ME Transformation Chamber",
-  "block.aeprimitives.resource_generator":"ME Resource Generator",
-  "itemGroup.aeprimitives":"AE Primitives"
+  "block.aeprimitives.fortune_chamber": "ME Fortune Chamber",
+  "block.aeprimitives.transformation_chamber": "ME Transformation Chamber",
+  "block.aeprimitives.resource_generator": "ME Resource Generator",
+  "block.aeprimitives.growth_chamber": "ME Crystal Growth Chamber",
+  "block.aeprimitives.resonance_controller": "ME Resonance Foundry Controller",
+  "block.aeprimitives.resonance_casing": "Resonance Casing",
+  "block.aeprimitives.resonance_coil": "Resonance Coil",
+  "block.aeprimitives.resonance_core": "Resonance Core",
+  "itemGroup.aeprimitives": "AE Primitives"
 }

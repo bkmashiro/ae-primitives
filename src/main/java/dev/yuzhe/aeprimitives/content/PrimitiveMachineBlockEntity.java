@@ -8,6 +8,7 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.me.helpers.MachineSource;
 import appeng.recipes.transform.TransformRecipe;
 import appeng.recipes.transform.TransformRecipeInput;
+import appeng.core.definitions.AEItems;
 import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,8 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     };
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private int progress;
+    private boolean structureDirty = true;
+    private boolean formed;
 
     public PrimitiveMachineBlockEntity(BlockPos pos, BlockState state) {
         this(ModContent.MACHINE_ENTITY.get(), pos, state);
@@ -54,18 +57,33 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     public ItemStackHandler inventory() { return inventory; }
     public MachineKind kind() { return ((PrimitiveMachineBlock) getBlockState().getBlock()).kind(); }
     public int progress() { return progress; }
+    public boolean isFormed() { return formed; }
+    public void markStructureDirty() { structureDirty = true; }
 
     public void serverTick() {
-        if (!(level instanceof ServerLevel server) || !getMainNode().isActive()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        if (kind() == MachineKind.FOUNDRY) {
+            if (structureDirty) updateFoundryStructure(server);
+            if (!formed) return;
+        }
+        if (!getMainNode().isActive()) return;
         flushOutputs();
         if (!hasOutputRoom()) return;
-        if (++progress < kind().processingTicks()) return;
+        if (++progress < kind().processingTicks()) {
+            if ((progress & 3) == 0) markForUpdate();
+            return;
+        }
         progress = 0;
         switch (kind()) {
             case FORTUNE -> processFortune(server);
             case TRANSFORMATION -> processTransformation(server);
             case GENERATOR -> queueAll(List.of(new ItemStack(Items.COBBLESTONE)));
+            case GROWTH -> processGrowth();
+            case FOUNDRY -> {
+                for (int parallel = 0; parallel < 4 && processTransformation(server); parallel++) {}
+            }
         }
+        markForUpdate();
     }
 
     private void processFortune(ServerLevel server) {
@@ -80,7 +98,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         queueAll(drops);
     }
 
-    private void processTransformation(ServerLevel server) {
+    private boolean processTransformation(ServerLevel server) {
         var available = new ArrayList<ItemStack>();
         for (int slot = 0; slot < 3; slot++) {
             var stack = inventory.getStackInSlot(slot);
@@ -105,11 +123,71 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
             }
             if (!matched) continue;
             var result = recipe.assemble(new TransformRecipeInput(available), server.registryAccess());
-            if (result.isEmpty() || !canQueueAll(List.of(result))) return;
+            if (result.isEmpty() || !canQueueAll(List.of(result))) return false;
             for (var slot : consumedSlots) inventory.extractItem(slot, 1, false);
             queueAll(List.of(result));
+            return true;
+        }
+        return false;
+    }
+
+    private void processGrowth() {
+        var dust = inventory.getStackInSlot(0);
+        var sand = inventory.getStackInSlot(1);
+        if (!sand.is(Items.SAND)) return;
+        ItemStack result;
+        if (dust.is(AEItems.CERTUS_QUARTZ_DUST.asItem())) {
+            result = new ItemStack(AEItems.CERTUS_QUARTZ_CRYSTAL.asItem(), 2);
+        } else if (dust.is(AEItems.FLUIX_DUST.asItem())) {
+            result = new ItemStack(AEItems.FLUIX_CRYSTAL.asItem(), 2);
+        } else {
             return;
         }
+        if (!canQueueAll(List.of(result))) return;
+        dust.shrink(1);
+        sand.shrink(1);
+        queueAll(List.of(result));
+    }
+
+    private void updateFoundryStructure(ServerLevel server) {
+        structureDirty = false;
+        boolean next = true;
+        for (int y = 0; y <= 1 && next; y++) {
+            for (int z = 0; z <= 2 && next; z++) {
+                for (int x = -1; x <= 1; x++) {
+                    var offset = worldPosition.offset(x, y, z);
+                    var expected = expectedFoundryBlock(x, y, z);
+                    if (!server.getBlockState(offset).is(expected)) {
+                        next = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if (formed != next) {
+            formed = next;
+            progress = 0;
+            setFoundryCoreActive(server, next);
+            setChanged();
+            markForUpdate();
+        }
+    }
+
+    private void setFoundryCoreActive(ServerLevel server, boolean active) {
+        for (int y = 0; y <= 1; y++) {
+            var pos = worldPosition.offset(0, y, 1);
+            var state = server.getBlockState(pos);
+            if (state.is(ModContent.RESONANCE_CORE.get()) && state.getValue(ResonancePartBlock.ACTIVE) != active) {
+                server.setBlockAndUpdate(pos, state.setValue(ResonancePartBlock.ACTIVE, active));
+            }
+        }
+    }
+
+    private Block expectedFoundryBlock(int x, int y, int z) {
+        if (x == 0 && y == 0 && z == 0) return ModContent.RESONANCE_CONTROLLER.get();
+        if (x == 0 && z == 1) return ModContent.RESONANCE_CORE.get();
+        if (Math.abs(x) == 1 && (z == 0 || z == 2)) return ModContent.RESONANCE_COIL.get();
+        return ModContent.RESONANCE_CASING.get();
     }
 
     private void flushOutputs() {
@@ -156,10 +234,13 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putInt("progress", progress);
+        tag.putBoolean("formed", formed);
     }
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadTag(tag, registries);
         if (tag.contains("inventory")) inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         progress = tag.getInt("progress");
+        formed = tag.getBoolean("formed");
+        structureDirty = true;
     }
 }

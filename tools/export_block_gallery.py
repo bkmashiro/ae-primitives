@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GALLERY = ROOT / "build/visual-gallery/index.html"
 OUTPUT = ROOT / "build/visual-gallery/images"
-MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator", "resonance_foundry")
+MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "resonance_foundry")
 CHROME_CANDIDATES = (
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
     Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),

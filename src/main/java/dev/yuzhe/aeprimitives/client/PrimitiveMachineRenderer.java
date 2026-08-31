@@ -25,8 +25,18 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
 
     @Override
     public void render(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-        if (be.kind() != MachineKind.GENERATOR || be.getLevel() == null) return;
+        if (be.getLevel() == null) return;
+        switch (be.kind()) {
+            case GENERATOR -> renderGenerator(be, partialTick, pose, buffers, light, overlay);
+            case FORTUNE -> renderFortune(be, partialTick, pose, buffers, light, overlay);
+            case TRANSFORMATION -> renderTransformation(be, partialTick, pose, buffers, light, overlay);
+            case GROWTH -> renderGrowth(be, partialTick, pose, buffers, light, overlay);
+            case FOUNDRY -> {}
+        }
+    }
 
+    private static void renderGenerator(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
+                                        MultiBufferSource buffers, int light, int overlay) {
         renderFluidTank(be, pose, buffers, light, overlay, Fluids.WATER.defaultFluidState(), 3 / 16f, 6 / 16f);
         renderFluidTank(be, pose, buffers, light, overlay, Fluids.LAVA.defaultFluidState(), 10 / 16f, 13 / 16f);
 
@@ -36,6 +46,58 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
         float angle = (be.getLevel().getGameTime() + partialTick) * 1.5f;
         pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(angle));
         Minecraft.getInstance().getItemRenderer().renderStatic(new ItemStack(Items.COBBLESTONE), ItemDisplayContext.FIXED,
+                light, overlay, pose, buffers, be.getLevel(), 0);
+        pose.popPose();
+    }
+
+    private static void renderFortune(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
+                                      MultiBufferSource buffers, int light, int overlay) {
+        var input = be.inventory().getStackInSlot(0);
+        if (!input.isEmpty()) renderItem(be, input, pose, buffers, light, overlay, 0.5, 0.53, 0.47, 0.34f, 0);
+        if (input.isEmpty()) return;
+        float phase = Math.min(1, (be.progress() + partialTick) / be.kind().processingTicks());
+        float strike = (float) Math.sin(phase * Math.PI);
+        pose.pushPose();
+        pose.translate(0.5, 0.86 - strike * 0.16, 0.38);
+        pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-38));
+        pose.scale(0.42f, 0.42f, 0.42f);
+        Minecraft.getInstance().getItemRenderer().renderStatic(new ItemStack(Items.DIAMOND_PICKAXE), ItemDisplayContext.FIXED,
+                light, overlay, pose, buffers, be.getLevel(), 1);
+        pose.popPose();
+    }
+
+    private static void renderTransformation(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
+                                             MultiBufferSource buffers, int light, int overlay) {
+        float phase = (be.getLevel().getGameTime() + partialTick) * 0.045f;
+        for (int slot = 0; slot < 3; slot++) {
+            var stack = be.inventory().getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            double angle = phase + slot * Math.PI * 2 / 3;
+            double radius = 0.20 - 0.06 * Math.min(1, (double) be.progress() / be.kind().processingTicks());
+            renderItem(be, stack, pose, buffers, light, overlay,
+                    0.5 + Math.cos(angle) * radius, 0.52 + slot * 0.035, 0.38 + Math.sin(angle) * 0.06,
+                    0.22f, (float) Math.toDegrees(angle));
+        }
+    }
+
+    private static void renderGrowth(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
+                                     MultiBufferSource buffers, int light, int overlay) {
+        var input = be.inventory().getStackInSlot(0);
+        if (input.isEmpty()) return;
+        float phase = Math.min(1, (be.progress() + partialTick) / be.kind().processingTicks());
+        float scale = 0.18f + phase * 0.16f;
+        renderItem(be, input, pose, buffers, light, overlay, 0.5, 0.38 + phase * 0.18, 0.34,
+                scale, (be.getLevel().getGameTime() + partialTick) * 1.2f);
+    }
+
+    private static void renderItem(PrimitiveMachineBlockEntity be, ItemStack stack, PoseStack pose,
+                                   MultiBufferSource buffers, int light, int overlay,
+                                   double x, double y, double z, float scale, float yaw) {
+        pose.pushPose();
+        pose.translate(x, y, z);
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(yaw));
+        pose.scale(scale, scale, scale);
+        Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemDisplayContext.FIXED,
                 light, overlay, pose, buffers, be.getLevel(), 0);
         pose.popPose();
     }

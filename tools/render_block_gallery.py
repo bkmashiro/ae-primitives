@@ -15,7 +15,7 @@ MODELS = ASSETS / "models/block"
 MULTIBLOCKS = ROOT / "build/machine-assets/multiblocks"
 TEXTURES = ASSETS / "textures"
 OUTPUT = ROOT / "build/visual-gallery/index.html"
-MODEL_IDS = ("fortune_chamber", "transformation_chamber", "resource_generator")
+MODEL_IDS = ("fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber")
 CLIENT_JAR = Path.home() / ".gradle/caches/neoformruntime/artifacts/minecraft_1.21.1_client.jar"
 
 FACE_VERTICES = {

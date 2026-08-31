@@ -1,6 +1,11 @@
 {
-  "block.aeprimitives.fortune_chamber":"ME 时运处理舱",
-  "block.aeprimitives.transformation_chamber":"ME 转化舱",
-  "block.aeprimitives.resource_generator":"ME 资源发生器",
-  "itemGroup.aeprimitives":"AE 原语"
+  "block.aeprimitives.fortune_chamber": "ME 时运处理舱",
+  "block.aeprimitives.transformation_chamber": "ME 转化舱",
+  "block.aeprimitives.resource_generator": "ME 资源发生器",
+  "block.aeprimitives.growth_chamber": "ME 晶体生长舱",
+  "block.aeprimitives.resonance_controller": "ME 共振铸造厂控制器",
+  "block.aeprimitives.resonance_casing": "共振外壳",
+  "block.aeprimitives.resonance_coil": "共振线圈",
+  "block.aeprimitives.resonance_core": "共振核心",
+  "itemGroup.aeprimitives": "AE 原语"
 }

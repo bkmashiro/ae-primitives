@@ -2,7 +2,7 @@
 
 Compact AE2 machines for common world-interaction contraptions.
 
-AE Primitives adds three single-block machines that connect directly to an AE network, use one channel, draw AE power and keep blocked outputs safely inside the machine.
+AE Primitives adds compact machines for common AE2 processing setups. Single-block machines connect directly to the network, use one channel and keep blocked outputs inside the machine.
 
 ## Machines
 
@@ -17,6 +17,16 @@ Runs AE2 `transform` recipes directly. Place the recipe ingredients in the three
 ### ME Resource Generator
 
 Generates cobblestone without placing water, lava or blocks in the world. Its transparent front shows the two media and the current product.
+
+### ME Crystal Growth Chamber
+
+Grows Certus Quartz or Fluix crystals from their dust and sand. The crystal rises through the chamber as the cycle progresses.
+
+### ME Resonance Foundry
+
+A 3×2×3 multiblock for high-throughput AE2 transform recipes. Its four coil columns run up to four transformations per cycle through one controller and shared inventory.
+
+Build it with the controller in the middle of the front edge. The four corners are two-block Resonance Coil columns, the two center blocks are Resonance Cores, and every remaining position is Resonance Casing. The foundry reacts immediately when a required part is added or removed.
 
 ## Using the machines
 

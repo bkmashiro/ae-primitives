@@ -3,7 +3,9 @@ package dev.yuzhe.aeprimitives.content;
 public enum MachineKind {
     FORTUNE("fortune_chamber", 20),
     TRANSFORMATION("transformation_chamber", 20),
-    GENERATOR("resource_generator", 40);
+    GENERATOR("resource_generator", 40),
+    GROWTH("growth_chamber", 80),
+    FOUNDRY("resonance_controller", 20);
 
     private final String id;
     private final int processingTicks;
