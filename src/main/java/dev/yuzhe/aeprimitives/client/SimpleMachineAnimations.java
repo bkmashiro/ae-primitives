@@ -8,13 +8,17 @@ import dev.yuzhe.aeprimitives.content.MachineKind;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class SimpleMachineAnimations {
-    private static final Map<String, JsonObject> MACHINES = new HashMap<>();
+    private static final Map<String, JsonObject> MACHINES = new ConcurrentHashMap<>();
 
     private SimpleMachineAnimations() {}
+
+    static void clearCache() {
+        MACHINES.clear();
+    }
 
     static float sample(MachineKind kind, String animationName, String target, String property,
                         float clockValue, float fallback) {

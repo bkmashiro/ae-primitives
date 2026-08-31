@@ -106,10 +106,16 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
 
         var input = be.inventory().getStackInSlot(0);
         if (input.isEmpty()) return;
+        float x = SimpleMachineAnimations.sample(
+                be.kind(), "work", "runtime:input", "translate_x", clock, 0.5f);
         float bob = SimpleMachineAnimations.sample(
                 be.kind(), "work", "runtime:input", "translate_y", clock, 0);
+        float z = SimpleMachineAnimations.sample(
+                be.kind(), "work", "runtime:input", "translate_z", clock, 0.46f);
+        float scale = SimpleMachineAnimations.sample(
+                be.kind(), "work", "runtime:input", "scale", clock, 0.25f);
         renderItem(be, input, pose, buffers, light, overlay,
-                0.56, 0.74 + bob, 0.16, 0.25f, -20);
+                x, 0.74 + bob, z, scale, -20);
     }
 
     private static void renderComposterBlock(PoseStack pose, MultiBufferSource buffers, int light, int overlay) {

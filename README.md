@@ -70,6 +70,8 @@ For interactive inspection, generate `build/visual-gallery/index.html` with `./g
 
 Machine models can also be generated from the repository's tree-shaped CSG and procedural texture format. See [Machine asset pipeline](docs/machine-assets.md).
 
+During a visual-harness client run, regenerate changed assets and call `reload-resources`; block models, textures and declarative animation tracks update without restarting Minecraft. Java renderer changes still require a client restart.
+
 ## License
 
 [MIT](LICENSE)

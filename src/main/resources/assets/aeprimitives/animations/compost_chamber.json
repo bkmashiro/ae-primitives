@@ -8,11 +8,30 @@
       "tracks": [
         {
           "target": "runtime:input",
+          "property": "translate_x",
+          "easing": "linear",
+          "keyframes": [
+            [
+              0.0,
+              0.5
+            ],
+            [
+              1.0,
+              0.5
+            ]
+          ]
+        },
+        {
+          "target": "runtime:input",
           "property": "translate_y",
           "easing": "smoothstep",
           "keyframes": [
             [
               0.0,
+              0.45
+            ],
+            [
+              0.55,
               0.12
             ],
             [
@@ -25,7 +44,37 @@
             ],
             [
               1.0,
-              0.12
+              0.45
+            ]
+          ]
+        },
+        {
+          "target": "runtime:input",
+          "property": "translate_z",
+          "easing": "linear",
+          "keyframes": [
+            [
+              0.0,
+              0.46
+            ],
+            [
+              1.0,
+              0.46
+            ]
+          ]
+        },
+        {
+          "target": "runtime:input",
+          "property": "scale",
+          "easing": "linear",
+          "keyframes": [
+            [
+              0.0,
+              0.18
+            ],
+            [
+              1.0,
+              0.18
             ]
           ]
         }

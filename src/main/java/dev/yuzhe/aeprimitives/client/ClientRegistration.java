@@ -10,16 +10,19 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 
 public final class ClientRegistration {
     public static void register(IEventBus bus) {
         bus.addListener(ClientRegistration::setup);
         bus.addListener(ClientRegistration::screens);
+        bus.addListener(ClientRegistration::reloadListeners);
     }
     private static void setup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
@@ -32,6 +35,10 @@ public final class ClientRegistration {
     }
     private static void screens(RegisterMenuScreensEvent event) {
         event.register(ModContent.MACHINE_MENU.get(), PrimitiveMachineScreen::new);
+    }
+    private static void reloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager ->
+                SimpleMachineAnimations.clearCache());
     }
 
     private ClientRegistration() {}
