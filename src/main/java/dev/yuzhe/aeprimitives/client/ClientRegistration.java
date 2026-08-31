@@ -14,6 +14,7 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.ModList;
 
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
@@ -25,6 +26,9 @@ public final class ClientRegistration {
         bus.addListener(ClientRegistration::reloadListeners);
     }
     private static void setup(FMLClientSetupEvent event) {
+        if (ModList.get().isLoaded("ponder")) {
+            dev.yuzhe.aeprimitives.compat.ponder.AePrimitivesPonderPlugin.register();
+        }
         event.enqueueWork(() -> {
             ItemBlockRenderTypes.setRenderLayer(ModContent.RESOURCE_GENERATOR.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModContent.GROWTH_CHAMBER.get(), RenderType.translucent());

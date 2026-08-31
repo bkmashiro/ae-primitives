@@ -7,6 +7,7 @@ import appeng.core.definitions.AEItems;
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
+import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerItem;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -85,6 +86,8 @@ public final class ModContent {
     public static final DeferredItem<Item> SEQUENCE_PATTERN = ITEMS.register("sequence_pattern", () ->
             PatternDetailsHelper.encodedPatternItemBuilder(SequencePatternData::decode)
                     .itemProperties(new Item.Properties().stacksTo(1)).build());
+    public static final DeferredItem<Item> PROCESS_ANALYZER = ITEMS.register("process_analyzer", () ->
+            new ProcessAnalyzerItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -146,6 +149,7 @@ public final class ModContent {
                         output.accept(PATTERN_PROVIDER_CARD.get());
                         output.accept(OPERATION_PATTERN.get());
                         output.accept(SEQUENCE_PATTERN.get());
+                        output.accept(PROCESS_ANALYZER.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {

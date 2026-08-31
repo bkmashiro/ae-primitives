@@ -3,6 +3,7 @@ package dev.yuzhe.aeprimitives.mixin;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEKey;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import dev.yuzhe.aeprimitives.operation.OperationPatternDetails;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternDetails;
 import dev.yuzhe.aeprimitives.sequence.SequenceRuntime;
@@ -21,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class PatternProviderLogicMixin {
     @Shadow @Final private List<IPatternDetails> patterns;
     @Shadow @Final private Set<AEKey> patternInputs;
+    @Shadow @Final private PatternProviderLogicHost host;
 
     @Inject(method = "updatePatterns", at = @At(
             value = "INVOKE",
@@ -38,7 +40,10 @@ public abstract class PatternProviderLogicMixin {
                 .toList();
 
         var self = (PatternProviderLogic) (Object) this;
-        SequenceRuntime.registerOperationProvider(self, !operations.isEmpty());
+        SequenceRuntime.updateOperationProvider(
+                self,
+                host.getBlockEntity(),
+                operations.stream().map(OperationPatternDetails::spec).toList());
         SequenceRuntime.update(self, sequences);
         if (sequences.isEmpty() && operations.isEmpty()) return;
 
@@ -67,5 +72,10 @@ public abstract class PatternProviderLogicMixin {
                 }
             }
         }
+    }
+
+    @Inject(method = "clearContent", at = @At("HEAD"))
+    private void aeprimitives$forgetProvider(CallbackInfo ci) {
+        SequenceRuntime.remove((PatternProviderLogic) (Object) this);
     }
 }

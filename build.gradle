@@ -3,12 +3,18 @@ group = 'dev.yuzhe.aeprimitives'
 version = mod_version
 java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 repositories {
+ mavenCentral()
  maven { name='Jared'; url='https://maven.blamejared.com' }
+ maven { name='Create'; url='https://maven.createmod.net' }
  exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } }
 }
 dependencies {
  implementation "maven.modrinth:ae2:${ae2_version}"
+ implementation 'maven.modrinth:ldlib:mc1.21.1-2.2.37-neoforge'
+ compileOnly 'dev.vfyjxf:taffy:1.1.4'
+ compileOnly 'org.appliedenergistics.yoga:yoga:1.0.0'
  compileOnly 'maven.modrinth:create:6.0.10+mc1.21.1'
+ compileOnly 'net.createmod.ponder:ponder-neoforge:1.0.82+mc1.21.1'
  compileOnly 'mezz.jei:jei-1.21.1-neoforge-api:19.39.0.369'
  compileOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
  if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.orElse(false).get()) {

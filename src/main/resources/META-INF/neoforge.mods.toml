@@ -28,6 +28,12 @@ versionRange="[19.2,20.0)"
 ordering="AFTER"
 side="BOTH"
 [[dependencies.aeprimitives]]
+modId="ldlib2"
+type="required"
+versionRange="[2.2.37,2.3)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.aeprimitives]]
 modId="create"
 type="optional"
 versionRange="[6.0.10,6.1)"

@@ -230,6 +230,15 @@ public final class PrimitiveMachineGameTests {
                             + patterns.stream().map(pattern -> pattern.getClass().getSimpleName()).toList());
             helper.assertTrue(patterns.stream().noneMatch(dev.yuzhe.aeprimitives.operation.OperationPatternDetails.class::isInstance),
                     "abstract operation marker leaked into AE crafting patterns");
+            var diagnostic = SequenceRuntime.snapshot(operationProvider.getLogic().getGrid());
+            helper.assertTrue(diagnostic.sequences().size() == 1,
+                    "process analyzer did not find the sequence on this ME network");
+            var diagnosticStep = diagnostic.sequences().getFirst().steps().getFirst();
+            helper.assertTrue(diagnosticStep.status() == dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus.READY,
+                    "process analyzer did not report the matching operation provider as ready");
+            helper.assertTrue(diagnosticStep.providers().stream()
+                            .anyMatch(provider -> provider.pos().equals(helper.absolutePos(operationPos))),
+                    "process analyzer did not retain the matching provider position");
         });
     }
 

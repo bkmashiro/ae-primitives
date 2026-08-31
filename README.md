@@ -48,6 +48,18 @@ A **Sequence Pattern** imports a complete Create Sequenced Assembly recipe. It e
 
 This keeps the number of registered patterns proportional to the sequences actually in use. Intermediate patterns are created only for live Sequence Patterns, and disappear when the sequence is removed.
 
+### Process Analyzer
+
+Use the **ME Process Analyzer** on any Pattern Provider to inspect the process graph for that ME network. It shows each sequence as an ordered graph and marks every operation as:
+
+- **Ready** when a matching provider is available.
+- **Busy** when matching providers exist but are currently occupied.
+- **Missing** when the network has no provider advertising that operation and recipe.
+
+The graph can be panned and zoomed. Select a node to see the matching providers and their coordinates. Diagnostics reuse the live pattern catalog maintained by provider updates; the analyzer does not scan blocks in the world.
+
+When Create is installed, the analyzer also has a Ponder tutorial showing how Operation Patterns and Sequence Patterns fit together.
+
 ### Importing from JEI
 
 With Create and JEI installed:
@@ -75,9 +87,10 @@ Both client and server need AE Primitives.
 - NeoForge 21.1.243 or newer
 - Applied Energistics 2 19.2.x
 - GuideME
+- LowDragLib2 2.2.37 or newer
 - Java 21
 
-Create 6.0.10 and JEI 19.39 are optional and enable sequence import and JEI pattern encoding.
+Create 6.0.10 and JEI 19.39 are optional and enable sequence import, JEI pattern encoding and the Ponder tutorial.
 
 ## Development
 
