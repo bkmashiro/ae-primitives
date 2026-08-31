@@ -85,7 +85,10 @@ tasks.register('lintMachineAssets', Exec) {
 }
 tasks.named('processResources') { dependsOn tasks.named('generateMachineAssets') }
 tasks.named('verifyAll') { dependsOn tasks.named('lintMachineAssets') }
-tasks.named('verifyAll') { dependsOn ':create-extension:build' }
+tasks.named('verifyAll') {
+ dependsOn ':create-extension:build'
+ dependsOn ':create-extension:runGameTestServer'
+}
 tasks.register('visualGallery', Exec) {
  group='verification'
  description='Generate an interactive gallery from the shipped block models and textures.'

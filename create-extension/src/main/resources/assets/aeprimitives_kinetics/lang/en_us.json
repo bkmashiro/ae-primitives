@@ -3,5 +3,8 @@
   "jei.aeprimitives_kinetics.import_operation": "Encode this recipe as an Operation Pattern",
   "jei.aeprimitives_kinetics.import_operation_family": "Shift-click: encode the whole operation family",
   "message.aeprimitives_kinetics.pattern_import.no_blank": "A blank matching pattern is required",
-  "message.aeprimitives_kinetics.pattern_import.success": "Pattern encoded"
+  "message.aeprimitives_kinetics.pattern_import.success": "Pattern encoded",
+  "itemGroup.aeprimitives_kinetics": "AE Primitives: Kinetics",
+  "block.aeprimitives_kinetics.me_press": "ME Kinetic Press",
+  "block.aeprimitives_kinetics.me_crusher": "ME Crushing Chamber"
 }

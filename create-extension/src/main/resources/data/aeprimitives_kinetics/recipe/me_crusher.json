@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WAW",
+    "AFA",
+    "WAW"
+  ],
+  "key": {
+    "W": {
+      "item": "create:crushing_wheel"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "F": {
+      "item": "aeprimitives:ultimate_machine_frame"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_crusher",
+    "count": 1
+  }
+}

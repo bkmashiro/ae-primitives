@@ -1,0 +1,69 @@
+package dev.yuzhe.aeprimitives.kinetics.content;
+
+import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
+import java.util.function.Supplier;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public final class KineticsContent {
+    private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(AePrimitivesKinetics.MOD_ID);
+    private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(AePrimitivesKinetics.MOD_ID);
+    private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, AePrimitivesKinetics.MOD_ID);
+    private static final DeferredRegister<CreativeModeTab> TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AePrimitivesKinetics.MOD_ID);
+
+    public static final DeferredBlock<KineticMachineBlock> ME_PRESS = block(KineticMachineKind.PRESS);
+    public static final DeferredBlock<KineticMachineBlock> ME_CRUSHER = block(KineticMachineKind.CRUSHER);
+    public static final DeferredItem<BlockItem> ME_PRESS_ITEM = item(KineticMachineKind.PRESS, ME_PRESS);
+    public static final DeferredItem<BlockItem> ME_CRUSHER_ITEM = item(KineticMachineKind.CRUSHER, ME_CRUSHER);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KineticMachineBlockEntity>> MACHINE_ENTITY =
+            BLOCK_ENTITIES.register("kinetic_machine", () -> BlockEntityType.Builder.of(
+                    KineticMachineBlockEntity::new, ME_PRESS.get(), ME_CRUSHER.get()).build(null));
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
+            CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.aeprimitives_kinetics"))
+                    .icon(() -> ME_PRESS_ITEM.get().getDefaultInstance())
+                    .displayItems((parameters, output) -> {
+                        output.accept(ME_PRESS_ITEM.get());
+                        output.accept(ME_CRUSHER_ITEM.get());
+                    }).build());
+
+    public static void register(IEventBus modBus) {
+        BLOCKS.register(modBus);
+        ITEMS.register(modBus);
+        BLOCK_ENTITIES.register(modBus);
+        TABS.register(modBus);
+        modBus.addListener(KineticsContent::registerCapabilities);
+    }
+
+    private static DeferredBlock<KineticMachineBlock> block(KineticMachineKind kind) {
+        return BLOCKS.register(kind.id(), () -> new KineticMachineBlock(kind,
+                BlockBehaviour.Properties.of().strength(4.0f).requiresCorrectToolForDrops().noOcclusion()));
+    }
+
+    private static DeferredItem<BlockItem> item(KineticMachineKind kind, Supplier<? extends KineticMachineBlock> block) {
+        return ITEMS.register(kind.id(), () -> new BlockItem(block.get(), new Item.Properties()));
+    }
+
+    private static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ENTITY.get(),
+                (machine, side) -> machine.inventory());
+    }
+
+    private KineticsContent() {}
+}

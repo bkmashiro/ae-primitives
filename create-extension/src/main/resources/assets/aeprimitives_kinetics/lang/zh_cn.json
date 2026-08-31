@@ -3,5 +3,8 @@
   "jei.aeprimitives_kinetics.import_operation": "将当前配方编码为工序样板",
   "jei.aeprimitives_kinetics.import_operation_family": "Shift 点击：编码整个工序门类",
   "message.aeprimitives_kinetics.pattern_import.no_blank": "需要一个对应的空白样板",
-  "message.aeprimitives_kinetics.pattern_import.success": "样板已编码"
+  "message.aeprimitives_kinetics.pattern_import.success": "样板已编码",
+  "itemGroup.aeprimitives_kinetics": "AE Primitives：动力扩展",
+  "block.aeprimitives_kinetics.me_press": "ME 动力辊压机",
+  "block.aeprimitives_kinetics.me_crusher": "ME 粉碎舱"
 }

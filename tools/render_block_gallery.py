@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "src/main/resources/assets/aeprimitives"
 MODELS = ASSETS / "models/block"
+KINETICS_MODELS = ROOT / "create-extension/src/main/resources/assets/aeprimitives_kinetics/models/block"
 ANIMATIONS = ASSETS / "animations"
 MULTIBLOCKS = ROOT / "build/machine-assets/multiblocks"
 TEXTURES = ASSETS / "textures"
@@ -169,6 +170,10 @@ def main() -> None:
     images: dict[str, str] = {}
     for model_id in MODEL_IDS:
         model, used = load_model(model_id)
+        models.append(model)
+        images.update(used)
+    for model_id in ("me_press", "me_crusher"):
+        model, used = load_model(model_id, KINETICS_MODELS / f"{model_id}.json")
         models.append(model)
         images.update(used)
     for path in sorted(MULTIBLOCKS.glob("*.json")):

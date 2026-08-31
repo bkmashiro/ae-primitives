@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "AFA",
+    " P "
+  ],
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "P": {
+      "item": "create:mechanical_press"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_press",
+    "count": 1
+  }
+}
