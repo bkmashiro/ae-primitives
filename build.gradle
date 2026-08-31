@@ -6,6 +6,10 @@ repositories { exclusiveContent { forRepository { maven { name='Modrinth'; url='
 dependencies {
  implementation "maven.modrinth:ae2:${ae2_version}"
  runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) {
+  runtimeOnly files('../minecraft-visual-harness/build/libs/minecraft-visual-harness-0.1.0-SNAPSHOT.jar')
+  runtimeOnly 'maven.modrinth:kotlin-lang-forge:1.1.0-k2.0.21-1.21+neoforge'
+ }
  testImplementation platform('org.junit:junit-bom:5.11.4')
  testImplementation 'org.junit.jupiter:junit-jupiter'
  testImplementation 'org.assertj:assertj-core:3.27.3'
@@ -16,6 +20,9 @@ neoForge {
   client {
    client()
    gameDirectory = project.file('run-client')
+   if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) {
+    systemProperty 'mcHarness.enabled', 'true'
+   }
    if (providers.gradleProperty('quickPlayMultiplayer').isPresent()) {
     programArgument '--quickPlayMultiplayer'
     programArgument providers.gradleProperty('quickPlayMultiplayer').get()
@@ -75,6 +82,12 @@ tasks.register('exportVisualGallery', Exec) {
  inputs.file project.file('tools/export_block_gallery.py')
  inputs.file layout.buildDirectory.file('visual-gallery/index.html')
  outputs.dir layout.buildDirectory.dir('visual-gallery/images')
+}
+tasks.register('exportMachineAnimation', Exec) {
+ group='verification'
+ description='Export the Fortune Chamber animation through a running Minecraft Visual Harness client.'
+ commandLine 'python3', project.file('tools/export_machine_animation.py')
+ inputs.files project.files('tools/export_machine_animation.py', 'assets-src/previews/fortune-animation.json')
 }
 test { useJUnitPlatform() }
 def expandedModVersion=providers.gradleProperty('mod_version').get()

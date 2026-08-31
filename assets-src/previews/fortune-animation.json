@@ -1,0 +1,6 @@
+[
+  {
+    "block": "aeprimitives:fortune_chamber",
+    "blockEntitySnbt": "{inventory:{Size:12,Items:[{Slot:0,id:\"minecraft:iron_ore\",count:1}]},progress:10}"
+  }
+]

@@ -78,7 +78,14 @@ Machine specs may define small transform tracks for renderer-owned parts. Tracks
 }
 ```
 
-The compiler validates the animation and writes `assets/aeprimitives/animations/<machine>.json`. `SimpleMachineAnimations` samples the generated track from a block-entity renderer. `exportVisualGallery` also exports fixed-phase PNGs without opening a browser window; Minecraft Visual Harness can combine the same frames into a sprite sheet or GIF. When the Harness sets `mcvisualharness.animationPhase`, the in-game sampler uses that exact 0–1 phase for deterministic captures.
+The compiler validates the animation and writes `assets/aeprimitives/animations/<machine>.json`. `SimpleMachineAnimations` samples the generated track from a block-entity renderer. The Web gallery remains a quick modeling preview. Final evidence uses Minecraft Visual Harness, which loads `assets-src/previews/fortune-animation.json`, invokes the real BlockEntity renderer in an off-screen framebuffer and exports fixed animation phases without placing the machine in a world:
+
+```bash
+./gradlew runClient -PvisualHarness=true
+./gradlew exportMachineAnimation
+```
+
+The export writes the PNG sequence, sprite sheet, GIF and manifest under `run-client/mc-harness`. When the Harness sets `mcvisualharness.animationPhase`, the in-game sampler uses that exact 0–1 phase for deterministic captures.
 
 ## Lint
 

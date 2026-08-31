@@ -25,12 +25,17 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
 
     @Override
     public void render(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-        if (be.getLevel() == null) return;
         switch (be.kind()) {
-            case GENERATOR -> renderGenerator(be, partialTick, pose, buffers, light, overlay);
             case FORTUNE -> renderFortune(be, partialTick, pose, buffers, light, overlay);
-            case TRANSFORMATION -> renderTransformation(be, partialTick, pose, buffers, light, overlay);
-            case GROWTH -> renderGrowth(be, partialTick, pose, buffers, light, overlay);
+            case GENERATOR -> {
+                if (be.getLevel() != null) renderGenerator(be, partialTick, pose, buffers, light, overlay);
+            }
+            case TRANSFORMATION -> {
+                if (be.getLevel() != null) renderTransformation(be, partialTick, pose, buffers, light, overlay);
+            }
+            case GROWTH -> {
+                if (be.getLevel() != null) renderGrowth(be, partialTick, pose, buffers, light, overlay);
+            }
             case FOUNDRY -> {}
         }
     }
@@ -52,7 +57,7 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
 
     private static void renderFortune(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
                                       MultiBufferSource buffers, int light, int overlay) {
-        var input = be.inventory().getStackInSlot(0);
+        ItemStack input = be.inventory().getStackInSlot(0);
         if (!input.isEmpty()) renderItem(be, input, pose, buffers, light, overlay, 0.5, 0.53, 0.47, 0.34f, 0);
         if (input.isEmpty()) return;
         float phase = Math.min(1, (be.progress() + partialTick) / be.kind().processingTicks());
