@@ -153,6 +153,11 @@ class CsgCompilerTest(unittest.TestCase):
         overlay = compile_machine(overlay_spec).model["elements"][0]
         self.assertEqual([0, 0, 16, 16], overlay["faces"]["up"]["uv"])
 
+        overlay_spec["root"]["uv_mode"] = "world"
+        clipped_overlay = compile_machine(overlay_spec).model["elements"][0]
+        self.assertEqual([6, 3, 10, 7], clipped_overlay["faces"]["up"]["uv"])
+        self.assertEqual([6, 4, 10, 12], clipped_overlay["faces"]["south"]["uv"])
+
 
 class TextureCompilerTest(unittest.TestCase):
     def test_texture_layers_are_deterministic_and_writable(self):

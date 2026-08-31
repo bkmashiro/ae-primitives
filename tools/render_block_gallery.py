@@ -117,6 +117,16 @@ def load_model(model_id: str, source: Path | None = None) -> tuple[dict, dict[st
             )
             for key, entry, tint, lower, upper in previews:
                 used[key] = png_bytes(client.read(entry))
+                x0, y0, z0 = lower
+                x1, y1, z1 = upper
+                fluid_uvs = {
+                    "down": [x0, 16 - z1, x1, 16 - z0],
+                    "up": [x0, z0, x1, z1],
+                    "north": [16 - x1, 16 - y1, 16 - x0, 16 - y0],
+                    "south": [x0, 16 - y1, x1, 16 - y0],
+                    "west": [z0, 16 - y1, z1, 16 - y0],
+                    "east": [16 - z1, 16 - y1, 16 - z0, 16 - y0],
+                }
                 normalized.append({"faces": [
                     {
                         "direction": direction,
@@ -124,6 +134,7 @@ def load_model(model_id: str, source: Path | None = None) -> tuple[dict, dict[st
                         "normal": NORMALS[direction],
                         "texture": key,
                         "tint": tint,
+                        "uv": fluid_uvs[direction],
                     }
                     for direction in FACE_VERTICES
                 ]})

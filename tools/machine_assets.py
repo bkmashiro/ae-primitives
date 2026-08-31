@@ -306,7 +306,11 @@ def _overlay_element(node: dict[str, Any]) -> dict[str, Any]:
     element: dict[str, Any] = {
         "from": bounds[:3],
         "to": bounds[3:],
-        "faces": _faces(str(node["material"]), bounds, global_uv=False),
+        "faces": _faces(
+            str(node["material"]),
+            bounds,
+            global_uv=node.get("uv_mode", "fit") == "world",
+        ),
     }
     if node.get("type") == "crystal":
         x0, y0, z0, x1, y1, z1 = bounds

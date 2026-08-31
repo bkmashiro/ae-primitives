@@ -118,24 +118,36 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
         float maxY = 11 / 16f;
         float minZ = 3 / 16f;
         float maxZ = 12 / 16f;
-        float u0 = sprite.getU0();
-        float u1 = sprite.getU1();
-        float v0 = sprite.getV0();
-        float v1 = sprite.getV1();
+        float verticalV0 = spriteV(sprite, 1 - maxY);
+        float verticalV1 = spriteV(sprite, 1 - minY);
         PoseStack.Pose transform = pose.last();
 
         quad(vertices, transform, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ, minX, minY, minZ,
-                0, 0, -1, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                0, 0, -1, spriteU(sprite, 1 - maxX), spriteU(sprite, 1 - minX), verticalV0, verticalV1,
+                red, green, blue, alpha, light, overlay);
         quad(vertices, transform, maxX, maxY, maxZ, minX, maxY, maxZ, minX, minY, maxZ, maxX, minY, maxZ,
-                0, 0, 1, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                0, 0, 1, spriteU(sprite, minX), spriteU(sprite, maxX), verticalV0, verticalV1,
+                red, green, blue, alpha, light, overlay);
         quad(vertices, transform, minX, maxY, maxZ, minX, maxY, minZ, minX, minY, minZ, minX, minY, maxZ,
-                -1, 0, 0, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                -1, 0, 0, spriteU(sprite, minZ), spriteU(sprite, maxZ), verticalV0, verticalV1,
+                red, green, blue, alpha, light, overlay);
         quad(vertices, transform, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, maxX, minY, minZ,
-                1, 0, 0, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                1, 0, 0, spriteU(sprite, 1 - maxZ), spriteU(sprite, 1 - minZ), verticalV0, verticalV1,
+                red, green, blue, alpha, light, overlay);
         quad(vertices, transform, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, minX, maxY, minZ,
-                0, 1, 0, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                0, 1, 0, spriteU(sprite, minX), spriteU(sprite, maxX), spriteV(sprite, minZ), spriteV(sprite, maxZ),
+                red, green, blue, alpha, light, overlay);
         quad(vertices, transform, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ,
-                0, -1, 0, u0, u1, v0, v1, red, green, blue, alpha, light, overlay);
+                0, -1, 0, spriteU(sprite, minX), spriteU(sprite, maxX), spriteV(sprite, 1 - maxZ), spriteV(sprite, 1 - minZ),
+                red, green, blue, alpha, light, overlay);
+    }
+
+    private static float spriteU(TextureAtlasSprite sprite, float blockCoordinate) {
+        return sprite.getU0() + (sprite.getU1() - sprite.getU0()) * blockCoordinate;
+    }
+
+    private static float spriteV(TextureAtlasSprite sprite, float blockCoordinate) {
+        return sprite.getV0() + (sprite.getV1() - sprite.getV0()) * blockCoordinate;
     }
 
     private static void quad(VertexConsumer vertices, PoseStack.Pose transform,
