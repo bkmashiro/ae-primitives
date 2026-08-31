@@ -1,6 +1,5 @@
 package dev.yuzhe.aeprimitives.kinetics.client;
 
-import com.simibubi.create.content.kinetics.base.KineticBlockEntityRenderer;
 import dev.yuzhe.aeprimitives.kinetics.content.KineticsContent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -12,7 +11,7 @@ public final class KineticsClientRegistration {
 
     private static void setup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
-                KineticsContent.MACHINE_ENTITY.get(), KineticBlockEntityRenderer::new));
+                KineticsContent.MACHINE_ENTITY.get(), CatalystChamberRenderer::new));
     }
 
     private KineticsClientRegistration() {}

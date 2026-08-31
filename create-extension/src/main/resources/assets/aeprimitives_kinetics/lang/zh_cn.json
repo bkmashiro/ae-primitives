@@ -6,5 +6,6 @@
   "message.aeprimitives_kinetics.pattern_import.success": "样板已编码",
   "itemGroup.aeprimitives_kinetics": "AE Primitives：动力扩展",
   "block.aeprimitives_kinetics.me_press": "ME 动力辊压机",
-  "block.aeprimitives_kinetics.me_crusher": "ME 粉碎舱"
+  "block.aeprimitives_kinetics.me_crusher": "ME 粉碎舱",
+  "block.aeprimitives_kinetics.me_catalyst_chamber": "ME 触媒处理舱"
 }

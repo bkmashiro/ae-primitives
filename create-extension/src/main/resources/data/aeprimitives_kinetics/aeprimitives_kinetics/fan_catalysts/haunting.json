@@ -1,0 +1,5 @@
+{
+  "activation": ["minecraft:soul_sand", "minecraft:soul_soil"],
+  "fan_processing_type": "create:haunting",
+  "display": { "kind": "block", "resource": "minecraft:soul_sand" }
+}

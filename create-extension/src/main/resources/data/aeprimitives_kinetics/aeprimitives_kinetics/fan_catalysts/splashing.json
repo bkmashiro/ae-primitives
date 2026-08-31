@@ -1,0 +1,7 @@
+{
+  "activation": ["minecraft:water_bucket"],
+  "fan_processing_type": "create:splashing",
+  "installation_remainder": "minecraft:bucket",
+  "removal_result": "minecraft:water_bucket",
+  "display": { "kind": "fluid", "resource": "minecraft:water", "color": "#55aaff" }
+}

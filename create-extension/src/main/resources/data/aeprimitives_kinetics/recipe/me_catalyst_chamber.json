@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["SFS", "GPG", "SCS"],
+  "key": {
+    "S": { "item": "create:shaft" },
+    "F": { "item": "create:encased_fan" },
+    "G": { "item": "minecraft:tinted_glass" },
+    "P": { "item": "aeprimitives:advanced_machine_frame" },
+    "C": { "item": "ae2:calculation_processor" }
+  },
+  "result": { "id": "aeprimitives_kinetics:me_catalyst_chamber", "count": 1 }
+}

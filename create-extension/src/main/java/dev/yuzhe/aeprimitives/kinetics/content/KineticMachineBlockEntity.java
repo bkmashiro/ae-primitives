@@ -12,13 +12,20 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.content.kinetics.fan.processing.FanProcessingType;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystDefinition;
+import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
+import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystVisual;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
@@ -47,6 +54,9 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         @Override protected void onContentsChanged(int slot) { setChanged(); sendData(); }
     };
     private float work;
+    private ResourceLocation catalystId;
+    private ItemStack catalystStack = ItemStack.EMPTY;
+    private CatalystVisual catalystVisual = CatalystVisual.item();
 
     public KineticMachineBlockEntity(BlockPos pos, BlockState state) {
         this(KineticsContent.MACHINE_ENTITY.get(), pos, state);
@@ -62,6 +72,42 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
 
     public ItemStackHandler inventory() { return inventory; }
     public float workFraction() { return Math.min(1.0f, work / WORK_PER_RECIPE); }
+    public Optional<ResourceLocation> catalystId() { return Optional.ofNullable(catalystId); }
+    public ItemStack catalystStack() { return catalystStack.copy(); }
+    public CatalystVisual catalystVisual() { return catalystVisual; }
+
+    public Optional<ItemStack> installCatalyst(ItemStack offered) {
+        if (kind() != KineticMachineKind.FAN || catalystId != null) return Optional.empty();
+        var definition = CatalystRegistry.find(offered).orElse(null);
+        if (definition == null) return Optional.empty();
+        catalystId = definition.id();
+        catalystStack = offered.copyWithCount(1);
+        catalystVisual = definition.display();
+        work = 0;
+        setChanged();
+        sendData();
+        return Optional.of(definition.installRemainder()
+                .flatMap(BuiltInRegistries.ITEM::getOptional)
+                .map(ItemStack::new)
+                .orElse(ItemStack.EMPTY));
+    }
+
+    public Optional<ItemStack> removeCatalyst() {
+        if (kind() != KineticMachineKind.FAN || catalystId == null) return Optional.empty();
+        var returned = CatalystRegistry.get(catalystId)
+                .flatMap(CatalystDefinition::removalResult)
+                .flatMap(BuiltInRegistries.ITEM::getOptional)
+                .map(ItemStack::new)
+                .orElseGet(() -> catalystStack.copy());
+        catalystId = null;
+        catalystStack = ItemStack.EMPTY;
+        catalystVisual = CatalystVisual.item();
+        work = 0;
+        setChanged();
+        sendData();
+        return Optional.of(returned);
+    }
+
     public boolean canRun() {
         return gridNode.isActive() && !isOverStressed() && Math.abs(getSpeed()) >= MIN_SPEED;
     }
@@ -81,8 +127,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         if (!canRun()) return;
         var input = inventory.getStackInSlot(0);
         if (input.isEmpty()) { work = 0; return; }
-        var recipe = findRecipe(server, input);
-        if (recipe == null) { work = 0; return; }
+        if (!hasRecipe(server, input)) { work = 0; return; }
         work += Math.abs(getSpeed());
         if (work < WORK_PER_RECIPE) return;
         if (completeCycle(server)) {
@@ -94,18 +139,44 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     boolean completeCycle(ServerLevel server) {
         var input = inventory.getStackInSlot(0);
         if (input.isEmpty()) return false;
-        var recipe = findRecipe(server, input);
-        if (recipe == null) return false;
-        var outputs = recipe.rollResults(server.random);
-        if (!canQueueAll(outputs)) return false;
+        var outputs = rollOutputs(server, input);
+        if (outputs == null || !canQueueAll(outputs)) return false;
         inventory.extractItem(0, 1, false);
         queueAll(outputs);
         setChanged();
         return true;
     }
 
+    private boolean hasRecipe(ServerLevel server, ItemStack input) {
+        if (kind() != KineticMachineKind.FAN) return findRecipe(server, input) != null;
+        var type = fanProcessingType();
+        return type != null && type.canProcess(input.copyWithCount(1), server);
+    }
+
+    private List<ItemStack> rollOutputs(ServerLevel server, ItemStack input) {
+        if (kind() == KineticMachineKind.FAN) {
+            var type = fanProcessingType();
+            if (type == null || !type.canProcess(input.copyWithCount(1), server)) return null;
+            return type.process(input.copyWithCount(1), server);
+        }
+        var recipe = findRecipe(server, input);
+        return recipe == null ? null : recipe.rollResults(server.random);
+    }
+
+    private FanProcessingType fanProcessingType() {
+        if (catalystId == null) return null;
+        var definition = CatalystRegistry.get(catalystId).orElse(null);
+        if (definition == null) return null;
+        try {
+            return FanProcessingType.parse(definition.fanProcessingType());
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private ProcessingRecipe<SingleRecipeInput, ?> findRecipe(ServerLevel server, ItemStack input) {
+        if (kind().recipeType() == null) return null;
         return (ProcessingRecipe<SingleRecipeInput, ?>) kind().recipeType()
                 .find(new SingleRecipeInput(input.copyWithCount(1)), server)
                 .map(holder -> holder.value())
@@ -166,6 +237,13 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.write(tag, registries, clientPacket);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putFloat("work", work);
+        if (catalystId != null) {
+            tag.putString("catalystId", catalystId.toString());
+            tag.put("catalystStack", catalystStack.saveOptional(registries));
+            tag.putString("catalystVisualKind", catalystVisual.kind().name());
+            catalystVisual.resource().ifPresent(id -> tag.putString("catalystVisualResource", id.toString()));
+            catalystVisual.tint().ifPresent(color -> tag.putInt("catalystVisualColor", color));
+        }
         var nodeTag = new CompoundTag();
         gridNode.saveToNBT(nodeTag);
         tag.put("aeNode", nodeTag);
@@ -175,6 +253,23 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.read(tag, registries, clientPacket);
         if (tag.contains("inventory")) inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         work = tag.getFloat("work");
+        catalystId = tag.contains("catalystId") ? ResourceLocation.tryParse(tag.getString("catalystId")) : null;
+        catalystStack = tag.contains("catalystStack")
+                ? ItemStack.parseOptional(registries, tag.getCompound("catalystStack")) : ItemStack.EMPTY;
+        if (catalystId != null) {
+            try {
+                var kind = CatalystVisual.Kind.valueOf(tag.getString("catalystVisualKind"));
+                var resource = tag.contains("catalystVisualResource")
+                        ? Optional.ofNullable(ResourceLocation.tryParse(tag.getString("catalystVisualResource"))) : Optional.<ResourceLocation>empty();
+                var tint = tag.contains("catalystVisualColor")
+                        ? Optional.of(tag.getInt("catalystVisualColor")) : Optional.<Integer>empty();
+                catalystVisual = new CatalystVisual(kind, resource, tint);
+            } catch (RuntimeException ignored) {
+                catalystVisual = CatalystVisual.item();
+            }
+        } else {
+            catalystVisual = CatalystVisual.item();
+        }
         if (tag.contains("aeNode")) gridNode.loadFromNBT(tag.getCompound("aeNode"));
     }
 

@@ -27,12 +27,14 @@ public final class KineticsContent {
 
     public static final DeferredBlock<KineticMachineBlock> ME_PRESS = block(KineticMachineKind.PRESS);
     public static final DeferredBlock<KineticMachineBlock> ME_CRUSHER = block(KineticMachineKind.CRUSHER);
+    public static final DeferredBlock<KineticMachineBlock> ME_CATALYST_CHAMBER = block(KineticMachineKind.FAN);
     public static final DeferredItem<BlockItem> ME_PRESS_ITEM = item(KineticMachineKind.PRESS, ME_PRESS);
     public static final DeferredItem<BlockItem> ME_CRUSHER_ITEM = item(KineticMachineKind.CRUSHER, ME_CRUSHER);
+    public static final DeferredItem<BlockItem> ME_CATALYST_CHAMBER_ITEM = item(KineticMachineKind.FAN, ME_CATALYST_CHAMBER);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KineticMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("kinetic_machine", () -> BlockEntityType.Builder.of(
-                    KineticMachineBlockEntity::new, ME_PRESS.get(), ME_CRUSHER.get()).build(null));
+                    KineticMachineBlockEntity::new, ME_PRESS.get(), ME_CRUSHER.get(), ME_CATALYST_CHAMBER.get()).build(null));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
@@ -41,6 +43,7 @@ public final class KineticsContent {
                     .displayItems((parameters, output) -> {
                         output.accept(ME_PRESS_ITEM.get());
                         output.accept(ME_CRUSHER_ITEM.get());
+                        output.accept(ME_CATALYST_CHAMBER_ITEM.get());
                     }).build());
 
     public static void register(IEventBus modBus) {

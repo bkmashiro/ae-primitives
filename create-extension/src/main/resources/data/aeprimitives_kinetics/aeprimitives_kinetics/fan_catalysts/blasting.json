@@ -1,0 +1,7 @@
+{
+  "activation": ["minecraft:lava_bucket"],
+  "fan_processing_type": "create:blasting",
+  "installation_remainder": "minecraft:bucket",
+  "removal_result": "minecraft:lava_bucket",
+  "display": { "kind": "fluid", "resource": "minecraft:lava" }
+}

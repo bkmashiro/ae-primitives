@@ -1,0 +1,5 @@
+{
+  "activation": ["minecraft:campfire"],
+  "fan_processing_type": "create:smoking",
+  "display": { "kind": "block", "resource": "minecraft:campfire" }
+}

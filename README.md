@@ -64,12 +64,15 @@ When Ponder is installed, the analyzer also has an interactive tutorial showing 
 
 Create support ships as a separate mod from the same repository. **AE Primitives: Kinetics** requires AE Primitives and Create; the core mod does not load or depend on Create.
 
-The extension provides Create Sequenced Assembly decoding, JEI pattern import, and two kinetic AE machines:
+The extension provides Create Sequenced Assembly decoding, JEI pattern import, and kinetic AE machines:
 
 - **ME Kinetic Press** runs Create Pressing recipes.
 - **ME Crushing Chamber** runs Create Crushing recipes, including probabilistic secondary outputs.
+- **ME Catalyst Processing Chamber** runs fan-processing recipes selected by its installed catalyst. Right-click it with a water or lava bucket, soul sand/soil, or a campfire; sneak-right-click with an empty hand to remove the catalyst.
 
-Both machines consume a channel and real Create rotational stress. Processing speed follows shaft speed; overstressed networks stop the machine. A Pattern Provider or any item transport can supply the input, and completed outputs are returned directly to ME storage. There is no separate FE conversion or stored “stress” resource.
+The catalyst chamber is data-driven. Integration packs can map items or item tags to any registered Create fan-processing type. Its window renders the configured fluid or block; definitions without a specialized visual show the exact installed item instead.
+
+All three machines consume a channel and real Create rotational stress. Processing speed follows shaft speed; overstressed networks stop the machine. A Pattern Provider or any item transport can supply the input, and completed outputs are returned directly to ME storage. There is no separate FE conversion or stored “stress” resource.
 
 With Kinetics and JEI installed:
 

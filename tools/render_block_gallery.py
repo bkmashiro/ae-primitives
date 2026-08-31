@@ -172,7 +172,7 @@ def main() -> None:
         model, used = load_model(model_id)
         models.append(model)
         images.update(used)
-    for model_id in ("me_press", "me_crusher"):
+    for model_id in ("me_press", "me_crusher", "me_catalyst_chamber"):
         model, used = load_model(model_id, KINETICS_MODELS / f"{model_id}.json")
         models.append(model)
         images.update(used)

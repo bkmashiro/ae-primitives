@@ -1,0 +1,22 @@
+[
+  {
+    "block": "aeprimitives_kinetics:me_catalyst_chamber",
+    "x": 0, "y": 0, "z": 0,
+    "blockEntitySnbt": "{catalystId:\"aeprimitives_kinetics:splashing\",catalystStack:{id:\"minecraft:water_bucket\",count:1},catalystVisualKind:\"FLUID\",catalystVisualResource:\"minecraft:water\",catalystVisualColor:-11162881}"
+  },
+  {
+    "block": "aeprimitives_kinetics:me_catalyst_chamber",
+    "x": 1, "y": 0, "z": 0,
+    "blockEntitySnbt": "{catalystId:\"aeprimitives_kinetics:blasting\",catalystStack:{id:\"minecraft:lava_bucket\",count:1},catalystVisualKind:\"FLUID\",catalystVisualResource:\"minecraft:lava\"}"
+  },
+  {
+    "block": "aeprimitives_kinetics:me_catalyst_chamber",
+    "x": 0, "y": 0, "z": 1,
+    "blockEntitySnbt": "{catalystId:\"aeprimitives_kinetics:haunting\",catalystStack:{id:\"minecraft:soul_sand\",count:1},catalystVisualKind:\"BLOCK\",catalystVisualResource:\"minecraft:soul_sand\"}"
+  },
+  {
+    "block": "aeprimitives_kinetics:me_catalyst_chamber",
+    "x": 1, "y": 0, "z": 1,
+    "blockEntitySnbt": "{catalystId:\"example:custom\",catalystStack:{id:\"minecraft:amethyst_shard\",count:1},catalystVisualKind:\"ITEM\"}"
+  }
+]

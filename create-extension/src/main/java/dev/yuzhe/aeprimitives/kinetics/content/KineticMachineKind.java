@@ -4,7 +4,8 @@ import com.simibubi.create.AllRecipeTypes;
 
 public enum KineticMachineKind {
     PRESS("me_press", AllRecipeTypes.PRESSING, 8.0f),
-    CRUSHER("me_crusher", AllRecipeTypes.CRUSHING, 16.0f);
+    CRUSHER("me_crusher", AllRecipeTypes.CRUSHING, 16.0f),
+    FAN("me_catalyst_chamber", null, 8.0f);
 
     private final String id;
     private final AllRecipeTypes recipeType;

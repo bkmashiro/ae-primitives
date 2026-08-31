@@ -20,7 +20,7 @@ MODELS = (
     "fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "compost_chamber",
     "concrete_curing_chamber", "soil_processor", "dripstone_reservoir", "oxidation_chamber",
     "crop_cultivator", "tree_nursery", "growth_rack", "apiary_chamber", "batch_gate", "cooling_plate",
-    "resonance_foundry", "me_press", "me_crusher",
+    "resonance_foundry", "me_press", "me_crusher", "me_catalyst_chamber",
 )
 CHROME_CANDIDATES = (
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),

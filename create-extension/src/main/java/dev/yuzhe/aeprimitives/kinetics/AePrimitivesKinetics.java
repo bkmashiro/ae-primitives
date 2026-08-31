@@ -1,10 +1,13 @@
 package dev.yuzhe.aeprimitives.kinetics;
 
+import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
 import dev.yuzhe.aeprimitives.kinetics.client.KineticsClientRegistration;
 import dev.yuzhe.aeprimitives.kinetics.compat.create.CreateSequenceDecoder;
 import dev.yuzhe.aeprimitives.kinetics.content.KineticsContent;
 import dev.yuzhe.aeprimitives.kinetics.network.PatternImportPayload;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternDecoders;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -18,6 +21,11 @@ public final class AePrimitivesKinetics {
         KineticsContent.register(modBus);
         SequencePatternDecoders.register(CreateSequenceDecoder::decode);
         modBus.addListener(PatternImportPayload::register);
+        NeoForge.EVENT_BUS.addListener(AePrimitivesKinetics::addReloadListener);
         if (FMLEnvironment.dist == Dist.CLIENT) KineticsClientRegistration.register(modBus);
+    }
+
+    private static void addReloadListener(AddReloadListenerEvent event) {
+        event.addListener(new CatalystRegistry());
     }
 }
