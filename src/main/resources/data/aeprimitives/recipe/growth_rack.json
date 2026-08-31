@@ -1,22 +1,25 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " K ",
+    "SFC",
+    " B "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "K": {
+      "item": "minecraft:kelp"
     },
-    "F": {
-      "item": "ae2:fluix_crystal"
+    "S": {
+      "item": "minecraft:sugar_cane"
     },
     "C": {
-      "item": "ae2:calculation_processor"
+      "item": "minecraft:cactus"
     },
-    "M": {
+    "B": {
       "item": "minecraft:bamboo"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

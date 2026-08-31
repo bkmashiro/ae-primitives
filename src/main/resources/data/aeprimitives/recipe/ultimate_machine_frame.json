@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FEF",
+    "PAP",
+    "FSF"
+  ],
+  "key": {
+    "F": {
+      "item": "ae2:fluix_block"
+    },
+    "E": {
+      "item": "ae2:dense_energy_cell"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    },
+    "A": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "S": {
+      "item": "ae2:singularity"
+    }
+  },
+  "result": {
+    "id": "aeprimitives:ultimate_machine_frame",
+    "count": 1
+  }
+}

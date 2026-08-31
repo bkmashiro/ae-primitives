@@ -77,7 +77,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     }
 
     private int speedMultiplier() {
-        return 1 << Math.min(4, getInstalledUpgrades(AEItems.SPEED_CARD));
+        return 1 << Math.min(kind().maxSpeedCards(), getInstalledUpgrades(AEItems.SPEED_CARD));
     }
 
     public void serverTick() {

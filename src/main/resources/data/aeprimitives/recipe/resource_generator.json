@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    "CWC",
+    "CFC",
+    "CLC"
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "C": {
+      "item": "minecraft:cobblestone"
+    },
+    "W": {
+      "item": "minecraft:water_bucket"
+    },
+    "L": {
+      "item": "minecraft:lava_bucket"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:calculation_processor"
-    },
-    "M": {
-      "item": "ae2:molecular_assembler"
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

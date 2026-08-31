@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " I ",
+    "OFO",
+    " M "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "I": {
+      "item": "minecraft:blue_ice"
     },
-    "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:engineering_processor"
+    "O": {
+      "item": "minecraft:obsidian"
     },
     "M": {
-      "item": "minecraft:blue_ice"
+      "item": "minecraft:magma_block"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

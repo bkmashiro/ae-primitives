@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QPQ",
-    "CRC",
-    "QPQ"
+    "PCP",
+    "FUF",
+    "PCP"
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
-    },
     "P": {
       "item": "ae2:engineering_processor"
     },
     "C": {
       "item": "aeprimitives:resonance_casing"
     },
-    "R": {
-      "item": "aeprimitives:resonance_core"
+    "F": {
+      "item": "ae2:fluix_crystal"
+    },
+    "U": {
+      "item": "aeprimitives:ultimate_machine_frame"
     }
   },
   "result": {

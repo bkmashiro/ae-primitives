@@ -47,6 +47,16 @@ A 3×2×3 multiblock for high-throughput AE2 transform recipes. Its four coil co
 
 Build it with the controller in the middle of the front edge. The four corners are two-block Resonance Coil columns, the two center blocks are Resonance Cores, and every remaining position is Resonance Casing. The foundry reacts immediately when a required part is added or removed.
 
+## Machine frames
+
+Machines share a three-step construction line instead of repeating the same AE2 components in every recipe:
+
+- **Basic Machine Frame** uses iron, quartz glass, Fluix and a Logic Processor. It builds simple processors, growers and routing machines.
+- **Advanced Machine Frame** upgrades the basic frame with an Engineering Processor, diamond and more AE materials. It builds passive resource machines and heavier world processors.
+- **Ultimate Machine Frame** upgrades the advanced frame with Fluix blocks, a Dense Energy Cell, Engineering Processors and a Singularity. It is reserved for genuinely expensive machinery; currently it is used by the Resonance Foundry Controller.
+
+Each final recipe combines the appropriate frame with parts that describe the machine's job, such as a hopper and comparator for the Batch Gate or a cauldron and pointed dripstone for the Dripstone Reservoir.
+
 ## Using the machines
 
 1. Connect the machine to a powered AE network. Each machine uses one channel.

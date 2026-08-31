@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "aeprimitives:item/advanced_machine_frame"
+  }
+}

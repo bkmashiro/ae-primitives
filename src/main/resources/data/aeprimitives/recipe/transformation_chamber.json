@@ -1,22 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
+    "RQR",
     "QFQ",
-    "CMC",
-    "QFQ"
+    "RQR"
   ],
   "key": {
+    "R": {
+      "item": "minecraft:redstone"
+    },
     "Q": {
-      "item": "ae2:quartz_glass"
+      "item": "minecraft:quartz"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:calculation_processor"
-    },
-    "M": {
-      "item": "ae2:molecular_assembler"
+      "item": "aeprimitives:basic_machine_frame"
     }
   },
   "result": {

@@ -1,22 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " C ",
+    "CFC",
+    " W "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "C": {
+      "item": "minecraft:copper_block"
+    },
+    "W": {
+      "item": "minecraft:water_bucket"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:calculation_processor"
-    },
-    "M": {
-      "item": "minecraft:copper_block"
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

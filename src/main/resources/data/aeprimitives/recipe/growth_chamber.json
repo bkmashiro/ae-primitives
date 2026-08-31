@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    "QSQ",
+    "DFD",
+    "QSQ"
   ],
   "key": {
     "Q": {
       "item": "ae2:quartz_glass"
     },
+    "S": {
+      "item": "minecraft:sand"
+    },
+    "D": {
+      "item": "ae2:certus_quartz_dust"
+    },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:calculation_processor"
-    },
-    "M": {
-      "item": "ae2:molecular_assembler"
+      "item": "aeprimitives:basic_machine_frame"
     }
   },
   "result": {

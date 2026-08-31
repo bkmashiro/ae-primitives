@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " H ",
+    "BFB",
+    " P "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "H": {
+      "item": "minecraft:honeycomb"
+    },
+    "B": {
+      "item": "minecraft:beehive"
+    },
+    "P": {
+      "item": "minecraft:poppy"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:engineering_processor"
-    },
-    "M": {
-      "item": "minecraft:beehive"
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

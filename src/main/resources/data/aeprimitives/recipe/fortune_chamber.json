@@ -1,22 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " D ",
+    "PFP",
+    " D "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "D": {
+      "item": "minecraft:diamond"
     },
-    "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
+    "P": {
       "item": "ae2:calculation_processor"
     },
-    "M": {
-      "item": "ae2:molecular_assembler"
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

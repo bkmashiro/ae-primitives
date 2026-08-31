@@ -1,11 +1,23 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["QFQ", "CMC", "QFQ"],
+  "pattern": [
+    " B ",
+    "CFC",
+    " B "
+  ],
   "key": {
-    "Q": {"item": "ae2:quartz_glass"},
-    "F": {"item": "ae2:fluix_crystal"},
-    "C": {"item": "ae2:calculation_processor"},
-    "M": {"item": "minecraft:composter"}
+    "B": {
+      "item": "minecraft:bone_meal"
+    },
+    "C": {
+      "item": "minecraft:composter"
+    },
+    "F": {
+      "item": "aeprimitives:basic_machine_frame"
+    }
   },
-  "result": {"id": "aeprimitives:compost_chamber", "count": 1}
+  "result": {
+    "id": "aeprimitives:compost_chamber",
+    "count": 1
+  }
 }

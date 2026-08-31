@@ -71,6 +71,9 @@ public final class ModContent {
     public static final DeferredItem<BlockItem> RESONANCE_CASING_ITEM = simpleItem("resonance_casing", RESONANCE_CASING);
     public static final DeferredItem<BlockItem> RESONANCE_COIL_ITEM = simpleItem("resonance_coil", RESONANCE_COIL);
     public static final DeferredItem<BlockItem> RESONANCE_CORE_ITEM = simpleItem("resonance_core", RESONANCE_CORE);
+    public static final DeferredItem<Item> BASIC_MACHINE_FRAME = machineFrame("basic_machine_frame");
+    public static final DeferredItem<Item> ADVANCED_MACHINE_FRAME = machineFrame("advanced_machine_frame");
+    public static final DeferredItem<Item> ULTIMATE_MACHINE_FRAME = machineFrame("ultimate_machine_frame");
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -126,6 +129,9 @@ public final class ModContent {
                         output.accept(RESONANCE_CASING_ITEM.get());
                         output.accept(RESONANCE_COIL_ITEM.get());
                         output.accept(RESONANCE_CORE_ITEM.get());
+                        output.accept(BASIC_MACHINE_FRAME.get());
+                        output.accept(ADVANCED_MACHINE_FRAME.get());
+                        output.accept(ULTIMATE_MACHINE_FRAME.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {
@@ -142,6 +148,9 @@ public final class ModContent {
     private static DeferredItem<BlockItem> simpleItem(String id, Supplier<? extends Block> block) {
         return ITEMS.register(id, () -> new BlockItem(block.get(), new Item.Properties()));
     }
+    private static DeferredItem<Item> machineFrame(String id) {
+        return ITEMS.register(id, () -> new Item(new Item.Properties()));
+    }
     public static void register(IEventBus bus) {
         BLOCKS.register(bus); ITEMS.register(bus); BLOCK_ENTITIES.register(bus); MENUS.register(bus); TABS.register(bus);
         bus.addListener(ModContent::registerCapabilities);
@@ -149,15 +158,26 @@ public final class ModContent {
     }
     private static void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            registerSpeed(4, FORTUNE_CHAMBER.get(), TRANSFORMATION_CHAMBER.get(), GROWTH_CHAMBER.get(),
-                    COMPOST_CHAMBER.get(), CONCRETE_CURING_CHAMBER.get(), SOIL_PROCESSOR.get(),
-                    OXIDATION_CHAMBER.get(), CROP_CULTIVATOR.get(), TREE_NURSERY.get(), COOLING_PLATE.get());
-            registerSpeed(2, RESOURCE_GENERATOR.get(), RESONANCE_CONTROLLER.get(), DRIPSTONE_RESERVOIR.get(),
-                    GROWTH_RACK.get(), APIARY_CHAMBER.get());
+            registerSpeed(MachineKind.FORTUNE, FORTUNE_CHAMBER.get());
+            registerSpeed(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER.get());
+            registerSpeed(MachineKind.GENERATOR, RESOURCE_GENERATOR.get());
+            registerSpeed(MachineKind.GROWTH, GROWTH_CHAMBER.get());
+            registerSpeed(MachineKind.COMPOST, COMPOST_CHAMBER.get());
+            registerSpeed(MachineKind.FOUNDRY, RESONANCE_CONTROLLER.get());
+            registerSpeed(MachineKind.CONCRETE, CONCRETE_CURING_CHAMBER.get());
+            registerSpeed(MachineKind.SOIL, SOIL_PROCESSOR.get());
+            registerSpeed(MachineKind.DRIPSTONE, DRIPSTONE_RESERVOIR.get());
+            registerSpeed(MachineKind.OXIDATION, OXIDATION_CHAMBER.get());
+            registerSpeed(MachineKind.CROP, CROP_CULTIVATOR.get());
+            registerSpeed(MachineKind.TREE, TREE_NURSERY.get());
+            registerSpeed(MachineKind.GROWTH_RACK, GROWTH_RACK.get());
+            registerSpeed(MachineKind.BEE, APIARY_CHAMBER.get());
+            registerSpeed(MachineKind.BATCH, BATCH_GATE.get());
+            registerSpeed(MachineKind.COOLING, COOLING_PLATE.get());
         });
     }
-    private static void registerSpeed(int maximum, Block... machines) {
-        for (var machine : machines) Upgrades.add(AEItems.SPEED_CARD, machine, maximum);
+    private static void registerSpeed(MachineKind kind, Block machine) {
+        if (kind.maxSpeedCards() > 0) Upgrades.add(AEItems.SPEED_CARD, machine, kind.maxSpeedCards());
     }
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ENTITY.get(),

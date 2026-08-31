@@ -18,5 +18,8 @@
   "block.aeprimitives.resonance_casing": "Resonance Casing",
   "block.aeprimitives.resonance_coil": "Resonance Coil",
   "block.aeprimitives.resonance_core": "Resonance Core",
+  "item.aeprimitives.basic_machine_frame": "Basic Machine Frame",
+  "item.aeprimitives.advanced_machine_frame": "Advanced Machine Frame",
+  "item.aeprimitives.ultimate_machine_frame": "Ultimate Machine Frame",
   "itemGroup.aeprimitives": "AE Primitives"
 }

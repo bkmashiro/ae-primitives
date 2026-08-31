@@ -1,22 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " P ",
+    "PFP",
+    " P "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "P": {
+      "item": "minecraft:white_concrete_powder"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:engineering_processor"
-    },
-    "M": {
-      "item": "minecraft:white_concrete_powder"
+      "item": "aeprimitives:basic_machine_frame"
     }
   },
   "result": {

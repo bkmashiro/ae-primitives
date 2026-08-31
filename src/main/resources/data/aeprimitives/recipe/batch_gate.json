@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " R ",
+    "HFC",
+    " R "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "R": {
+      "item": "minecraft:redstone"
     },
-    "F": {
-      "item": "ae2:fluix_crystal"
+    "H": {
+      "item": "minecraft:hopper"
     },
     "C": {
-      "item": "ae2:logic_processor"
+      "item": "minecraft:comparator"
     },
-    "M": {
-      "item": "minecraft:hopper"
+    "F": {
+      "item": "aeprimitives:basic_machine_frame"
     }
   },
   "result": {

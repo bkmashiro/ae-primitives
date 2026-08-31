@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " D ",
+    "BFC",
+    " D "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "D": {
+      "item": "minecraft:pointed_dripstone"
     },
-    "F": {
-      "item": "ae2:fluix_crystal"
+    "B": {
+      "item": "minecraft:bucket"
     },
     "C": {
-      "item": "ae2:engineering_processor"
-    },
-    "M": {
       "item": "minecraft:cauldron"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
     }
   },
   "result": {

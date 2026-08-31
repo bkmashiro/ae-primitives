@@ -1,22 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "QFQ",
-    "CMC",
-    "QFQ"
+    " B ",
+    "SFS",
+    " D "
   ],
   "key": {
-    "Q": {
-      "item": "ae2:quartz_glass"
+    "B": {
+      "item": "minecraft:bone_meal"
+    },
+    "S": {
+      "item": "minecraft:wheat_seeds"
+    },
+    "D": {
+      "item": "minecraft:dirt"
     },
     "F": {
-      "item": "ae2:fluix_crystal"
-    },
-    "C": {
-      "item": "ae2:calculation_processor"
-    },
-    "M": {
-      "item": "minecraft:farmland"
+      "item": "aeprimitives:basic_machine_frame"
     }
   },
   "result": {
