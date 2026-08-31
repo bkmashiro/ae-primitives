@@ -7,7 +7,7 @@ import struct
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 Voxel = tuple[int, int, int]
 Color = tuple[int, int, int, int]
@@ -272,13 +272,33 @@ def _greedy_boxes(solid: dict[Voxel, str]) -> list[tuple[list[int], str]]:
     return boxes
 
 
-def _faces(material: str) -> dict[str, dict[str, str]]:
-    return {face: {"texture": f"#{material}"} for face in ("down", "up", "north", "south", "west", "east")}
+def _faces(
+    material: str, bounds: Sequence[float], *, global_uv: bool = True
+) -> dict[str, dict[str, Any]]:
+    x1, y1, z1, x2, y2, z2 = bounds
+    uvs = {
+        "down": [x1, 16 - z2, x2, 16 - z1],
+        "up": [x1, z1, x2, z2],
+        "north": [16 - x2, 16 - y2, 16 - x1, 16 - y1],
+        "south": [x1, 16 - y2, x2, 16 - y1],
+        "west": [z1, 16 - y2, z2, 16 - y1],
+        "east": [16 - z2, 16 - y2, 16 - z1, 16 - y1],
+    }
+    if not global_uv:
+        uvs = {face: [0, 0, 16, 16] for face in uvs}
+    return {
+        face: {"texture": f"#{material}", "uv": uv}
+        for face, uv in uvs.items()
+    }
 
 
 def _overlay_element(node: dict[str, Any]) -> dict[str, Any]:
     bounds = node["bounds"]
-    element: dict[str, Any] = {"from": bounds[:3], "to": bounds[3:], "faces": _faces(str(node["material"]))}
+    element: dict[str, Any] = {
+        "from": bounds[:3],
+        "to": bounds[3:],
+        "faces": _faces(str(node["material"]), bounds, global_uv=False),
+    }
     if node.get("type") == "crystal":
         x0, y0, z0, x1, y1, z1 = bounds
         element["rotation"] = {
@@ -320,7 +340,7 @@ def compile_machine(spec: dict[str, Any]) -> CompileResult:
     textures["particle"] = textures.get(particle, particle)
 
     elements = [
-        {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material)}
+        {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds)}
         for bounds, material in _greedy_boxes(solid)
     ]
     elements.extend(_overlay_element(node) for node in overlays)

@@ -124,6 +124,34 @@ class CsgCompilerTest(unittest.TestCase):
         spec["root"]["children"][1]["allow_overlap_with"] = ["solid"]
         allowed = compile_machine(spec)
         self.assertNotIn("overlay.solid_intersection", {d.code for d in allowed.diagnostics})
+    def test_generated_faces_use_global_uv_coordinates(self):
+        spec = {
+            "id": "uv",
+            "materials": {"shell": {"texture": "shell"}},
+            "root": {"type": "box", "bounds": [2, 3, 4, 6, 7, 8], "material": "shell"},
+        }
+        result = compile_machine(spec)
+        faces = {
+            direction: face
+            for element in result.model["elements"]
+            for direction, face in element["faces"].items()
+        }
+        self.assertEqual([2, 4, 6, 8], faces["up"]["uv"])
+        self.assertEqual([10, 9, 14, 13], faces["north"]["uv"])
+        self.assertTrue(all(len(face["uv"]) == 4 for face in faces.values()))
+
+        overlay_spec = {
+            "id": "overlay_uv",
+            "materials": {"crystal": {"texture": "crystal"}},
+            "root": {
+                "type": "crystal",
+                "composition": "overlay",
+                "bounds": [6, 4, 3, 10, 12, 7],
+                "material": "crystal",
+            },
+        }
+        overlay = compile_machine(overlay_spec).model["elements"][0]
+        self.assertEqual([0, 0, 16, 16], overlay["faces"]["up"]["uv"])
 
 
 class TextureCompilerTest(unittest.TestCase):
