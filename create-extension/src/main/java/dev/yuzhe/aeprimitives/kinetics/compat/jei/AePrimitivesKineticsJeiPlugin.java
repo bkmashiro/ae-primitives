@@ -1,7 +1,7 @@
-package dev.yuzhe.aeprimitives.compat.jei;
+package dev.yuzhe.aeprimitives.kinetics.compat.jei;
 
-import dev.yuzhe.aeprimitives.AePrimitives;
-import dev.yuzhe.aeprimitives.network.PatternImportPayload;
+import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
+import dev.yuzhe.aeprimitives.kinetics.network.PatternImportPayload;
 import java.util.Set;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -18,7 +18,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Adds one small import action directly to supported JEI recipe pages. */
 @JeiPlugin
-public final class AePrimitivesJeiPlugin implements IModPlugin {
+public final class AePrimitivesKineticsJeiPlugin implements IModPlugin {
     private static final ResourceLocation UID = id("jei");
     private static final ResourceLocation SEQUENCED_ASSEMBLY = create("sequenced_assembly");
     private static final Set<ResourceLocation> OPERATIONS = Set.of(
@@ -73,10 +73,10 @@ public final class AePrimitivesJeiPlugin implements IModPlugin {
         @Override
         public void getTooltips(ITooltipBuilder tooltip) {
             if (SEQUENCED_ASSEMBLY.equals(category)) {
-                tooltip.add(Component.translatable("jei.aeprimitives.import_sequence"));
+                tooltip.add(Component.translatable("jei.aeprimitives_kinetics.import_sequence"));
             } else {
-                tooltip.add(Component.translatable("jei.aeprimitives.import_operation"));
-                tooltip.add(Component.translatable("jei.aeprimitives.import_operation_family"));
+                tooltip.add(Component.translatable("jei.aeprimitives_kinetics.import_operation"));
+                tooltip.add(Component.translatable("jei.aeprimitives_kinetics.import_operation_family"));
             }
         }
     }
@@ -95,6 +95,6 @@ public final class AePrimitivesJeiPlugin implements IModPlugin {
     }
 
     private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AePrimitives.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(AePrimitivesKinetics.MOD_ID, path);
     }
 }

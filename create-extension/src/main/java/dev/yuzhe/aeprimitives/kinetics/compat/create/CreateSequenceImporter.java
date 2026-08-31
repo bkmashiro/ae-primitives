@@ -1,4 +1,4 @@
-package dev.yuzhe.aeprimitives.compat.create;
+package dev.yuzhe.aeprimitives.kinetics.compat.create;
 
 import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;

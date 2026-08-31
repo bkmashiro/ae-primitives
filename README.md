@@ -44,7 +44,7 @@ AE Primitives can also describe capabilities supplied by ordinary external machi
 
 An **Operation Pattern** means that the attached machine can perform an operation such as pressing, crushing, filling or deploying. It can represent one exact recipe or the whole operation family. Put it in a normal AE Pattern Provider facing the appropriate machine.
 
-A **Sequence Pattern** imports a complete Create Sequenced Assembly recipe. It expands the sequence into concrete intermediate processing steps, while AE's Crafting CPU remains responsible for ingredient accounting, ordering and dispatch. Install the Sequence Pattern in any powered Pattern Provider and install matching Operation Patterns beside the machines that perform its steps.
+A **Sequence Pattern** describes an ordered process supplied by an optional integration. It expands the sequence into concrete intermediate processing steps, while AE's Crafting CPU remains responsible for ingredient accounting, ordering and dispatch.
 
 This keeps the number of registered patterns proportional to the sequences actually in use. Intermediate patterns are created only for live Sequence Patterns, and disappear when the sequence is removed.
 
@@ -58,11 +58,15 @@ Use the **ME Process Analyzer** on any Pattern Provider to inspect the process g
 
 The graph can be panned and zoomed. Select a node to see the matching providers and their coordinates. Diagnostics reuse the live pattern catalog maintained by provider updates; the analyzer does not scan blocks in the world.
 
-When Create is installed, the analyzer also has a Ponder tutorial showing how Operation Patterns and Sequence Patterns fit together.
+When Ponder is installed, the analyzer also has an interactive tutorial showing how Operation Patterns and Sequence Patterns fit together.
 
-### Importing from JEI
+### AE Primitives: Kinetics
 
-With Create and JEI installed:
+Create support ships as a separate mod from the same repository. **AE Primitives: Kinetics** requires AE Primitives and Create; the core mod does not load or depend on Create.
+
+The extension currently provides Create Sequenced Assembly decoding and JEI pattern import. It is also the home for kinetic AE machines and live Create stress integration.
+
+With Kinetics and JEI installed:
 
 1. Craft an empty Operation Pattern or Sequence Pattern.
 2. Open a supported Create recipe in JEI.
@@ -90,7 +94,7 @@ Both client and server need AE Primitives.
 - LowDragLib2 2.2.37 or newer
 - Java 21
 
-Create 6.0.10 and JEI 19.39 are optional and enable sequence import, JEI pattern encoding and the Ponder tutorial.
+AE Primitives: Kinetics is an optional second JAR. It requires Create 6.0.10. JEI 19.39 and Ponder are optional client integrations.
 
 ## Development
 
@@ -98,6 +102,8 @@ Create 6.0.10 and JEI 19.39 are optional and enable sequence import, JEI pattern
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 ./gradlew verifyAll
 ```
+
+This is a two-module Gradle build. `verifyAll` builds both the core mod and `create-extension`; each module produces its own JAR.
 
 Generate PNG previews without opening a browser:
 

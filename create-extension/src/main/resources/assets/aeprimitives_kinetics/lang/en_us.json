@@ -1,0 +1,7 @@
+{
+  "jei.aeprimitives_kinetics.import_sequence": "Encode this sequence (requires a blank Sequence Pattern)",
+  "jei.aeprimitives_kinetics.import_operation": "Encode this recipe as an Operation Pattern",
+  "jei.aeprimitives_kinetics.import_operation_family": "Shift-click: encode the whole operation family",
+  "message.aeprimitives_kinetics.pattern_import.no_blank": "A blank matching pattern is required",
+  "message.aeprimitives_kinetics.pattern_import.success": "Pattern encoded"
+}

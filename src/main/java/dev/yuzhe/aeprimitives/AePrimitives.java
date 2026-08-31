@@ -4,7 +4,6 @@ import dev.yuzhe.aeprimitives.client.ClientRegistration;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.crafting.LazyPatternRegistry;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerPreviewCommand;
-import dev.yuzhe.aeprimitives.network.PatternImportPayload;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
@@ -20,7 +19,6 @@ public final class AePrimitives {
 
     public AePrimitives(IEventBus modBus) {
         ModContent.register(modBus);
-        modBus.addListener(PatternImportPayload::register);
         modBus.addListener(ProcessAnalyzerPayload::register);
         NeoForge.EVENT_BUS.addListener(AePrimitives::addReloadListener);
         if (Boolean.getBoolean("mcHarness.enabled")) {

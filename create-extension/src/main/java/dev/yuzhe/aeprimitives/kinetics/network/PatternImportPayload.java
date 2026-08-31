@@ -1,7 +1,7 @@
-package dev.yuzhe.aeprimitives.network;
+package dev.yuzhe.aeprimitives.kinetics.network;
 
-import dev.yuzhe.aeprimitives.AePrimitives;
-import dev.yuzhe.aeprimitives.compat.create.CreateSequenceImporter;
+import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
+import dev.yuzhe.aeprimitives.kinetics.compat.create.CreateSequenceImporter;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
@@ -17,7 +17,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -25,7 +24,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record PatternImportPayload(Kind kind, ResourceLocation operation, ResourceLocation recipe)
         implements CustomPacketPayload {
     public static final Type<PatternImportPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(AePrimitives.MOD_ID, "pattern_import"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(AePrimitivesKinetics.MOD_ID, "pattern_import"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PatternImportPayload> STREAM_CODEC = StreamCodec.of(
             (buffer, payload) -> {
                 buffer.writeEnum(payload.kind);
@@ -68,10 +67,10 @@ public record PatternImportPayload(Kind kind, ResourceLocation operation, Resour
         }
 
         if (!replaceBlank(player, encodedItem, encoded)) {
-            player.displayClientMessage(Component.translatable("message.aeprimitives.pattern_import.no_blank"), false);
+            player.displayClientMessage(Component.translatable("message.aeprimitives_kinetics.pattern_import.no_blank"), false);
             return;
         }
-        player.displayClientMessage(Component.translatable("message.aeprimitives.pattern_import.success"), false);
+        player.displayClientMessage(Component.translatable("message.aeprimitives_kinetics.pattern_import.success"), false);
     }
 
     private boolean validOperation(ServerPlayer player) {
@@ -84,7 +83,6 @@ public record PatternImportPayload(Kind kind, ResourceLocation operation, Resour
     }
 
     private boolean validSequence(ServerPlayer player) {
-        if (!ModList.get().isLoaded("create")) return false;
         var holder = player.serverLevel().getRecipeManager().byKey(recipe).orElse(null);
         if (holder == null || !(holder.value() instanceof com.simibubi.create.content.processing.sequenced.SequencedAssemblyRecipe sequence)) {
             return false;

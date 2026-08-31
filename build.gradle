@@ -13,14 +13,7 @@ dependencies {
  implementation 'maven.modrinth:ldlib:mc1.21.1-2.2.37-neoforge'
  compileOnly 'dev.vfyjxf:taffy:1.1.4'
  compileOnly 'org.appliedenergistics.yoga:yoga:1.0.0'
- compileOnly 'maven.modrinth:create:6.0.10+mc1.21.1'
  compileOnly 'net.createmod.ponder:ponder-neoforge:1.0.82+mc1.21.1'
- compileOnly 'mezz.jei:jei-1.21.1-neoforge-api:19.39.0.369'
- compileOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
- if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.orElse(false).get()) {
-  runtimeOnly 'maven.modrinth:create:6.0.10+mc1.21.1'
-  runtimeOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
- }
  runtimeOnly 'maven.modrinth:guideme:21.1.10'
  if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) {
   runtimeOnly files('../minecraft-visual-harness/build/libs/minecraft-visual-harness-0.1.0-SNAPSHOT.jar')
@@ -92,6 +85,7 @@ tasks.register('lintMachineAssets', Exec) {
 }
 tasks.named('processResources') { dependsOn tasks.named('generateMachineAssets') }
 tasks.named('verifyAll') { dependsOn tasks.named('lintMachineAssets') }
+tasks.named('verifyAll') { dependsOn ':create-extension:build' }
 tasks.register('visualGallery', Exec) {
  group='verification'
  description='Generate an interactive gallery from the shipped block models and textures.'

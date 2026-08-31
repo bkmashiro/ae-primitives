@@ -1,0 +1,40 @@
+plugins { id 'java'; id 'net.neoforged.moddev' version '2.0.78' }
+group = 'dev.yuzhe.aeprimitives.kinetics'
+version = rootProject.version
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+repositories {
+ mavenCentral()
+ maven { name='Jared'; url='https://maven.blamejared.com' }
+ maven { name='Create'; url='https://maven.createmod.net' }
+ exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } }
+}
+dependencies {
+ implementation project(':')
+ implementation "maven.modrinth:ae2:${ae2_version}"
+ implementation 'maven.modrinth:ldlib:mc1.21.1-2.2.37-neoforge'
+ implementation 'maven.modrinth:create:6.0.10+mc1.21.1'
+ compileOnly 'mezz.jei:jei-1.21.1-neoforge-api:19.39.0.369'
+ compileOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
+ runtimeOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
+ runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ testImplementation platform('org.junit:junit-bom:5.11.4')
+ testImplementation 'org.junit.jupiter:junit-jupiter'
+ testImplementation 'org.assertj:assertj-core:3.27.3'
+}
+neoForge {
+ version = neoforge_version
+ runs {
+  client { client(); gameDirectory = project.file('run-client') }
+  server { server(); programArgument '--nogui'; gameDirectory = project.file('run-server') }
+ }
+ mods {
+  aeprimitives { sourceSet rootProject.sourceSets.main }
+  aeprimitivesKinetics { sourceSet sourceSets.main }
+ }
+ unitTest { enable(); testedMod = mods.aeprimitivesKinetics }
+}
+tasks.withType(JavaCompile).configureEach { options.encoding='UTF-8'; options.release=21 }
+tasks.named('jar', Jar) { archiveBaseName = 'ae-primitives-kinetics' }
+test { useJUnitPlatform() }
+def expandedModVersion=providers.gradleProperty('mod_version').get()
+processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }
