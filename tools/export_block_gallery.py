@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GALLERY = ROOT / "build/visual-gallery/index.html"
 OUTPUT = ROOT / "build/visual-gallery/images"
-MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator")
+MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator", "resonance_foundry")
 CHROME_CANDIDATES = (
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
     Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),
@@ -94,15 +94,37 @@ def capture(chrome: Path, profiles: Path, output: Path, size: tuple[int, int], q
                 process.wait()
 
 
+def compose_gallery(output: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("ffmpeg is required to compose the gallery image")
+    command = [ffmpeg, "-y"]
+    for model in MODELS:
+        command.extend(["-i", str(OUTPUT / f"{model}.png")])
+    scaled = ";".join(
+        f"[{index}:v]crop=512:440:0:0,scale=300:258,pad=300:300:0:21:color=#10161c[s{index}]"
+        for index in range(len(MODELS))
+    )
+    inputs = "".join(f"[s{index}]" for index in range(len(MODELS)))
+    command.extend([
+        "-filter_complex", f"{scaled};{inputs}hstack=inputs={len(MODELS)}[out]",
+        "-map", "[out]",
+        str(output),
+    ])
+    subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if png_size(output) != (300 * len(MODELS), 300):
+        raise RuntimeError(f"unexpected gallery dimensions for {output}")
+
+
 def main() -> None:
     if not GALLERY.is_file():
         raise SystemExit("Generate the gallery first with ./gradlew visualGallery")
     chrome = find_chrome()
     with tempfile.TemporaryDirectory(prefix="ae-primitives-gallery-") as temp:
         profile = Path(temp)
-        capture(chrome, profile, OUTPUT / "gallery.png", (1200, 400), "")
         for model in MODELS:
-            capture(chrome, profile, OUTPUT / f"{model}.png", (512, 512), f"&model={model}")
+            capture(chrome, profile, OUTPUT / f"{model}.png", (512, 470), f"&model={model}")
+    compose_gallery(OUTPUT / "gallery.png")
     for path in (OUTPUT / "gallery.png", *(OUTPUT / f"{model}.png" for model in MODELS)):
         print(path)
 

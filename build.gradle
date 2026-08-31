@@ -40,10 +40,11 @@ tasks.register('generateMachineAssets', Exec) {
  group='build'
  description='Compile declarative CSG machine specs into Minecraft models and textures.'
  commandLine 'python3', project.file('tools/generate_machine_assets.py')
- inputs.files fileTree('assets-src/machines') { include '*.json' }
+ inputs.files fileTree('assets-src') { include 'machines/*.json', 'multiblocks/*.json' }
  inputs.files project.files('tools/machine_assets.py', 'tools/generate_machine_assets.py')
- outputs.file project.file('src/main/resources/assets/aeprimitives/models/block/transformation_chamber.json')
- outputs.files fileTree('src/main/resources/assets/aeprimitives/textures/block') { include 'transformation_*.png' }
+ outputs.files fileTree('src/main/resources/assets/aeprimitives/models/block') { include 'fortune_chamber.json', 'transformation_chamber.json' }
+ outputs.files fileTree('src/main/resources/assets/aeprimitives/textures/block') { include 'fortune_*.png', 'transformation_*.png', 'foundry_*.png' }
+ outputs.dir layout.buildDirectory.dir('machine-assets/multiblocks')
  outputs.file layout.buildDirectory.file('machine-assets/report.json')
 }
 tasks.register('lintMachineAssets', Exec) {

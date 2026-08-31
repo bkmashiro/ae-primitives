@@ -7,12 +7,14 @@ import json
 import sys
 from pathlib import Path
 
-from machine_assets import CompileResult, compile_machine, render_texture, write_png
+from machine_assets import CompileResult, MultiblockCompileResult, compile_machine, compile_multiblock, render_texture, write_png
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets-src/machines"
+MULTIBLOCK_SOURCE = ROOT / "assets-src/multiblocks"
 MODEL_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/models/block"
 TEXTURE_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/textures/block"
+MULTIBLOCK_OUTPUT = ROOT / "build/machine-assets/multiblocks"
 REPORT_OUTPUT = ROOT / "build/machine-assets/report.json"
 
 
@@ -22,6 +24,21 @@ def compile_file(path: Path) -> CompileResult:
     machine_id = spec["id"]
     MODEL_OUTPUT.mkdir(parents=True, exist_ok=True)
     (MODEL_OUTPUT / f"{machine_id}.json").write_text(json.dumps(result.model, indent=2) + "\n")
+    for material in spec["materials"].values():
+        texture_spec = material.get("texture_spec")
+        if texture_spec:
+            write_png(TEXTURE_OUTPUT / f"{material['texture']}.png", render_texture(texture_spec))
+    return result
+
+
+def compile_multiblock_file(path: Path) -> MultiblockCompileResult:
+    spec = json.loads(path.read_text())
+    result = compile_multiblock(spec)
+    MULTIBLOCK_OUTPUT.mkdir(parents=True, exist_ok=True)
+    payload = dict(result.model)
+    payload["id"] = spec["id"]
+    payload["label"] = spec.get("label", spec["id"].replace("_", " ").title())
+    (MULTIBLOCK_OUTPUT / f"{spec['id']}.json").write_text(json.dumps(payload, indent=2) + "\n")
     for material in spec["materials"].values():
         texture_spec = material.get("texture_spec")
         if texture_spec:
@@ -44,6 +61,27 @@ def main() -> None:
         reports.append(
             {
                 "machine": path.stem,
+                "solid_voxels": result.solid_voxels,
+                "components": result.components,
+                "elements": len(result.model["elements"]),
+                "diagnostics": diagnostics,
+            }
+        )
+        for item in result.diagnostics:
+            print(f"{path.name}:{item.path}: {item.severity}: {item.code}: {item.message}")
+            if item.severity == "error" or arguments.strict:
+                failed = True
+    for path in sorted(MULTIBLOCK_SOURCE.glob("*.json")):
+        result = compile_multiblock_file(path)
+        diagnostics = [
+            {"severity": item.severity, "code": item.code, "path": item.path, "message": item.message}
+            for item in result.diagnostics
+        ]
+        reports.append(
+            {
+                "machine": path.stem,
+                "kind": "multiblock_preview",
+                "parts": result.parts,
                 "solid_voxels": result.solid_voxels,
                 "components": result.components,
                 "elements": len(result.model["elements"]),

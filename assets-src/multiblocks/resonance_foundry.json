@@ -1,0 +1,107 @@
+{
+  "id": "resonance_foundry",
+  "label": "ME Resonance Foundry / Multiblock Study",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "view": {"yaw": -18, "pitch": -20},
+  "particle": "casing",
+  "materials": {
+    "casing": {"texture": "casing"},
+    "top": {"texture": "casing_top"},
+    "glass": {"texture": "glass"},
+    "coil": {
+      "texture": "foundry_coil",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "fill", "color": "#b66f22"},
+          {"type": "rect", "bounds": [0, 3, 16, 6], "color": "#ffd06a"},
+          {"type": "rect", "bounds": [0, 10, 16, 13], "color": "#ffd06a"},
+          {"type": "noise", "amount": 4, "seed": 83}
+        ]
+      }
+    },
+    "core": {
+      "texture": "foundry_core",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "vertical_gradient", "top": "#efffff", "bottom": "#6b2fad"},
+          {"type": "border", "width": 2, "color": "#c886ff"},
+          {"type": "rect", "bounds": [6, 1, 10, 15], "color": "#8ee8ff"},
+          {"type": "noise", "amount": 5, "seed": 89}
+        ]
+      }
+    },
+    "energy": {
+      "texture": "foundry_energy",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "fill", "color": "#3ccdde"},
+          {"type": "border", "width": 3, "color": "#c7ffff"}
+        ]
+      }
+    }
+  },
+  "parts": [
+    {
+      "id": "corner_lower",
+      "at": [[0, 0, 0], [2, 0, 0], [0, 0, 2], [2, 0, 2]],
+      "root": {
+        "type": "group",
+        "children": [
+          {"type": "box", "bounds": [0, 0, 0, 16, 3, 16], "material": "casing"},
+          {"type": "box", "bounds": [5, 3, 5, 11, 16, 11], "material": "casing"},
+          {"id": "coil", "type": "box", "composition": "overlay", "bounds": [4.5, 6, 4.5, 11.5, 13, 11.5], "material": "coil", "allow_overlap_with": ["solid"]}
+        ]
+      }
+    },
+    {
+      "id": "base",
+      "at": [[1, 0, 0], [0, 0, 1], [2, 0, 1], [1, 0, 2]],
+      "root": {"type": "box", "bounds": [0, 0, 0, 16, 3, 16], "material": "casing"}
+    },
+    {
+      "id": "core_lower",
+      "at": [1, 0, 1],
+      "root": {
+        "type": "group",
+        "children": [
+          {"type": "box", "bounds": [0, 0, 0, 16, 3, 16], "material": "casing"},
+          {"id": "core", "type": "crystal", "composition": "overlay", "bounds": [5, 3, 5, 11, 16, 11], "material": "core", "axis": "y", "angle": 45},
+          {"id": "ring", "type": "frame", "composition": "overlay", "bounds": [2, 7, 2, 14, 10, 14], "material": "energy", "width": 2, "allow_overlap_with": ["core"]}
+        ]
+      }
+    },
+    {
+      "id": "corner_upper",
+      "at": [[0, 1, 0], [2, 1, 0], [0, 1, 2], [2, 1, 2]],
+      "root": {
+        "type": "group",
+        "allow_overlap": true,
+        "children": [
+          {"type": "box", "bounds": [5, 0, 5, 11, 16, 11], "material": "casing"},
+          {"type": "box", "bounds": [0, 13, 0, 16, 16, 16], "material": "top"},
+          {"id": "coil", "type": "box", "composition": "overlay", "bounds": [4.5, 3, 4.5, 11.5, 10, 11.5], "material": "coil", "allow_overlap_with": ["solid"]}
+        ]
+      }
+    },
+    {
+      "id": "roof",
+      "at": [[1, 1, 0], [0, 1, 1], [2, 1, 1], [1, 1, 2]],
+      "root": {"type": "box", "bounds": [0, 13, 0, 16, 16, 16], "material": "top"}
+    },
+    {
+      "id": "core_upper",
+      "at": [1, 1, 1],
+      "root": {
+        "type": "group",
+        "children": [
+          {"id": "core", "type": "crystal", "composition": "overlay", "bounds": [5, 0, 5, 11, 13, 11], "material": "core", "axis": "y", "angle": 45},
+          {"id": "ring", "type": "frame", "composition": "overlay", "bounds": [2, 5, 2, 14, 8, 14], "material": "energy", "width": 2, "allow_overlap_with": ["core"]}
+        ]
+      }
+    }
+  ]
+}

@@ -29,6 +29,15 @@ class CompileResult:
     components: int
 
 
+@dataclass
+class MultiblockCompileResult:
+    model: dict[str, Any]
+    diagnostics: list[Diagnostic]
+    solid_voxels: int
+    components: int
+    parts: int
+
+
 def _diagnostic(severity: str, code: str, path: str, message: str) -> Diagnostic:
     return Diagnostic(severity, code, path, message)
 
@@ -348,6 +357,123 @@ def compile_machine(spec: dict[str, Any]) -> CompileResult:
     if spec.get("render_type"):
         model["render_type"] = spec["render_type"]
     return CompileResult(model, diagnostics, len(solid), component_count)
+
+
+def _translate_element(element: dict[str, Any], offset: Sequence[int]) -> dict[str, Any]:
+    translated = dict(element)
+    translated["from"] = [value + offset[index] for index, value in enumerate(element["from"])]
+    translated["to"] = [value + offset[index] for index, value in enumerate(element["to"])]
+    if isinstance(element.get("rotation"), dict):
+        rotation = dict(element["rotation"])
+        rotation["origin"] = [
+            value + offset[index]
+            for index, value in enumerate(element["rotation"]["origin"])
+        ]
+        translated["rotation"] = rotation
+    return translated
+
+
+def compile_multiblock(spec: dict[str, Any]) -> MultiblockCompileResult:
+    """Compile block-local CSG parts into one preview-only assembly."""
+    diagnostics: list[Diagnostic] = []
+    materials = spec.get("materials", {})
+    if not isinstance(materials, dict) or not materials:
+        diagnostics.append(_diagnostic("error", "material.catalog", "materials", "multiblock needs a material catalog"))
+        materials = {}
+
+    placements: list[tuple[str, tuple[int, int, int], dict[str, Any]]] = []
+    occupied_cells: set[tuple[int, int, int]] = set()
+    for part_index, part in enumerate(spec.get("parts", [])):
+        part_path = f"parts/{part_index}"
+        locations = part.get("at", [])
+        if isinstance(locations, list) and len(locations) == 3 and all(isinstance(value, int) for value in locations):
+            locations = [locations]
+        if not isinstance(locations, list) or not locations:
+            diagnostics.append(_diagnostic("error", "multiblock.placement", part_path, "part needs one or more integer cell coordinates"))
+            continue
+        root = part.get("root")
+        if not isinstance(root, dict):
+            diagnostics.append(_diagnostic("error", "multiblock.root", part_path, "part needs a local geometry root"))
+            continue
+        for location_index, raw_location in enumerate(locations):
+            if not isinstance(raw_location, list) or len(raw_location) != 3 or not all(isinstance(value, int) for value in raw_location):
+                diagnostics.append(_diagnostic("error", "multiblock.placement", f"{part_path}/at/{location_index}", "cell coordinate must contain three integers"))
+                continue
+            location = tuple(raw_location)
+            if location in occupied_cells:
+                diagnostics.append(_diagnostic("error", "multiblock.duplicate_cell", f"{part_path}/at/{location_index}", f"cell {list(location)} is already occupied"))
+            occupied_cells.add(location)
+            placements.append((str(part.get("id", part_index)), location, root))
+
+    global_solid: dict[Voxel, str] = {}
+    global_overlays: list[dict[str, Any]] = []
+    elements: list[dict[str, Any]] = []
+    used_materials: set[str] = set()
+    for placement_index, (part_id, cell, root) in enumerate(placements):
+        local_diagnostics: list[Diagnostic] = []
+        solid, overlays = _evaluate(root, f"parts/{part_id}/{placement_index}", local_diagnostics)
+        diagnostics.extend(local_diagnostics)
+        offset = tuple(value * 16 for value in cell)
+        for voxel, material in solid.items():
+            translated_voxel: Voxel = (
+                voxel[0] + offset[0],
+                voxel[1] + offset[1],
+                voxel[2] + offset[2],
+            )
+            if translated_voxel in global_solid:
+                diagnostics.append(_diagnostic("error", "multiblock.geometry_overlap", f"parts/{part_id}/{placement_index}", f"geometry overlaps at {translated_voxel}"))
+            global_solid[translated_voxel] = material
+            used_materials.add(material)
+        for overlay in overlays:
+            translated = dict(overlay)
+            translated["id"] = f"{part_id}.{placement_index}.{overlay.get('id')}"
+            translated["bounds"] = [
+                value + offset[index % 3]
+                for index, value in enumerate(overlay["bounds"])
+            ]
+            global_overlays.append(translated)
+            used_materials.add(str(overlay.get("material")))
+        elements.extend(
+            _translate_element(
+                {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds)},
+                offset,
+            )
+            for bounds, material in _greedy_boxes(solid)
+        )
+        elements.extend(_translate_element(_overlay_element(overlay), offset) for overlay in overlays)
+
+    for material in sorted(used_materials):
+        if material not in materials:
+            diagnostics.append(_diagnostic("error", "material.unknown", "materials", f"unknown material {material}"))
+    component_count = _components(global_solid)
+    if component_count > 1 and not spec.get("allow_islands", False):
+        diagnostics.append(_diagnostic("warning", "topology.disconnected", "parts", f"assembly contains {component_count} disconnected solid regions"))
+
+    namespace = spec.get("namespace", "aeprimitives")
+    textures: dict[str, str] = {}
+    for name, material in materials.items():
+        texture = material.get("texture", name)
+        textures[name] = texture if ":" in texture else f"{namespace}:block/{texture}"
+    particle = str(spec.get("particle", next(iter(textures), "minecraft:block/stone")))
+    textures["particle"] = textures.get(particle, particle)
+
+    if occupied_cells:
+        minima = [min(cell[index] for cell in occupied_cells) * 16 for index in range(3)]
+        maxima = [(max(cell[index] for cell in occupied_cells) + 1) * 16 for index in range(3)]
+    else:
+        minima, maxima = [0, 0, 0], [16, 16, 16]
+    model: dict[str, Any] = {
+        "textures": textures,
+        "elements": elements,
+        "center": [(minima[index] + maxima[index]) / 2 for index in range(3)],
+        "span": [maxima[index] - minima[index] for index in range(3)],
+        "preview_only": True,
+    }
+    if isinstance(spec.get("view"), dict):
+        model["view"] = spec["view"]
+    if spec.get("render_type"):
+        model["render_type"] = spec["render_type"]
+    return MultiblockCompileResult(model, diagnostics, len(global_solid), component_count, len(placements))
 
 
 def _color(value: str | list[int]) -> Color:

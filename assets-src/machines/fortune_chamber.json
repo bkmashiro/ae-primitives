@@ -1,0 +1,60 @@
+{
+  "id": "fortune_chamber",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {"texture": "casing"},
+    "top": {"texture": "casing_top"},
+    "anvil": {
+      "texture": "fortune_anvil",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "vertical_gradient", "top": "#526675", "bottom": "#202b35"},
+          {"type": "rect", "bounds": [2, 2, 14, 4], "color": "#7d94a4"},
+          {"type": "rect", "bounds": [5, 5, 11, 14], "color": "#344652"},
+          {"type": "noise", "amount": 4, "seed": 71}
+        ]
+      }
+    },
+    "ore": {"texture": "fortune_ore"},
+    "pick": {
+      "texture": "fortune_pick",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "vertical_gradient", "top": "#d0ffff", "bottom": "#3b9caf"},
+          {"type": "border", "width": 1, "color": "#74e6ee"},
+          {"type": "noise", "amount": 3, "seed": 73}
+        ]
+      }
+    },
+    "energy": {
+      "texture": "fortune_energy",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {"type": "fill", "color": "#f1a84b"},
+          {"type": "border", "width": 3, "color": "#fff0a5"}
+        ]
+      }
+    }
+  },
+  "root": {
+    "type": "group",
+    "allow_overlap": true,
+    "children": [
+      {"type": "box", "bounds": [0, 0, 0, 16, 3, 16], "material": "casing"},
+      {"type": "box", "bounds": [1, 3, 10, 4, 16, 16], "material": "casing"},
+      {"type": "box", "bounds": [12, 3, 10, 15, 16, 16], "material": "casing"},
+      {"type": "box", "bounds": [1, 13, 8, 15, 16, 16], "material": "top"},
+      {"type": "box", "bounds": [5, 3, 6, 11, 5, 12], "material": "anvil"},
+      {"type": "box", "bounds": [3, 5, 8, 13, 7, 11], "material": "anvil"},
+      {"id": "ore", "type": "crystal", "composition": "overlay", "bounds": [6, 7, 7, 10, 11, 11], "material": "ore", "axis": "y", "angle": 45},
+      {"id": "pick_head", "type": "box", "composition": "overlay", "bounds": [4, 11, 5, 12, 13, 7], "material": "pick", "rotation": {"origin": [8, 12, 6], "axis": "z", "angle": -22.5, "rescale": true}},
+      {"id": "pick_handle", "type": "box", "composition": "overlay", "bounds": [7.25, 8.5, 5.5, 8.75, 13, 6.5], "material": "anvil", "rotation": {"origin": [8, 11, 6], "axis": "z", "angle": -22.5, "rescale": true}, "allow_overlap_with": ["pick_head", "strike"]},
+      {"id": "strike", "type": "box", "composition": "overlay", "bounds": [7, 7.5, 6.25, 9, 10.5, 7], "material": "energy", "allow_overlap_with": ["ore"]}
+    ]
+  }
+}

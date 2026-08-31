@@ -2,6 +2,8 @@
 
 Machine models can be described as a small tree of shape primitives in `assets-src/machines/`. The compiler produces Minecraft block models, deterministic PNG textures and a lint report.
 
+Preview-only multiblock studies live in `assets-src/multiblocks/`. They reuse the same block-local geometry trees and place them on integer block coordinates. The compiler assembles them only for the visual gallery; a study does not register blocks or imply gameplay behavior.
+
 ```bash
 ./gradlew generateMachineAssets lintMachineAssets exportVisualGallery
 ```
@@ -59,3 +61,21 @@ The initial layer set is `fill`, `vertical_gradient`, `border`, `rect` and seede
 The compiler reports malformed bounds, out-of-range or off-grid solids, unknown materials, ineffective or empty CSG operations, undeclared solid/overlay intersections, undeclared overlay intersections and disconnected solid regions. A machine may declare `allow_islands` when separate solid regions are intentional.
 
 `build/machine-assets/report.json` records voxel count, connected components, generated element count and diagnostics for each machine. `lintMachineAssets` fails on any diagnostic so exceptions stay explicit in the source specification.
+
+## Multiblock studies
+
+A part can be repeated at several block coordinates without copying its geometry:
+
+```json
+{
+  "id": "corner",
+  "at": [[0, 0, 0], [2, 0, 0], [0, 0, 2], [2, 0, 2]],
+  "root": {
+    "type": "box",
+    "bounds": [5, 0, 5, 11, 16, 11],
+    "material": "casing"
+  }
+}
+```
+
+Each `root` stays inside one 16×16×16 block. The multiblock compiler translates the generated cuboids into an assembly preview and lints duplicate occupied cells, cross-part solid overlap and disconnected global topology. This keeps future in-game controllers free to choose their own validation and assembly rules.

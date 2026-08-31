@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from machine_assets import compile_machine, render_texture, write_png
+from machine_assets import compile_machine, compile_multiblock, render_texture, write_png
 
 
 class CsgCompilerTest(unittest.TestCase):
@@ -175,6 +175,46 @@ class TextureCompilerTest(unittest.TestCase):
             contents = output.read_bytes()
             self.assertTrue(contents.startswith(b"\x89PNG\r\n\x1a\n"))
             self.assertEqual((16, 16), tuple(int.from_bytes(contents[i:i + 4], "big") for i in (16, 20)))
+
+
+class MultiblockCompilerTest(unittest.TestCase):
+    def test_repeated_parts_are_translated_into_one_preview_scene(self):
+        spec = {
+            "id": "array",
+            "materials": {"frame": {"texture": "frame"}},
+            "parts": [
+                {
+                    "id": "pillars",
+                    "at": [[0, 0, 0], [2, 0, 0]],
+                    "root": {"type": "box", "bounds": [0, 0, 0, 4, 16, 4], "material": "frame"},
+                }
+            ],
+        }
+
+        result = compile_multiblock(spec)
+
+        self.assertEqual(2, result.parts)
+        self.assertEqual([0, 0, 0], result.model["elements"][0]["from"])
+        self.assertEqual([32, 0, 0], result.model["elements"][1]["from"])
+        self.assertEqual([24, 8, 8], result.model["center"])
+        self.assertIn("topology.disconnected", {item.code for item in result.diagnostics})
+
+    def test_duplicate_part_cell_is_reported(self):
+        spec = {
+            "id": "duplicate",
+            "materials": {"frame": {"texture": "frame"}},
+            "parts": [
+                {
+                    "id": "blocks",
+                    "at": [[0, 0, 0], [0, 0, 0]],
+                    "root": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "frame"},
+                }
+            ],
+        }
+
+        result = compile_multiblock(spec)
+
+        self.assertIn("multiblock.duplicate_cell", {item.code for item in result.diagnostics})
 
 
 if __name__ == "__main__":
