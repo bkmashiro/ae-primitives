@@ -42,6 +42,8 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                 buffer.writeVarInt(step.index());
                 buffer.writeResourceLocation(step.recipe());
                 buffer.writeResourceLocation(step.operation());
+                writeOptionalId(buffer, step.inputIcon());
+                writeOptionalId(buffer, step.outputIcon());
                 buffer.writeEnum(step.status());
                 buffer.writeVarInt(step.providers().size());
                 for (var provider : step.providers()) {
@@ -70,6 +72,8 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                 int index = buffer.readVarInt();
                 var recipe = buffer.readResourceLocation();
                 var operation = buffer.readResourceLocation();
+                var inputIcon = readOptionalId(buffer);
+                var outputIcon = readOptionalId(buffer);
                 var status = buffer.readEnum(ProcessStepStatus.class);
                 var providers = new ArrayList<ProcessProviderView>();
                 int providerCount = bounded(buffer.readVarInt(), 1024);
@@ -77,7 +81,8 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                     providers.add(new ProcessProviderView(
                             buffer.readUtf(256), buffer.readBlockPos(), buffer.readBoolean()));
                 }
-                steps.add(new ProcessStepView(index, recipe, operation, status, providers));
+                steps.add(new ProcessStepView(
+                        index, recipe, operation, inputIcon, outputIcon, status, providers));
             }
             var edges = new ArrayList<ProcessEdgeView>();
             int edgeCount = bounded(buffer.readVarInt(), 1024);
@@ -87,6 +92,15 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             sequences.add(new ProcessSequenceView(id, steps, edges));
         }
         return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences));
+    }
+
+    private static void writeOptionalId(RegistryFriendlyByteBuf buffer, ResourceLocation id) {
+        buffer.writeBoolean(id != null);
+        if (id != null) buffer.writeResourceLocation(id);
+    }
+
+    private static ResourceLocation readOptionalId(RegistryFriendlyByteBuf buffer) {
+        return buffer.readBoolean() ? buffer.readResourceLocation() : null;
     }
 
     private static int bounded(int value, int max) {

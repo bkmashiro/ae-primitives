@@ -3,6 +3,7 @@ package dev.yuzhe.aeprimitives.client;
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
 import com.lowdragmc.lowdraglib2.gui.texture.ColorBorderTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
@@ -18,7 +19,10 @@ import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepView;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 /** Client-only LDLib2 graph viewer for process diagnostics. */
 public final class ProcessAnalyzerClient {
@@ -133,19 +137,40 @@ public final class ProcessAnalyzerClient {
                 .background(new ColorRectTexture(color))
                 .overlay(new ColorBorderTexture(-2, color | 0xff000000)));
 
+        var flow = new UIElement();
+        flow.layout(layout -> layout.height(20).flexDirection(FlexDirection.ROW).gapAll(3));
+        flow.addChildren(icon(step.inputIcon()), arrow(), icon(step.outputIcon()));
+
         var operation = new Label();
         operation.setText(Component.literal(step.operation().getPath()));
-        operation.textStyle(style -> style.fontSize(12).textColor(0xffffffff).textShadow(true));
-        var recipe = new Label();
-        recipe.setText(Component.literal(step.recipe().getPath()));
-        recipe.textStyle(style -> style.fontSize(8).textColor(0xffd7e5e7));
+        operation.textStyle(style -> style.fontSize(10).textColor(0xffffffff).textShadow(true));
         var status = new Label();
         status.setText(Component.translatable("screen.aeprimitives.process_analyzer.status." +
                 step.status().name().toLowerCase(), step.providers().size()));
         status.textStyle(style -> style.fontSize(9).textColor(0xffffffff));
-        node.addChildren(operation, recipe, status);
+        node.addChildren(flow, operation, status);
         node.addEventListener(UIEvents.CLICK, event -> detail.setText(stepDetails(step)));
         return node;
+    }
+
+    private static UIElement icon(ResourceLocation id) {
+        var icon = new UIElement();
+        icon.layout(layout -> layout.width(18).height(18));
+        if (id == null) {
+            icon.style(style -> style.background(new ColorRectTexture(0x55313d46)));
+            return icon;
+        }
+        var item = BuiltInRegistries.ITEM.get(id);
+        icon.style(style -> style.background(new ItemStackTexture(new ItemStack(item))));
+        return icon;
+    }
+
+    private static Label arrow() {
+        var arrow = new Label();
+        arrow.setText(Component.literal("→"));
+        arrow.layout(layout -> layout.width(10).height(18));
+        arrow.textStyle(style -> style.fontSize(11).textColor(0xffd7e5e7));
+        return arrow;
     }
 
     private static Component stepDetails(ProcessStepView step) {

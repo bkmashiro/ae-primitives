@@ -7,6 +7,8 @@ public record ProcessStepView(
         int index,
         ResourceLocation recipe,
         ResourceLocation operation,
+        ResourceLocation inputIcon,
+        ResourceLocation outputIcon,
         ProcessStepStatus status,
         List<ProcessProviderView> providers) {
     public ProcessStepView {
