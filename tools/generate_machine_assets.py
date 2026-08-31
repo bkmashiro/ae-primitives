@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets-src/machines"
 MULTIBLOCK_SOURCE = ROOT / "assets-src/multiblocks"
 MODEL_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/models/block"
+ANIMATION_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/animations"
 TEXTURE_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/textures/block"
 MULTIBLOCK_OUTPUT = ROOT / "build/machine-assets/multiblocks"
 REPORT_OUTPUT = ROOT / "build/machine-assets/report.json"
@@ -23,7 +24,15 @@ def compile_file(path: Path) -> CompileResult:
     result = compile_machine(spec)
     machine_id = spec["id"]
     MODEL_OUTPUT.mkdir(parents=True, exist_ok=True)
-    (MODEL_OUTPUT / f"{machine_id}.json").write_text(json.dumps(result.model, indent=2) + "\n")
+    model = dict(result.model)
+    animations = model.pop("aeprimitives_animations", None)
+    (MODEL_OUTPUT / f"{machine_id}.json").write_text(json.dumps(model, indent=2) + "\n")
+    animation_path = ANIMATION_OUTPUT / f"{machine_id}.json"
+    if animations:
+        ANIMATION_OUTPUT.mkdir(parents=True, exist_ok=True)
+        animation_path.write_text(json.dumps({"schemaVersion": 1, "animations": animations}, indent=2) + "\n")
+    elif animation_path.exists():
+        animation_path.unlink()
     for material in spec["materials"].values():
         texture_spec = material.get("texture_spec")
         if texture_spec:
@@ -64,6 +73,7 @@ def main() -> None:
                 "solid_voxels": result.solid_voxels,
                 "components": result.components,
                 "elements": len(result.model["elements"]),
+                "animations": len(result.model.get("aeprimitives_animations", {})),
                 "diagnostics": diagnostics,
             }
         )

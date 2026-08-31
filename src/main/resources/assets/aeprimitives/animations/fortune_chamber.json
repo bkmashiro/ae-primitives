@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "animations": {
+    "work": {
+      "clock": "progress",
+      "loop": "clamp",
+      "duration": 1.0,
+      "tracks": [
+        {
+          "target": "runtime:tool",
+          "property": "translate_y",
+          "easing": "smoothstep",
+          "keyframes": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.5,
+              -0.16
+            ],
+            [
+              1.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "target": "pick_head",
+          "property": "translate_y",
+          "easing": "smoothstep",
+          "keyframes": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.5,
+              -0.16
+            ],
+            [
+              1.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "target": "pick_handle",
+          "property": "translate_y",
+          "easing": "smoothstep",
+          "keyframes": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.5,
+              -0.16
+            ],
+            [
+              1.0,
+              0.0
+            ]
+          ]
+        }
+      ]
+    }
+  }
+}

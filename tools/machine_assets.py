@@ -306,6 +306,7 @@ def _overlay_element(node: dict[str, Any]) -> dict[str, Any]:
     element: dict[str, Any] = {
         "from": bounds[:3],
         "to": bounds[3:],
+        "aeprimitives_part": str(node.get("id", "")),
         "faces": _faces(
             str(node["material"]),
             bounds,
@@ -323,6 +324,85 @@ def _overlay_element(node: dict[str, Any]) -> dict[str, Any]:
     elif isinstance(node.get("rotation"), dict):
         element["rotation"] = node["rotation"]
     return element
+
+
+def _compile_animations(spec: dict[str, Any], diagnostics: list[Diagnostic]) -> dict[str, Any]:
+    raw_animations = spec.get("animations")
+    if raw_animations is None:
+        return {}
+    if not isinstance(raw_animations, dict):
+        diagnostics.append(_diagnostic("error", "animation.catalog", "animations", "animations must be an object"))
+        return {}
+    supported_properties = {
+        "translate_x", "translate_y", "translate_z",
+        "rotate_x", "rotate_y", "rotate_z", "scale",
+    }
+    compiled: dict[str, Any] = {}
+    for name, raw_animation in raw_animations.items():
+        path = f"animations/{name}"
+        if not isinstance(raw_animation, dict):
+            diagnostics.append(_diagnostic("error", "animation.definition", path, "animation must be an object"))
+            continue
+        clock = raw_animation.get("clock", "progress")
+        loop = raw_animation.get("loop", "clamp")
+        duration = raw_animation.get("duration", 1)
+        if clock not in {"progress", "world"}:
+            diagnostics.append(_diagnostic("error", "animation.clock", path, "clock must be progress or world"))
+        if loop not in {"clamp", "repeat", "pingpong"}:
+            diagnostics.append(_diagnostic("error", "animation.loop", path, "loop must be clamp, repeat or pingpong"))
+        if not isinstance(duration, (int, float)) or duration <= 0:
+            diagnostics.append(_diagnostic("error", "animation.duration", path, "duration must be positive"))
+            duration = 1
+        raw_tracks = raw_animation.get("tracks")
+        if not isinstance(raw_tracks, list) or not raw_tracks:
+            diagnostics.append(_diagnostic("error", "animation.tracks", path, "animation needs at least one track"))
+            continue
+        tracks: list[dict[str, Any]] = []
+        for index, raw_track in enumerate(raw_tracks):
+            track_path = f"{path}/tracks/{index}"
+            if not isinstance(raw_track, dict):
+                diagnostics.append(_diagnostic("error", "animation.track", track_path, "track must be an object"))
+                continue
+            target = raw_track.get("target")
+            prop = raw_track.get("property")
+            easing = raw_track.get("easing", "linear")
+            if not isinstance(target, str) or not target:
+                diagnostics.append(_diagnostic("error", "animation.target", track_path, "track needs a target"))
+            if prop not in supported_properties:
+                diagnostics.append(_diagnostic("error", "animation.property", track_path, f"unsupported property {prop!r}"))
+            if easing not in {"linear", "smoothstep"}:
+                diagnostics.append(_diagnostic("error", "animation.easing", track_path, "easing must be linear or smoothstep"))
+            raw_keyframes = raw_track.get("keyframes")
+            keyframes: list[list[float]] = []
+            valid_keyframes = isinstance(raw_keyframes, list) and len(raw_keyframes) >= 2
+            if valid_keyframes and isinstance(raw_keyframes, list):
+                valid_keyframes = all(
+                    isinstance(frame, list) and len(frame) == 2
+                    and all(isinstance(value, (int, float)) for value in frame)
+                    for frame in raw_keyframes
+                )
+                if valid_keyframes:
+                    keyframes = [[float(frame[0]), float(frame[1])] for frame in raw_keyframes]
+                    phases = [frame[0] for frame in keyframes]
+                    valid_keyframes = phases == sorted(set(phases)) and phases[0] >= 0 and phases[-1] <= 1
+            if not valid_keyframes:
+                diagnostics.append(_diagnostic(
+                    "error", "animation.keyframes", track_path,
+                    "keyframes need unique ascending [phase, value] pairs inside 0..1",
+                ))
+            tracks.append({
+                "target": target,
+                "property": prop,
+                "easing": easing,
+                "keyframes": keyframes,
+            })
+        compiled[str(name)] = {
+            "clock": clock,
+            "loop": loop,
+            "duration": float(duration),
+            "tracks": tracks,
+        }
+    return compiled
 
 
 def compile_machine(spec: dict[str, Any]) -> CompileResult:
@@ -358,6 +438,9 @@ def compile_machine(spec: dict[str, Any]) -> CompileResult:
     ]
     elements.extend(_overlay_element(node) for node in overlays)
     model: dict[str, Any] = {"textures": textures, "elements": elements}
+    animations = _compile_animations(spec, diagnostics)
+    if animations:
+        model["aeprimitives_animations"] = animations
     if spec.get("render_type"):
         model["render_type"] = spec["render_type"]
     return CompileResult(model, diagnostics, len(solid), component_count)

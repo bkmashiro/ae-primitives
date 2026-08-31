@@ -360,6 +360,7 @@
         5.0,
         13.0
       ],
+      "aeprimitives_part": "bed",
       "faces": {
         "down": {
           "texture": "#bed",
@@ -428,6 +429,7 @@
         12.0,
         11.0
       ],
+      "aeprimitives_part": "crystal",
       "faces": {
         "down": {
           "texture": "#crystal",
@@ -506,6 +508,7 @@
         7.0,
         12.5
       ],
+      "aeprimitives_part": "ring_low",
       "faces": {
         "down": {
           "texture": "#energy",
@@ -574,6 +577,7 @@
         11.0,
         12.5
       ],
+      "aeprimitives_part": "ring_high",
       "faces": {
         "down": {
           "texture": "#energy",
@@ -642,6 +646,7 @@
         13.0,
         1.0
       ],
+      "aeprimitives_part": "glass",
       "faces": {
         "down": {
           "texture": "#glass",

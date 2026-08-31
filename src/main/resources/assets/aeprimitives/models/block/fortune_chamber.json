@@ -836,6 +836,7 @@
         11.0,
         11.0
       ],
+      "aeprimitives_part": "ore",
       "faces": {
         "down": {
           "texture": "#ore",
@@ -914,6 +915,7 @@
         13.0,
         7.0
       ],
+      "aeprimitives_part": "pick_head",
       "faces": {
         "down": {
           "texture": "#pick",
@@ -992,6 +994,7 @@
         13.0,
         6.5
       ],
+      "aeprimitives_part": "pick_handle",
       "faces": {
         "down": {
           "texture": "#anvil",
@@ -1070,6 +1073,7 @@
         10.5,
         7.0
       ],
+      "aeprimitives_part": "strike",
       "faces": {
         "down": {
           "texture": "#energy",

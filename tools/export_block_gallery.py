@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GALLERY = ROOT / "build/visual-gallery/index.html"
 OUTPUT = ROOT / "build/visual-gallery/images"
+ANIMATION_OUTPUT = ROOT / "build/visual-gallery/animations/fortune"
 MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "resonance_foundry")
 CHROME_CANDIDATES = (
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
@@ -124,8 +125,18 @@ def main() -> None:
         profile = Path(temp)
         for model in MODELS:
             capture(chrome, profile, OUTPUT / f"{model}.png", (512, 470), f"&model={model}")
+        for index, phase in enumerate((0, 0.25, 0.5, 0.75, 1)):
+            capture(
+                chrome,
+                profile,
+                ANIMATION_OUTPUT / f"fortune-{index:03d}.png",
+                (512, 470),
+                f"&model=fortune_chamber&animation=work&phase={phase}",
+            )
     compose_gallery(OUTPUT / "gallery.png")
     for path in (OUTPUT / "gallery.png", *(OUTPUT / f"{model}.png" for model in MODELS)):
+        print(path)
+    for path in sorted(ANIMATION_OUTPUT.glob("fortune-*.png")):
         print(path)
 
 

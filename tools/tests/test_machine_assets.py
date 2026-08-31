@@ -182,6 +182,42 @@ class TextureCompilerTest(unittest.TestCase):
             self.assertEqual((16, 16), tuple(int.from_bytes(contents[i:i + 4], "big") for i in (16, 20)))
 
 
+class AnimationCompilerTest(unittest.TestCase):
+    def test_compiles_simple_runtime_tracks(self):
+        spec = {
+            "id": "animated",
+            "materials": {"shell": {"texture": "shell"}},
+            "root": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "shell"},
+            "animations": {
+                "work": {
+                    "clock": "progress", "loop": "clamp", "duration": 1,
+                    "tracks": [{
+                        "target": "runtime:tool", "property": "translate_y", "easing": "smoothstep",
+                        "keyframes": [[0, 0], [0.5, -0.16], [1, 0]],
+                    }],
+                }
+            },
+        }
+        result = compile_machine(spec)
+        self.assertFalse(result.diagnostics)
+        animation = result.model["aeprimitives_animations"]["work"]
+        self.assertEqual("runtime:tool", animation["tracks"][0]["target"])
+        self.assertEqual([[0.0, 0.0], [0.5, -0.16], [1.0, 0.0]], animation["tracks"][0]["keyframes"])
+
+    def test_rejects_bad_animation_property_and_keyframes(self):
+        spec = {
+            "id": "bad_animation",
+            "materials": {"shell": {"texture": "shell"}},
+            "root": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "shell"},
+            "animations": {"work": {"tracks": [{
+                "target": "runtime:tool", "property": "warp", "keyframes": [[0.5, 0], [0.25, 1]],
+            }]}},
+        }
+        codes = {item.code for item in compile_machine(spec).diagnostics}
+        self.assertIn("animation.property", codes)
+        self.assertIn("animation.keyframes", codes)
+
+
 class MultiblockCompilerTest(unittest.TestCase):
     def test_repeated_parts_are_translated_into_one_preview_scene(self):
         spec = {

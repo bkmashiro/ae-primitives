@@ -56,9 +56,10 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
         if (!input.isEmpty()) renderItem(be, input, pose, buffers, light, overlay, 0.5, 0.53, 0.47, 0.34f, 0);
         if (input.isEmpty()) return;
         float phase = Math.min(1, (be.progress() + partialTick) / be.kind().processingTicks());
-        float strike = (float) Math.sin(phase * Math.PI);
+        float toolOffset = SimpleMachineAnimations.sample(
+                be.kind(), "work", "runtime:tool", "translate_y", phase, 0);
         pose.pushPose();
-        pose.translate(0.5, 0.86 - strike * 0.16, 0.38);
+        pose.translate(0.5, 0.86 + toolOffset, 0.38);
         pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-38));
         pose.scale(0.42f, 0.42f, 0.42f);
         Minecraft.getInstance().getItemRenderer().renderStatic(new ItemStack(Items.DIAMOND_PICKAXE), ItemDisplayContext.FIXED,

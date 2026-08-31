@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "src/main/resources/assets/aeprimitives"
 MODELS = ASSETS / "models/block"
+ANIMATIONS = ASSETS / "animations"
 MULTIBLOCKS = ROOT / "build/machine-assets/multiblocks"
 TEXTURES = ASSETS / "textures"
 OUTPUT = ROOT / "build/visual-gallery/index.html"
@@ -107,7 +108,14 @@ def load_model(model_id: str, source: Path | None = None) -> tuple[dict, dict[st
                 "texture": key,
                 "uv": face.get("uv", [0, 0, 16, 16]),
             })
-        normalized.append({"faces": faces})
+        normalized.append({
+            "faces": faces,
+            "part": element.get("aeprimitives_part", ""),
+            "center": [
+                (float(element["from"][index]) + float(element["to"][index])) / 2
+                for index in range(3)
+            ],
+        })
 
     if model_id == "resource_generator" and CLIENT_JAR.exists():
         with zipfile.ZipFile(CLIENT_JAR) as client:
@@ -138,6 +146,8 @@ def load_model(model_id: str, source: Path | None = None) -> tuple[dict, dict[st
                     }
                     for direction in FACE_VERTICES
                 ]})
+    animation_path = ANIMATIONS / f"{model_id}.json"
+    animations = json.loads(animation_path.read_text()).get("animations", {}) if animation_path.is_file() else {}
     return {
         "id": model_id,
         "label": model.get("label", model_id.replace("_", " ").title()),
@@ -146,6 +156,7 @@ def load_model(model_id: str, source: Path | None = None) -> tuple[dict, dict[st
         "span": model.get("span", [16, 16, 16]),
         "multiblock": bool(model.get("preview_only")),
         "view": model.get("view"),
+        "animations": animations,
     }, used
 
 
@@ -187,12 +198,14 @@ body.export{background:#10161c;overflow:hidden}body.export header,body.export .g
 <body><header><div><h1>AE PRIMITIVES / VISUAL GALLERY</h1><p>Generated directly from shipped model JSON and PNG textures.</p></div><div class="controls"><label>Yaw<input id="yaw" type="range" min="-70" max="30" value="-35"></label><label>Pitch<input id="pitch" type="range" min="-45" max="5" value="-25"></label></div></header>
 <main><section id="grid" class="grid"></section><section class="gui"><img id="gui"><div><h2>Machine interface</h2><p>Nearest-neighbour preview at 2×. Block cards use the same source textures and cuboid coordinates as the game resources.</p><p><span class="key">Drag the sliders</span> to check silhouette and window layering. Minecraft remains the authority for lighting, mipmaps, translucent sorting and the dynamic product renderer.</p></div></section></main>
 <script>
-const DATA=__PAYLOAD__; const loaded={}; const params=new URLSearchParams(location.search);const exportMode=params.has('export');const only=params.get('model');if(exportMode)document.body.classList.add('export');
+const DATA=__PAYLOAD__; const loaded={}; const params=new URLSearchParams(location.search);const exportMode=params.has('export');const only=params.get('model');const animationName=params.get('animation')||'work';const requestedPhase=params.has('phase')?Math.max(0,Math.min(1,+params.get('phase'))):0;if(exportMode)document.body.classList.add('export');
 function loadImages(){return Promise.all(Object.entries(DATA.images).map(([k,v])=>new Promise(r=>{const i=new Image;i.onload=()=>{loaded[k]=i;r()};i.src=v}))) }
 function rot(p,yaw,pitch,center){let x=p[0]-center[0],y=p[1]-center[1],z=p[2]-center[2];const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);const rx=x*cy-z*sy,rz=x*sy+z*cy;return [rx,y*cp-rz*sp,y*sp+rz*cp]}
 function rotN(n,yaw,pitch){const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);const rx=n[0]*cy-n[2]*sy,rz=n[0]*sy+n[2]*cy;return [rx,n[1]*cp-rz*sp,n[1]*sp+rz*cp]}
+function sample(track,phase){const frames=track.keyframes;if(phase<=frames[0][0])return frames[0][1];if(phase>=frames[frames.length-1][0])return frames[frames.length-1][1];for(let i=1;i<frames.length;i++){if(phase<=frames[i][0]){const a=frames[i-1],b=frames[i];let t=(phase-a[0])/(b[0]-a[0]);if(track.easing==='smoothstep')t=t*t*(3-2*t);return a[1]+(b[1]-a[1])*t}}return 0}
+function animatedVertex(p,el,model){const animation=model.animations?.[animationName];if(!animation||!el.part)return p;const values={translate_x:0,translate_y:0,translate_z:0,rotate_x:0,rotate_y:0,rotate_z:0,scale:1};for(const track of animation.tracks)if(track.target===el.part)values[track.property]=sample(track,requestedPhase);let q=[p[0]-el.center[0],p[1]-el.center[1],p[2]-el.center[2]];q=q.map(v=>v*values.scale);for(const axis of ['x','y','z']){const angle=values['rotate_'+axis]*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);let [x,y,z]=q;if(axis==='x')[y,z]=[y*c-z*s,y*s+z*c];else if(axis==='y')[x,z]=[x*c+z*s,-x*s+z*c];else[x,y]=[x*c-y*s,x*s+y*c];q=[x,y,z]}return[q[0]+el.center[0]+values.translate_x*16,q[1]+el.center[1]+values.translate_y*16,q[2]+el.center[2]+values.translate_z*16]}
 function render(canvas,model){const ctx=canvas.getContext('2d');const dpr=devicePixelRatio||1,w=canvas.clientWidth||380,h=exportMode?w:w*.82;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);const yaw=+(model.view?.yaw??document.querySelector('#yaw').value)*Math.PI/180,pitch=+(model.view?.pitch??document.querySelector('#pitch').value)*Math.PI/180,scale=Math.min(w,h)*(exportMode?.52:.60)/Math.max(...model.span),cx=w*.5,cy=h*(exportMode?.46:.5);let faces=[];
-for(const el of model.elements)for(const f of el.faces){const n=rotN(f.normal,yaw,pitch);if(n[2]>=-.015)continue;const pts=f.vertices.map(p=>rot(p,yaw,pitch,model.center));faces.push({...f,pts,depth:pts.reduce((a,p)=>a+p[2],0)/4,shade:f.direction==='up'?.02:(f.direction==='east'||f.direction==='west')?.18:.08})}faces.sort((a,b)=>b.depth-a.depth);
+for(const el of model.elements)for(const f of el.faces){const n=rotN(f.normal,yaw,pitch);if(n[2]>=-.015)continue;const pts=f.vertices.map(p=>rot(animatedVertex(p,el,model),yaw,pitch,model.center));faces.push({...f,pts,depth:pts.reduce((a,p)=>a+p[2],0)/4,shade:f.direction==='up'?.02:(f.direction==='east'||f.direction==='west')?.18:.08})}faces.sort((a,b)=>b.depth-a.depth);
 ctx.imageSmoothingEnabled=false;for(const f of faces){const raw=f.pts.map(q=>[cx+q[0]*scale,cy-q[1]*scale]),mx=raw.reduce((a,q)=>a+q[0],0)/4,my=raw.reduce((a,q)=>a+q[1],0)/4,p=raw.map(q=>{const dx=q[0]-mx,dy=q[1]-my,d=Math.hypot(dx,dy)||1;return[q[0]+dx/d*.4,q[1]+dy/d*.4]}),img=loaded[f.texture],tw=img.width,th=Math.min(img.height,img.width),uv=f.uv||[0,0,16,16],sx=uv[0]/16*tw,sy=uv[1]/16*th,sw=(uv[2]-uv[0])/16*tw,sh=(uv[3]-uv[1])/16*th;ctx.save();ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.clip();ctx.transform((p[1][0]-p[0][0])/sw,(p[1][1]-p[0][1])/sw,(p[3][0]-p[0][0])/sh,(p[3][1]-p[0][1])/sh,p[0][0],p[0][1]);ctx.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);ctx.restore();if(f.tint){ctx.save();ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.58;ctx.fillStyle=f.tint;ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.fill();ctx.restore()}if(f.shade){ctx.save();ctx.fillStyle=`rgba(0,0,0,${f.shade})`;ctx.beginPath();ctx.moveTo(...p[0]);for(let i=1;i<4;i++)ctx.lineTo(...p[i]);ctx.closePath();ctx.fill();ctx.restore()}}
 }
 function renderAll(){document.querySelectorAll('canvas[data-i]').forEach(c=>render(c,DATA.models[+c.dataset.i]))}

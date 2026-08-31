@@ -56,11 +56,35 @@ Materials may reference an existing texture or generate one from deterministic l
 
 The initial layer set is `fill`, `vertical_gradient`, `border`, `rect` and seeded `noise`.
 
+## Simple animations
+
+Machine specs may define small transform tracks for renderer-owned parts. Tracks support `translate_x/y/z`, `rotate_x/y/z` and uniform `scale`, with `linear` or `smoothstep` interpolation and `clamp`, `repeat` or `pingpong` clocks.
+
+```json
+{
+  "animations": {
+    "work": {
+      "clock": "progress",
+      "loop": "clamp",
+      "duration": 1,
+      "tracks": [{
+        "target": "runtime:tool",
+        "property": "translate_y",
+        "easing": "smoothstep",
+        "keyframes": [[0, 0], [0.5, -0.16], [1, 0]]
+      }]
+    }
+  }
+}
+```
+
+The compiler validates the animation and writes `assets/aeprimitives/animations/<machine>.json`. `SimpleMachineAnimations` samples the generated track from a block-entity renderer. `exportVisualGallery` also exports fixed-phase PNGs without opening a browser window; Minecraft Visual Harness can combine the same frames into a sprite sheet or GIF. When the Harness sets `mcvisualharness.animationPhase`, the in-game sampler uses that exact 0–1 phase for deterministic captures.
+
 ## Lint
 
 The compiler reports malformed bounds, out-of-range or off-grid solids, unknown materials, ineffective or empty CSG operations, undeclared solid/overlay intersections, undeclared overlay intersections and disconnected solid regions. A machine may declare `allow_islands` when separate solid regions are intentional.
 
-`build/machine-assets/report.json` records voxel count, connected components, generated element count and diagnostics for each machine. `lintMachineAssets` fails on any diagnostic so exceptions stay explicit in the source specification.
+`build/machine-assets/report.json` records voxel count, connected components, generated element and animation counts, and diagnostics for each machine. `lintMachineAssets` fails on any diagnostic so exceptions stay explicit in the source specification.
 
 ## Multiblock studies
 
