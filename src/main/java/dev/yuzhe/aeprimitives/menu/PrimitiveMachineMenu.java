@@ -20,6 +20,8 @@ public final class PrimitiveMachineMenu extends AbstractContainerMenu {
         this.machine = machine;
         for (int i=0;i<3;i++) addSlot(new SlotItemHandler(machine.inventory(), i, 26 + i*20, 36));
         for (int i=0;i<9;i++) addSlot(new SlotItemHandler(machine.inventory(), 3+i, 86 + (i%3)*20, 26 + (i/3)*20));
+        var upgrades = machine.getUpgrades().toContainer();
+        for (int i=0;i<4;i++) addSlot(new Slot(upgrades, i, 16 + i*20, 68));
         for (int row=0;row<3;row++) for (int col=0;col<9;col++)
             addSlot(new Slot(playerInventory, col + row*9 + 9, 8 + col*18, 105 + row*18));
         for (int col=0;col<9;col++) addSlot(new Slot(playerInventory, col, 8 + col*18, 163));

@@ -1,0 +1,127 @@
+{
+  "id": "cooling_plate",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {
+      "texture": "casing"
+    },
+    "top": {
+      "texture": "casing_top"
+    },
+    "glass": {
+      "texture": "glass"
+    },
+    "coolant": {
+      "texture": "coolant",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {
+            "type": "fill",
+            "color": "#244c72"
+          },
+          {
+            "type": "rect",
+            "bounds": [
+              3,
+              3,
+              13,
+              13
+            ],
+            "color": "#78bce8"
+          },
+          {
+            "type": "noise",
+            "amount": 5,
+            "seed": 752
+          }
+        ]
+      }
+    }
+  },
+  "root": {
+    "type": "group",
+    "children": [
+      {
+        "type": "box",
+        "bounds": [
+          0,
+          0,
+          0,
+          16,
+          3,
+          16
+        ],
+        "material": "casing"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          2,
+          3,
+          2,
+          14,
+          5,
+          14
+        ],
+        "material": "top",
+        "id": "plate"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          5,
+          5,
+          5,
+          11,
+          7,
+          11
+        ],
+        "material": "coolant",
+        "id": "quench-zone"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          1,
+          5,
+          2,
+          3,
+          12,
+          14
+        ],
+        "material": "coolant",
+        "id": "left-fin"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          13,
+          5,
+          2,
+          15,
+          12,
+          14
+        ],
+        "material": "coolant",
+        "id": "right-fin"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          5,
+          1,
+          13,
+          9,
+          2
+        ],
+        "material": "glass",
+        "id": "front-shield",
+        "composition": "overlay"
+      }
+    ]
+  }
+}

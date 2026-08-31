@@ -1,0 +1,12 @@
+[
+  {"block":"aeprimitives:concrete_curing_chamber","x":0,"y":0,"z":0,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:soil_processor","x":1,"y":0,"z":0,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:dripstone_reservoir","x":2,"y":0,"z":0,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:oxidation_chamber","x":3,"y":0,"z":0,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:crop_cultivator","x":4,"y":0,"z":0,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:tree_nursery","x":0,"y":0,"z":2,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:growth_rack","x":1,"y":0,"z":2,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:apiary_chamber","x":2,"y":0,"z":2,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:batch_gate","x":3,"y":0,"z":2,"blockEntitySnbt":"{}"},
+  {"block":"aeprimitives:cooling_plate","x":4,"y":0,"z":2,"blockEntitySnbt":"{}"}
+]

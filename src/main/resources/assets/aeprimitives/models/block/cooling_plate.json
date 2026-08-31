@@ -1,0 +1,421 @@
+{
+  "textures": {
+    "casing": "aeprimitives:block/casing",
+    "top": "aeprimitives:block/casing_top",
+    "glass": "aeprimitives:block/glass",
+    "coolant": "aeprimitives:block/coolant",
+    "particle": "aeprimitives:block/casing"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        3,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            13,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            13,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            13,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#casing",
+          "uv": [
+            0,
+            13,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        3,
+        2
+      ],
+      "to": [
+        14,
+        5,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#top",
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ]
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ]
+        },
+        "north": {
+          "texture": "#top",
+          "uv": [
+            2,
+            11,
+            14,
+            13
+          ]
+        },
+        "south": {
+          "texture": "#top",
+          "uv": [
+            2,
+            11,
+            14,
+            13
+          ]
+        },
+        "west": {
+          "texture": "#top",
+          "uv": [
+            2,
+            11,
+            14,
+            13
+          ]
+        },
+        "east": {
+          "texture": "#top",
+          "uv": [
+            2,
+            11,
+            14,
+            13
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        5,
+        2
+      ],
+      "to": [
+        3,
+        12,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#coolant",
+          "uv": [
+            1,
+            2,
+            3,
+            14
+          ]
+        },
+        "up": {
+          "texture": "#coolant",
+          "uv": [
+            1,
+            2,
+            3,
+            14
+          ]
+        },
+        "north": {
+          "texture": "#coolant",
+          "uv": [
+            13,
+            4,
+            15,
+            11
+          ]
+        },
+        "south": {
+          "texture": "#coolant",
+          "uv": [
+            1,
+            4,
+            3,
+            11
+          ]
+        },
+        "west": {
+          "texture": "#coolant",
+          "uv": [
+            2,
+            4,
+            14,
+            11
+          ]
+        },
+        "east": {
+          "texture": "#coolant",
+          "uv": [
+            2,
+            4,
+            14,
+            11
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        13,
+        5,
+        2
+      ],
+      "to": [
+        15,
+        12,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#coolant",
+          "uv": [
+            13,
+            2,
+            15,
+            14
+          ]
+        },
+        "up": {
+          "texture": "#coolant",
+          "uv": [
+            13,
+            2,
+            15,
+            14
+          ]
+        },
+        "north": {
+          "texture": "#coolant",
+          "uv": [
+            1,
+            4,
+            3,
+            11
+          ]
+        },
+        "south": {
+          "texture": "#coolant",
+          "uv": [
+            13,
+            4,
+            15,
+            11
+          ]
+        },
+        "west": {
+          "texture": "#coolant",
+          "uv": [
+            2,
+            4,
+            14,
+            11
+          ]
+        },
+        "east": {
+          "texture": "#coolant",
+          "uv": [
+            2,
+            4,
+            14,
+            11
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        5,
+        5
+      ],
+      "to": [
+        11,
+        7,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ]
+        },
+        "up": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ]
+        },
+        "north": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            9,
+            11,
+            11
+          ]
+        },
+        "south": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            9,
+            11,
+            11
+          ]
+        },
+        "west": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            9,
+            11,
+            11
+          ]
+        },
+        "east": {
+          "texture": "#coolant",
+          "uv": [
+            5,
+            9,
+            11,
+            11
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        3.0,
+        5.0,
+        1.0
+      ],
+      "to": [
+        13.0,
+        9.0,
+        2.0
+      ],
+      "aeprimitives_part": "front-shield",
+      "faces": {
+        "down": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#glass",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ],
+  "render_type": "minecraft:translucent"
+}

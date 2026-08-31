@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "QFQ",
+    "CMC",
+    "QFQ"
+  ],
+  "key": {
+    "Q": {
+      "item": "ae2:quartz_glass"
+    },
+    "F": {
+      "item": "ae2:fluix_crystal"
+    },
+    "C": {
+      "item": "ae2:calculation_processor"
+    },
+    "M": {
+      "item": "minecraft:farmland"
+    }
+  },
+  "result": {
+    "id": "aeprimitives:crop_cultivator",
+    "count": 1
+  }
+}

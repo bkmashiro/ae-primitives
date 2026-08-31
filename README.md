@@ -26,6 +26,21 @@ Grows Certus Quartz or Fluix crystals from their dust and sand. The crystal rise
 
 Turns vanilla compostable items into bone meal without Export Buses, hoppers or a world composter. It uses each item's vanilla composting value, so compacting the setup does not improve its long-run yield.
 
+### World-processing machines
+
+- **ME Concrete Curing Chamber** turns any vanilla concrete powder into its matching concrete block.
+- **ME Soil Processor** wets dirt into mud with a water bucket, or slowly dries mud into clay.
+- **ME Dripstone Reservoir** keeps a water or lava source bucket and slowly fills empty buckets at a deliberately low rate.
+- **ME Oxidation Chamber** advances unwaxed copper blocks through one vanilla weathering stage at a time.
+- **ME Crop Cultivator** grows wheat, carrots, potatoes or beetroot from retained planting stock and bone meal.
+- **ME Tree Nursery** converts bone meal into a conservative four-log harvest while retaining the sapling stock.
+- **ME Growth Rack** grows sugar cane, cactus, bamboo, kelp and vines slowly from a retained mother plant.
+- **ME Apiary Chamber** needs a flower plus bottles or shears to produce honey bottles or honeycomb.
+- **ME Batch Gate** releases stackable input to the network only in batches of eight.
+- **ME Cooling Plate** quenches lava and ice into obsidian, or combines lava, blue ice and soul soil into basalt.
+
+These machines replace block placement, random ticking and small entity contraptions; they do not multiply the inputs of ordinary crafting or processing recipes.
+
 ### ME Resonance Foundry
 
 A 3×2×3 multiblock for high-throughput AE2 transform recipes. Its four coil columns run up to four transformations per cycle through one controller and shared inventory.
@@ -36,8 +51,9 @@ Build it with the controller in the middle of the front edge. The four corners a
 
 1. Connect the machine to a powered AE network. Each machine uses one channel.
 2. Feed inputs from any side or with a Pattern Provider.
-3. Right-click the machine to inspect its input and output buffers.
-4. Outputs are inserted into the same AE network. If the network cannot accept them, they remain in the machine.
+3. Right-click the machine to inspect its input, output and upgrade slots.
+4. Processing machines accept AE2 Speed Cards. Most accept four; passive generators and the Resonance Foundry accept two. Each card doubles speed, while idle power rises with the square of that multiplier.
+5. Outputs are inserted into the same AE network. If the network cannot accept them, they remain in the machine.
 
 Both client and server need AE Primitives installed.
 

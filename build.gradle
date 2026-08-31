@@ -49,9 +49,16 @@ tasks.register('generateMachineAssets', Exec) {
  commandLine 'python3', project.file('tools/generate_machine_assets.py')
  inputs.files fileTree('assets-src') { include 'machines/*.json', 'multiblocks/*.json' }
  inputs.files project.files('tools/machine_assets.py', 'tools/generate_machine_assets.py')
- outputs.files fileTree('src/main/resources/assets/aeprimitives/models/block') { include 'fortune_chamber.json', 'transformation_chamber.json', 'growth_chamber.json', 'compost_chamber.json' }
+ outputs.files fileTree('src/main/resources/assets/aeprimitives/models/block') {
+  include 'fortune_chamber.json', 'transformation_chamber.json', 'growth_chamber.json', 'compost_chamber.json'
+  include 'concrete_curing_chamber.json', 'soil_processor.json', 'dripstone_reservoir.json', 'oxidation_chamber.json'
+  include 'crop_cultivator.json', 'tree_nursery.json', 'growth_rack.json', 'apiary_chamber.json', 'batch_gate.json', 'cooling_plate.json'
+ }
  outputs.files fileTree('src/main/resources/assets/aeprimitives/animations') { include '*.json' }
- outputs.files fileTree('src/main/resources/assets/aeprimitives/textures/block') { include 'fortune_*.png', 'transformation_*.png', 'growth_*.png', 'compost_*.png', 'foundry_*.png' }
+ outputs.files fileTree('src/main/resources/assets/aeprimitives/textures/block') {
+  include 'fortune_*.png', 'transformation_*.png', 'growth_*.png', 'compost_*.png', 'foundry_*.png'
+  include 'wet_mix.png', 'earth.png', 'liquid.png', 'copper.png', 'crop.png', 'foliage.png', 'vine.png', 'honey.png', 'packet.png', 'coolant.png'
+ }
  outputs.dir layout.buildDirectory.dir('machine-assets/multiblocks')
  outputs.file layout.buildDirectory.file('machine-assets/report.json')
 }

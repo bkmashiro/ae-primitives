@@ -16,7 +16,12 @@ ROOT = Path(__file__).resolve().parents[1]
 GALLERY = ROOT / "build/visual-gallery/index.html"
 OUTPUT = ROOT / "build/visual-gallery/images"
 ANIMATION_OUTPUT = ROOT / "build/visual-gallery/animations/fortune"
-MODELS = ("fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "compost_chamber", "resonance_foundry")
+MODELS = (
+    "fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "compost_chamber",
+    "concrete_curing_chamber", "soil_processor", "dripstone_reservoir", "oxidation_chamber",
+    "crop_cultivator", "tree_nursery", "growth_rack", "apiary_chamber", "batch_gate", "cooling_plate",
+    "resonance_foundry",
+)
 CHROME_CANDIDATES = (
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
     Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),

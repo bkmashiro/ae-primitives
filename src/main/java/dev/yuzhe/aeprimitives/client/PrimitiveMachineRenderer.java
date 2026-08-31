@@ -40,7 +40,7 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
                 if (be.getLevel() != null) renderGrowth(be, partialTick, pose, buffers, light, overlay);
             }
             case COMPOST -> renderCompost(be, partialTick, pose, buffers, light, overlay);
-            case FOUNDRY -> {}
+            case FOUNDRY, CONCRETE, SOIL, DRIPSTONE, OXIDATION, CROP, TREE, GROWTH_RACK, BEE, BATCH, COOLING -> {}
         }
     }
 

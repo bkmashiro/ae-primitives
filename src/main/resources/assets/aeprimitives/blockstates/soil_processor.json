@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "aeprimitives:block/soil_processor"
+    }
+  }
+}

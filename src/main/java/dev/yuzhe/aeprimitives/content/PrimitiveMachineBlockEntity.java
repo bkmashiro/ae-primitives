@@ -4,6 +4,9 @@ import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.IUpgradeableObject;
+import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.me.helpers.MachineSource;
 import appeng.recipes.transform.TransformRecipe;
@@ -32,7 +35,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity implements MenuProvider {
+public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity implements MenuProvider, IUpgradeableObject {
     private static final int OUTPUT_START = 3;
     private static final int OUTPUT_END = 12;
     private final ItemStackHandler inventory = new ItemStackHandler(12) {
@@ -42,6 +45,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         }
     };
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
+    private final IUpgradeInventory upgrades;
     private int progress;
     private float compostProgress;
     private boolean structureDirty = true;
@@ -53,6 +57,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
 
     public PrimitiveMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
+        upgrades = UpgradeInventories.forMachine(state.getBlock(), 4, this::onUpgradesChanged);
         getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL).setIdlePowerUsage(2.0);
     }
 
@@ -61,7 +66,19 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     public int progress() { return progress; }
     public float compostProgress() { return compostProgress; }
     public boolean isFormed() { return formed; }
+    @Override public IUpgradeInventory getUpgrades() { return upgrades; }
     public void markStructureDirty() { structureDirty = true; }
+
+    private void onUpgradesChanged() {
+        progress = 0;
+        getMainNode().setIdlePowerUsage(2.0 * speedMultiplier() * speedMultiplier());
+        setChanged();
+        if (level != null) markForUpdate();
+    }
+
+    private int speedMultiplier() {
+        return 1 << Math.min(4, getInstalledUpgrades(AEItems.SPEED_CARD));
+    }
 
     public void serverTick() {
         if (!(level instanceof ServerLevel server)) return;
@@ -72,7 +89,8 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         if (!getMainNode().isActive()) return;
         flushOutputs();
         if (!hasOutputRoom()) return;
-        if (++progress < kind().processingTicks()) {
+        progress += speedMultiplier();
+        if (progress < kind().processingTicks()) {
             if ((progress & 3) == 0) markForUpdate();
             return;
         }
@@ -86,8 +104,17 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
             case FOUNDRY -> {
                 for (int parallel = 0; parallel < 4 && processTransformation(server); parallel++) {}
             }
+            case CONCRETE, SOIL, DRIPSTONE, OXIDATION, CROP, TREE, GROWTH_RACK, BEE, BATCH, COOLING ->
+                    processPrimitiveRecipe();
         }
         markForUpdate();
+    }
+
+    private void processPrimitiveRecipe() {
+        var plan = PrimitiveMachineRecipes.find(kind(), inventory);
+        if (plan == null || !canQueueAll(plan.outputs())) return;
+        plan.apply(inventory);
+        queueAll(plan.outputs());
     }
 
     private void processFortune(ServerLevel server) {
@@ -252,6 +279,7 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         tag.putInt("progress", progress);
         tag.putFloat("compostProgress", compostProgress);
         tag.putBoolean("formed", formed);
+        upgrades.writeToNBT(tag, "upgrades", registries);
     }
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadTag(tag, registries);
@@ -259,6 +287,8 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
         progress = tag.getInt("progress");
         compostProgress = tag.getFloat("compostProgress");
         formed = tag.getBoolean("formed");
+        upgrades.readFromNBT(tag, "upgrades", registries);
+        getMainNode().setIdlePowerUsage(2.0 * speedMultiplier() * speedMultiplier());
         structureDirty = true;
     }
 }

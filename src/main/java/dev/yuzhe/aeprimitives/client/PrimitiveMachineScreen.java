@@ -15,6 +15,9 @@ public final class PrimitiveMachineScreen extends AbstractContainerScreen<Primit
     }
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, 256, 256);
+        for (int slot = 0; slot < 4; slot++) {
+            graphics.blit(TEXTURE, leftPos + 15 + slot * 20, topPos + 67, 25, 35, 18, 18, 256, 256);
+        }
     }
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick); renderTooltip(graphics, mouseX, mouseY);

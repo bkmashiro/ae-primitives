@@ -1,0 +1,135 @@
+{
+  "id": "apiary_chamber",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {
+      "texture": "casing"
+    },
+    "top": {
+      "texture": "casing_top"
+    },
+    "glass": {
+      "texture": "glass"
+    },
+    "honey": {
+      "texture": "honey",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {
+            "type": "fill",
+            "color": "#7a4b18"
+          },
+          {
+            "type": "rect",
+            "bounds": [
+              3,
+              3,
+              13,
+              13
+            ],
+            "color": "#e3a62d"
+          },
+          {
+            "type": "noise",
+            "amount": 5,
+            "seed": 547
+          }
+        ]
+      }
+    }
+  },
+  "root": {
+    "type": "group",
+    "children": [
+      {
+        "type": "box",
+        "bounds": [
+          0,
+          0,
+          0,
+          16,
+          3,
+          16
+        ],
+        "material": "casing"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          2,
+          3,
+          2,
+          14,
+          5,
+          14
+        ],
+        "material": "honey"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          5,
+          3,
+          13,
+          8,
+          13
+        ],
+        "material": "honey"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          4,
+          8,
+          4,
+          12,
+          11,
+          12
+        ],
+        "material": "honey"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          5,
+          11,
+          5,
+          11,
+          14,
+          11
+        ],
+        "material": "honey"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          6,
+          14,
+          6,
+          10,
+          16,
+          10
+        ],
+        "material": "top"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          5,
+          6,
+          1,
+          11,
+          12,
+          2
+        ],
+        "material": "glass",
+        "id": "hive-window",
+        "composition": "overlay"
+      }
+    ]
+  }
+}

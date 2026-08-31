@@ -60,6 +60,101 @@ public final class PrimitiveMachineGameTests {
                 "compost chamber produced no bone meal"));
     }
 
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void concreteChamberUsesSpeedCardAndCuresPowder(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.CONCRETE_CURING_CHAMBER.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.RED_CONCRETE_POWDER));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.RED_CONCRETE), "concrete chamber produced no concrete"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 180)
+    public static void soilProcessorDriesMudIntoClay(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.SOIL_PROCESSOR.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.MUD));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.CLAY), "soil processor produced no clay"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 380)
+    public static void dripstoneReservoirPreservesSourceAndFillsBucket(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.DRIPSTONE_RESERVOIR.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        machine.getUpgrades().setItemDirect(1, AEItems.SPEED_CARD.stack());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.LAVA_BUCKET));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.BUCKET));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.LAVA_BUCKET), "reservoir consumed its source bucket");
+            helper.assertTrue(has(machine, Items.LAVA_BUCKET), "reservoir filled no lava bucket");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 120)
+    public static void oxidationChamberAdvancesCopperOneStage(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.OXIDATION_CHAMBER.get());
+        for (int slot = 0; slot < 4; slot++) machine.getUpgrades().setItemDirect(slot, AEItems.SPEED_CARD.stack());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.COPPER_BLOCK));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.EXPOSED_COPPER), "oxidation chamber advanced no copper"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 260)
+    public static void cropCultivatorConsumesBoneMealNotSeedStock(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.CROP_CULTIVATOR.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.WHEAT_SEEDS));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.BONE_MEAL, 3));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.WHEAT_SEEDS), "cultivator consumed seed stock");
+            helper.assertTrue(has(machine, Items.WHEAT), "cultivator produced no wheat");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 280)
+    public static void treeNurseryUsesBoneMealForConservativeLogs(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.TREE_NURSERY.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.OAK_SAPLING));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.BONE_MEAL, 8));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.OAK_LOG), "tree nursery produced no logs"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 280)
+    public static void growthRackRetainsMotherPlant(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.GROWTH_RACK.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.SUGAR_CANE));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.SUGAR_CANE), "growth rack consumed mother plant");
+            helper.assertTrue(has(machine, Items.SUGAR_CANE), "growth rack produced no sugar cane");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 220)
+    public static void apiaryNeedsFlowerAndContainer(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.APIARY_CHAMBER.get());
+        machine.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        machine.getUpgrades().setItemDirect(1, AEItems.SPEED_CARD.stack());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.POPPY));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.GLASS_BOTTLE));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.HONEY_BOTTLE), "apiary produced no honey bottle"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void batchGateReleasesOnlyACompleteBatch(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.BATCH_GATE.get());
+        helper.assertTrue(!machine.getUpgrades().isItemValid(0, AEItems.SPEED_CARD.stack()),
+                "batch gate accepted a speed card with no timing semantics");
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.COBBLESTONE, 8));
+        helper.succeedWhen(() -> helper.assertTrue(has(machine, Items.COBBLESTONE), "batch gate released no batch"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 120)
+    public static void coolingPlateQuenchesLavaWithIce(GameTestHelper helper) {
+        var machine = setup(helper, ModContent.COOLING_PLATE.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.LAVA_BUCKET));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.ICE));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(has(machine, Items.OBSIDIAN), "cooling plate produced no obsidian");
+            helper.assertTrue(has(machine, Items.BUCKET), "cooling plate did not return bucket");
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 220)
     public static void resonanceFoundryFormsAndProcessesInParallel(GameTestHelper helper) {
         var machine = setupFoundry(helper);

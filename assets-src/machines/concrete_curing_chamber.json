@@ -1,0 +1,138 @@
+{
+  "id": "concrete_curing_chamber",
+  "namespace": "aeprimitives",
+  "render_type": "minecraft:translucent",
+  "particle": "casing",
+  "materials": {
+    "casing": {
+      "texture": "casing"
+    },
+    "top": {
+      "texture": "casing_top"
+    },
+    "glass": {
+      "texture": "glass"
+    },
+    "wet_mix": {
+      "texture": "wet_mix",
+      "texture_spec": {
+        "size": 16,
+        "layers": [
+          {
+            "type": "fill",
+            "color": "#355f7a"
+          },
+          {
+            "type": "rect",
+            "bounds": [
+              3,
+              3,
+              13,
+              13
+            ],
+            "color": "#87b8c8"
+          },
+          {
+            "type": "noise",
+            "amount": 5,
+            "seed": 765
+          }
+        ]
+      }
+    }
+  },
+  "root": {
+    "type": "group",
+    "children": [
+      {
+        "type": "box",
+        "bounds": [
+          0,
+          0,
+          0,
+          16,
+          3,
+          16
+        ],
+        "material": "casing"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          0,
+          3,
+          1,
+          3,
+          13,
+          15
+        ],
+        "material": "casing"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          13,
+          3,
+          1,
+          16,
+          13,
+          15
+        ],
+        "material": "casing"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          4,
+          3,
+          13,
+          6,
+          13
+        ],
+        "material": "wet_mix",
+        "id": "mix-bed"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          10,
+          3,
+          13,
+          12,
+          13
+        ],
+        "material": "wet_mix"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          6,
+          2,
+          13,
+          10,
+          3
+        ],
+        "material": "glass",
+        "id": "drum-front",
+        "composition": "overlay"
+      },
+      {
+        "type": "box",
+        "bounds": [
+          3,
+          6,
+          13,
+          13,
+          10,
+          14
+        ],
+        "material": "glass",
+        "id": "drum-back",
+        "composition": "overlay"
+      }
+    ]
+  }
+}
