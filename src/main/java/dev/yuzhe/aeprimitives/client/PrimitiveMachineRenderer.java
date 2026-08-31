@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
@@ -101,31 +102,19 @@ public final class PrimitiveMachineRenderer implements BlockEntityRenderer<Primi
 
     private static void renderCompost(PrimitiveMachineBlockEntity be, float partialTick, PoseStack pose,
                                       MultiBufferSource buffers, int light, int overlay) {
-        float clock = be.getLevel() == null ? 0 : (be.getLevel().getGameTime() + partialTick) / 80f;
-        renderComposterBlock(pose, buffers, light, overlay);
-
-        var input = be.inventory().getStackInSlot(0);
-        if (input.isEmpty()) return;
-        float x = SimpleMachineAnimations.sample(
-                be.kind(), "work", "runtime:input", "translate_x", clock, 0.5f);
-        float bob = SimpleMachineAnimations.sample(
-                be.kind(), "work", "runtime:input", "translate_y", clock, 0);
-        float z = SimpleMachineAnimations.sample(
-                be.kind(), "work", "runtime:input", "translate_z", clock, 0.46f);
-        float scale = SimpleMachineAnimations.sample(
-                be.kind(), "work", "runtime:input", "scale", clock, 0.25f);
-        renderItem(be, input, pose, buffers, light, overlay,
-                x, 0.74 + bob, z, scale, -20);
+        int level = Math.max(0, Math.min(7, (int) Math.ceil(be.compostProgress())));
+        renderComposterBlock(level, pose, buffers, light, overlay);
     }
 
-    private static void renderComposterBlock(PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+    private static void renderComposterBlock(int level, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
         pose.pushPose();
         pose.translate(0.5, 0.47, 0.46);
         pose.mulPose(Axis.YP.rotationDegrees(35));
         pose.scale(0.54f, 0.54f, 0.54f);
         pose.translate(-0.5, -0.5, -0.5);
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(
-                Blocks.COMPOSTER.defaultBlockState(), pose, buffers, light, overlay);
+                Blocks.COMPOSTER.defaultBlockState().setValue(ComposterBlock.LEVEL, level),
+                pose, buffers, light, overlay);
         pose.popPose();
     }
 
