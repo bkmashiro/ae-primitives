@@ -1,0 +1,13 @@
+{
+  "itemGroup.aeprimitives_pneumaticcraft": "AE 原语：气动工艺",
+  "item.aeprimitives_pneumaticcraft.basic_compressed_air_cell": "基础压缩空气存储元件",
+  "item.aeprimitives_pneumaticcraft.reinforced_compressed_air_cell": "强化压缩空气存储元件",
+  "block.aeprimitives_pneumaticcraft.basic_pressure_import_port": "基础 ME 气压输入端口",
+  "block.aeprimitives_pneumaticcraft.reinforced_pressure_import_port": "强化 ME 气压输入端口",
+  "block.aeprimitives_pneumaticcraft.basic_pressure_export_port": "基础 ME 气压输出端口",
+  "block.aeprimitives_pneumaticcraft.reinforced_pressure_export_port": "强化 ME 气压输出端口",
+  "key.aeprimitives_pneumatic.basic_compressed_air": "基础压缩空气",
+  "key.aeprimitives_pneumatic.reinforced_compressed_air": "强化压缩空气",
+  "tooltip.aeprimitives_pneumatic.pressure_rating": "额定压力：%s bar",
+  "tooltip.aeprimitives_pneumatic.normal_drive": "可放入普通 ME 驱动器和 ME 箱子"
+}

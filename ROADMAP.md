@@ -8,12 +8,20 @@ The repository remains a lightweight monorepo:
 
 - `ae-primitives`: shared AE machines, patterns, diagnostics and spatial parallelism.
 - `create-extension`: Create recipes, stress-driven machines and sequenced assembly support.
-- Future optional extensions are limited to Farmer's Delight, Botania and Powah.
+- Optional extensions currently cover Farmer's Delight, Botania, Powah and PneumaticCraft.
 - The core mod must not acquire optional mod dependencies.
 
 ## Current execution pointer
 
-The scoped roadmap is complete. Spatial parallelism, the Create atomic-operation and real sequence path, Farmer's Delight, Botania, Powah, machine space components, and the heterogeneous factory are implemented and verified. Further work requires a new product decision rather than extending this execution pointer.
+The original spatial-factory roadmap is complete. The current extension pointer is PneumaticCraft support. The first verified slice adds tiered compressed-air cells for normal AE2 drives plus bounded pressure import/export ports. The next product slice is network pressure monitoring and the first AE machine that consumes the matching pressure tier directly from ME storage.
+
+Pressure rules for this extension:
+
+- Basic and reinforced air remain separate 5 bar and 20 bar storage domains.
+- Stored air and cell volume determine pressure; adding cells never creates free pressure.
+- Compatible AE machines draw from matching cells anywhere on their ME network.
+- Import/export ports are optional tube-network escape hatches, not mandatory per-machine plumbing.
+- Ports safety-vent before critical pressure. ME Drives and storage cells never explode; downstream PneumaticCraft machines retain native behavior.
 
 ## 1. Spatial parallel blocks
 

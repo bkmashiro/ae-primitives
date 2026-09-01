@@ -1,0 +1,39 @@
+plugins { id 'java'; id 'net.neoforged.moddev' version '2.0.78' }
+group='dev.yuzhe.aeprimitives'; version=rootProject.version
+base { archivesName='ae-primitives-pneumaticcraft' }
+repositories {
+ mavenCentral()
+ exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } }
+}
+dependencies {
+ implementation project(':')
+ implementation "maven.modrinth:ae2:${ae2_version}"
+ implementation 'maven.modrinth:pneumaticcraft-repressurized:8.2.23'
+ runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ testImplementation platform('org.junit:junit-bom:5.11.4')
+ testImplementation 'org.junit.jupiter:junit-jupiter'
+ testImplementation 'org.assertj:assertj-core:3.27.3'
+}
+neoForge {
+ version=neoforge_version
+ parchment { minecraftVersion='1.21.1'; mappingsVersion='2024.11.17' }
+ runs {
+  client { client(); gameDirectory=file('run-client') }
+  server { server(); gameDirectory=file('run-server'); programArgument '--nogui' }
+  gameTestServer { type='gameTestServer'; gameDirectory=file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives_pneumaticcraft' }
+ }
+ mods {
+  aeprimitives { sourceSet rootProject.sourceSets.main }
+  aeprimitivesPneumaticCraft { sourceSet sourceSets.main }
+ }
+ unitTest { enable(); testedMod=mods.aeprimitivesPneumaticCraft }
+}
+java { toolchain { languageVersion=JavaLanguageVersion.of(21) } }
+tasks.withType(JavaCompile).configureEach { options.encoding='UTF-8'; options.release=21 }
+tasks.named('jar', Jar) {
+ exclude 'dev/yuzhe/aeprimitives/pneumatic/PneumaticCraftGameTests.class'
+ exclude 'data/aeprimitives_pneumaticcraft/structure/empty.nbt'
+}
+test { useJUnitPlatform() }
+def expandedModVersion=providers.gradleProperty('mod_version').get()
+processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }

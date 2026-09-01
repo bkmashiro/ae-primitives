@@ -70,6 +70,7 @@ Each integration is a separate JAR. Install only the integrations used by the pa
 - [**Farmer's Delight**](farmers-delight-extension/README.md) adds ME cutting and cooking with an explicit factory heat port.
 - [**Botania**](botania-extension/README.md) adds Pure Daisy, Petal Apothecary, Runic Altar and Mana Pool interfaces.
 - [**Powah**](powah-extension/README.md) adds an ME Energizing Chamber and an explicit factory FE port.
+- [**PneumaticCraft**](pneumaticcraft-extension/README.md) adds tiered compressed-air cells and pressure import/export ports.
 
 ### AE Primitives: Kinetics
 
@@ -115,7 +116,7 @@ Both client and server need AE Primitives.
 
 AE Primitives: Kinetics is an optional extension JAR. It requires Create 6.0.10. JEI 19.39 and Ponder are optional client integrations.
 
-Farmer's Delight, Botania and Powah support are also optional JARs. Their exact dependencies and usage are documented in their module READMEs above.
+Farmer's Delight, Botania, Powah and PneumaticCraft support are optional JARs. Their exact dependencies and usage are documented in their module READMEs above.
 
 ## Development
 

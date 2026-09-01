@@ -1,0 +1,37 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="aeprimitives_pneumaticcraft"
+version="${version}"
+displayName="AE Primitives: PneumaticCraft"
+description='''Compressed-air storage cells and ME pressure endpoints for PneumaticCraft: Repressurized.'''
+
+[[dependencies.aeprimitives_pneumaticcraft]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.aeprimitives_pneumaticcraft]]
+modId="ae2"
+type="required"
+versionRange="[19.2.13,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.aeprimitives_pneumaticcraft]]
+modId="aeprimitives"
+type="required"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.aeprimitives_pneumaticcraft]]
+modId="pneumaticcraft"
+type="required"
+versionRange="[8.2.23,)"
+ordering="AFTER"
+side="BOTH"

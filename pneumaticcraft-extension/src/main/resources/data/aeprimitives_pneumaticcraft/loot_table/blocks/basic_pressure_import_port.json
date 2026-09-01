@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "aeprimitives_pneumaticcraft:basic_pressure_import_port"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "aeprimitives_pneumaticcraft:blocks/basic_pressure_import_port"
+}

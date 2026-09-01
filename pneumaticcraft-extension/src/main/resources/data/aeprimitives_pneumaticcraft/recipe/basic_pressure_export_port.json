@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PTP",
+    "TCT",
+    "PFP"
+  ],
+  "key": {
+    "P": {
+      "item": "pneumaticcraft:pressure_tube"
+    },
+    "T": {
+      "item": "ae2:fluix_crystal"
+    },
+    "C": {
+      "item": "ae2:interface"
+    },
+    "F": {
+      "item": "ae2:formation_core"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_pneumaticcraft:basic_pressure_export_port",
+    "count": 1
+  }
+}

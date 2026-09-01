@@ -1,0 +1,13 @@
+{
+  "itemGroup.aeprimitives_pneumaticcraft": "AE Primitives: PneumaticCraft",
+  "item.aeprimitives_pneumaticcraft.basic_compressed_air_cell": "Basic Compressed Air Storage Cell",
+  "item.aeprimitives_pneumaticcraft.reinforced_compressed_air_cell": "Reinforced Compressed Air Storage Cell",
+  "block.aeprimitives_pneumaticcraft.basic_pressure_import_port": "Basic ME Pressure Import Port",
+  "block.aeprimitives_pneumaticcraft.reinforced_pressure_import_port": "Reinforced ME Pressure Import Port",
+  "block.aeprimitives_pneumaticcraft.basic_pressure_export_port": "Basic ME Pressure Export Port",
+  "block.aeprimitives_pneumaticcraft.reinforced_pressure_export_port": "Reinforced ME Pressure Export Port",
+  "key.aeprimitives_pneumatic.basic_compressed_air": "Basic Compressed Air",
+  "key.aeprimitives_pneumatic.reinforced_compressed_air": "Reinforced Compressed Air",
+  "tooltip.aeprimitives_pneumatic.pressure_rating": "Pressure rating: %s bar",
+  "tooltip.aeprimitives_pneumatic.normal_drive": "Fits standard ME Drives and ME Chests"
+}

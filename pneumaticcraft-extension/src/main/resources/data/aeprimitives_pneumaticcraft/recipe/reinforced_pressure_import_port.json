@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ATA",
+    "TCT",
+    "APA"
+  ],
+  "key": {
+    "A": {
+      "item": "pneumaticcraft:advanced_pressure_tube"
+    },
+    "T": {
+      "item": "ae2:sky_dust"
+    },
+    "C": {
+      "item": "aeprimitives_pneumaticcraft:basic_pressure_import_port"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_pneumaticcraft:reinforced_pressure_import_port",
+    "count": 1
+  }
+}

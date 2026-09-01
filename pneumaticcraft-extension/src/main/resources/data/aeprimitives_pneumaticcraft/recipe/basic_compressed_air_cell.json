@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " F ",
+    "CAC",
+    " P "
+  ],
+  "key": {
+    "F": {
+      "item": "ae2:fluix_crystal"
+    },
+    "C": {
+      "item": "ae2:item_cell_housing"
+    },
+    "A": {
+      "item": "pneumaticcraft:air_canister"
+    },
+    "P": {
+      "item": "ae2:calculation_processor"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_pneumaticcraft:basic_compressed_air_cell",
+    "count": 1
+  }
+}
