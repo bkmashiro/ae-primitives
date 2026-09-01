@@ -83,7 +83,7 @@ interface KineticProcessBehavior {
         }
 
         @SuppressWarnings({"rawtypes", "unchecked"})
-        private static ProcessingRecipe<?, ?> findRecipe(
+        static ProcessingRecipe<?, ?> findRecipe(
                 KineticMachineKind kind, ServerLevel level, ItemStack input) {
             if (kind.recipeType() == null) return null;
             RecipeInput recipeInput;

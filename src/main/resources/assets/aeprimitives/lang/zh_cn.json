@@ -45,6 +45,7 @@
   "gui.aeprimitives.factory.status.invalid": "不支持",
   "gui.aeprimitives.factory.status.offline": "ME 离线",
   "gui.aeprimitives.factory.status.waiting_input": "等待输入",
+  "gui.aeprimitives.factory.status.waiting_resource": "等待动力",
   "gui.aeprimitives.factory.status.blocked_output": "输出堵塞",
   "gui.aeprimitives.factory.status.running": "运行中",
   "itemGroup.aeprimitives": "AE 原语"

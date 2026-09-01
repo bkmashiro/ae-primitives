@@ -24,6 +24,7 @@ import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystDefinition;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystVisual;
 import dev.yuzhe.aeprimitives.operation.BoundOperationPattern;
+import dev.yuzhe.aeprimitives.space.MachineSpacePackable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -44,7 +45,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public final class KineticMachineBlockEntity extends KineticBlockEntity implements
-        IInWorldGridNodeHost, IActionHost, SpatialParallelHost, ICraftingMachine {
+        IInWorldGridNodeHost, IActionHost, SpatialParallelHost, ICraftingMachine, MachineSpacePackable {
     public static final int BASIN_INPUT_SLOTS = 9;
     public static final int PROCESS_INPUT_SLOT = 0;
     public static final int TOOL_SLOT = 1;
@@ -327,6 +328,26 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     }
 
     @Override public float calculateStressApplied() { return kind().stressImpact() * Math.max(1, activeLanes); }
+
+    @Override
+    public boolean canPackIntoMachineSpace() {
+        if (kind() != KineticMachineKind.PRESS || work != 0 || !dispatchedPlans.isEmpty() || catalystId != null) return false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        for (int tank = 0; tank < basinFluids.getTanks(); tank++) if (!basinFluids.getFluidInTank(tank).isEmpty()) return false;
+        return true;
+    }
+
+    @Override
+    public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
+        CompoundTag configuration = new CompoundTag();
+        configuration.putString("kind", kind().id());
+        return configuration;
+    }
+
+    @Override
+    public boolean restoreMachineSpaceConfiguration(CompoundTag configuration, HolderLookup.Provider registries) {
+        return kind() == KineticMachineKind.PRESS && KineticMachineKind.PRESS.id().equals(configuration.getString("kind"));
+    }
     @Override public IGridNode getGridNode(Direction direction) { return gridNode.isReady() ? gridNode.getNode() : null; }
     @Override public IGridNode getActionableNode() { return gridNode.getNode(); }
 

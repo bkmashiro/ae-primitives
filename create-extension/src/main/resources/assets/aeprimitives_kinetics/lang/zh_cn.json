@@ -13,5 +13,6 @@
   "block.aeprimitives_kinetics.me_deployer": "ME 执行器",
   "block.aeprimitives_kinetics.me_saw": "ME 精密锯床",
   "block.aeprimitives_kinetics.me_mill": "ME 磨粉机",
-  "block.aeprimitives_kinetics.me_polisher": "ME 抛光机"
+  "block.aeprimitives_kinetics.me_polisher": "ME 抛光机",
+  "block.aeprimitives_kinetics.kinetic_factory_port": "动力工厂端口"
 }

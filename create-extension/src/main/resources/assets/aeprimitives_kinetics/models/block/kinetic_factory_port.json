@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "aeprimitives:block/transformation_energy",
+    "side": "aeprimitives:block/casing"
+  }
+}

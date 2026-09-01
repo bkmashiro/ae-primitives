@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add an extension-owned virtual-lane executor contract and use it to package and run one Create Kinetics pressing lane inside the heterogeneous spatial factory. Keep Create recipe and stress logic in the Kinetics module, charge resources per lane, and keep the Core JAR free of Create classes.
+Extend the Kinetics virtual-lane executor from pressing to crushing and catalyst processing. Preserve catalyst configuration in packaged components, roll each probabilistic result per completed lane, and keep all Create recipe and stress code inside `create-extension`.
 
 ## 1. Spatial parallel blocks
 
@@ -138,7 +138,7 @@ Do not add Mekanism integration. Its existing Pattern Provider processing workfl
 
 ## 5. Machine space components and heterogeneous factory
 
-This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities. Its four-lane menu installs components directly, exposes isolated input/output buffers and reports lane identity, progress and blocked state.
+This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities. Its four-lane menu installs components directly, exposes isolated input/output buffers and reports lane identity, progress and blocked state. A core-side executor registry now lets optional extensions own virtual execution without leaking their classes into the Core JAR. The first Kinetics slice packages idle ME presses and runs Create pressing recipes through a dedicated kinetic factory port; that port binds one controller, reports missing rotational power, and applies stress linearly per active lane.
 
 ### Packaging model
 

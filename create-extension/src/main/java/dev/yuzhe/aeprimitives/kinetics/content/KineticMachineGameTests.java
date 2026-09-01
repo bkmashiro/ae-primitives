@@ -1,6 +1,8 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
 import appeng.api.stacks.KeyCounter;
+import appeng.core.definitions.AEBlocks;
+
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
 import com.simibubi.create.content.processing.sequenced.SequencedAssemblyRecipe;
 import dev.yuzhe.aeprimitives.content.ModContent;
@@ -390,6 +392,100 @@ public final class KineticMachineGameTests {
         helper.setBlock(MACHINE.offset(1, 0, 0), ModContent.ADVANCED_SPATIAL_PARALLEL.get().defaultBlockState()
                 .setValue(SpatialParallelBlock.FACING, Direction.WEST));
         return machine;
+    }
+
+    @GameTest(template = "empty")
+    public static void idlePressCanBePackagedButBusyPressCannot(GameTestHelper helper) {
+        var press = place(helper, KineticsContent.ME_PRESS.get());
+        helper.assertTrue(press.canPackIntoMachineSpace(), "idle ME press rejected machine-space packaging");
+        press.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT));
+        helper.assertTrue(!press.canPackIntoMachineSpace(), "press with inventory was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void factoryRunsPackagedPressThroughKineticPort(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(portPos, KineticsContent.FACTORY_PORT.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var port = helper.<KineticFactoryPortBlockEntity>getBlockEntity(portPos);
+        port.setSpeed(64);
+        factory.inventory().setStackInSlot(0, pressComponent(helper));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.IRON_INGOT));
+        helper.succeedWhen(() -> {
+            port.setSpeed(64);
+            factory.scheduleExternalWork();
+            for (int tick = 0; tick < 70; tick++) factory.serverTick();
+            var output = factory.inventory().getStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0));
+            helper.assertTrue(output.is(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("create", "iron_sheet"))),
+                    "packaged press produced no iron sheet; active=" + factory.getMainNode().isActive()
+                            + ", scheduled=" + factory.isScheduled() + ", progress=" + factory.laneProgress(0)
+                            + ", portSpeed=" + port.getSpeed() + ", portLanes=" + port.activeLaneCount()
+                            + ", output=" + output);
+            helper.assertTrue(factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).isEmpty(),
+                    "packaged press did not consume one input");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void packagedPressWaitsWithoutKineticPort(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        factory.inventory().setStackInSlot(0, pressComponent(helper));
+        int inputSlot = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0);
+        factory.inventory().setStackInSlot(inputSlot, new ItemStack(Items.IRON_INGOT));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(factory.getMainNode().isActive(), "factory ME node did not become active");
+            factory.scheduleExternalWork();
+            factory.serverTick();
+            helper.assertTrue(factory.laneProgress(0) == 0 && factory.inventory().getStackInSlot(inputSlot).is(Items.IRON_INGOT),
+                    "packaged press ran without a kinetic resource port");
+            helper.assertTrue(factory.menuData().get(2)
+                            == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.WAITING_RESOURCE.ordinal(),
+                    "factory did not expose the missing kinetic resource state");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void packagedPressStressScalesPerActiveFactoryLane(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(portPos, KineticsContent.FACTORY_PORT.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var port = helper.<KineticFactoryPortBlockEntity>getBlockEntity(portPos);
+        port.setSpeed(16);
+        for (int lane = 0; lane < 2; lane++) {
+            factory.inventory().setStackInSlot(lane, pressComponent(helper));
+            factory.inventory().setStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(lane, 0),
+                    new ItemStack(Items.IRON_INGOT));
+        }
+        helper.succeedWhen(() -> {
+            helper.assertTrue(port.activeLaneCount() == 2, "factory port did not track two independent active lanes");
+            helper.assertTrue(port.calculateStressApplied() == KineticMachineKind.PRESS.stressImpact() * 2,
+                    "packaged lane stress did not scale linearly");
+        });
+    }
+
+    private static ItemStack pressComponent(GameTestHelper helper) {
+        var configuration = new net.minecraft.nbt.CompoundTag();
+        configuration.putString("kind", KineticMachineKind.PRESS.id());
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(KineticsContent.ME_PRESS.get()),
+                KineticsContent.ME_PRESS.get().defaultBlockState(), configuration);
+        return dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope);
     }
 
     private static KineticMachineBlockEntity place(GameTestHelper helper, KineticMachineBlock block) {

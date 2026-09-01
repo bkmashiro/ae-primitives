@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "aeprimitives_kinetics:block/kinetic_factory_port" }
+  }
+}

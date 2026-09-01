@@ -13,5 +13,6 @@
   "block.aeprimitives_kinetics.me_deployer": "ME Deployer",
   "block.aeprimitives_kinetics.me_saw": "ME Precision Saw",
   "block.aeprimitives_kinetics.me_mill": "ME Mill",
-  "block.aeprimitives_kinetics.me_polisher": "ME Polisher"
+  "block.aeprimitives_kinetics.me_polisher": "ME Polisher",
+  "block.aeprimitives_kinetics.kinetic_factory_port": "Kinetic Factory Port"
 }

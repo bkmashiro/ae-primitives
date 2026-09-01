@@ -9,6 +9,8 @@ import appeng.core.definitions.AEItems;
 import appeng.me.helpers.MachineSource;
 import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
 import dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope;
+import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor;
+import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutors;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -61,6 +63,13 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     public ItemStackHandler inventory() { return inventory; }
+
+    /** Wakes the event-driven lane scheduler after an extension resource changes. */
+    public void scheduleExternalWork() {
+        scheduled = true;
+        setChanged();
+    }
+
     public int laneProgress(int lane) { return laneProgress[lane]; }
     public boolean isScheduled() { return scheduled; }
 
@@ -81,19 +90,27 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     private int laneDuration(int lane) {
         if (!(level instanceof ServerLevel server)) return 0;
-        Lane definition = lane(server, lane);
-        return definition == null ? 0 : definition.kind.processingTicks();
+        CoreLane core = coreLane(server, lane);
+        if (core != null) return core.kind.processingTicks();
+        ExternalLane external = externalLane(server, lane);
+        return external == null || external.plan == null ? 0 : external.plan.durationTicks();
     }
 
     private LaneStatus laneStatus(int lane) {
         if (inventory.getStackInSlot(lane).isEmpty()) return LaneStatus.EMPTY;
         if (!(level instanceof ServerLevel server)) return LaneStatus.OFFLINE;
-        Lane definition = lane(server, lane);
-        if (definition == null) return LaneStatus.INVALID;
         if (!getMainNode().isActive()) return LaneStatus.OFFLINE;
-        var plan = PrimitiveMachineRecipes.find(definition.kind, snapshotInputs(lane));
-        if (plan == null) return LaneStatus.WAITING_INPUT;
-        return canQueueAll(lane, plan.outputs()) ? LaneStatus.RUNNING : LaneStatus.BLOCKED_OUTPUT;
+        CoreLane core = coreLane(server, lane);
+        if (core != null) {
+            var plan = PrimitiveMachineRecipes.find(core.kind, snapshotInputs(lane));
+            if (plan == null) return LaneStatus.WAITING_INPUT;
+            return canQueueAll(lane, plan.outputs()) ? LaneStatus.RUNNING : LaneStatus.BLOCKED_OUTPUT;
+        }
+        ExternalLane external = externalLane(server, lane);
+        if (external == null) return LaneStatus.INVALID;
+        if (external.plan == null) return LaneStatus.WAITING_INPUT;
+        if (!canQueueAll(lane, external.plan.previewOutputs())) return LaneStatus.BLOCKED_OUTPUT;
+        return external.plan.resourcesAvailable() ? LaneStatus.RUNNING : LaneStatus.WAITING_RESOURCE;
     }
 
     public void serverTick() {
@@ -101,28 +118,59 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         flushOutputs();
         boolean workRemaining = false;
         for (int lane = 0; lane < COMPONENT_END; lane++) {
-            Lane definition = lane(server, lane);
-            if (definition == null) { laneProgress[lane] = 0; continue; }
-            ItemStackHandler laneInventory = snapshotInputs(lane);
-            PrimitiveMachineRecipes.Plan plan = PrimitiveMachineRecipes.find(definition.kind, laneInventory);
-            if (plan == null || !canQueueAll(lane, plan.outputs())) { laneProgress[lane] = 0; continue; }
-            workRemaining = true;
-            laneProgress[lane] += definition.speed;
-            if (laneProgress[lane] < definition.kind.processingTicks()) continue;
-            laneProgress[lane] = 0;
-            laneInventory = snapshotInputs(lane);
-            plan = PrimitiveMachineRecipes.find(definition.kind, laneInventory);
-            if (plan == null || !canQueueAll(lane, plan.outputs())) continue;
-            plan.apply(laneInventory);
-            commitInputs(lane, laneInventory);
-            queueAll(lane, plan.outputs());
+            CoreLane core = coreLane(server, lane);
+            if (core != null) {
+                workRemaining |= tickCoreLane(lane, core);
+                continue;
+            }
+            ExternalLane external = externalLane(server, lane);
+            if (external == null) { laneProgress[lane] = 0; continue; }
+            workRemaining |= tickExternalLane(lane, external);
         }
         if (!workRemaining) scheduled = false;
         setChanged();
         markForUpdate();
     }
 
-    private Lane lane(ServerLevel server, int slot) {
+    private boolean tickCoreLane(int lane, CoreLane definition) {
+        ItemStackHandler laneInventory = snapshotInputs(lane);
+        PrimitiveMachineRecipes.Plan plan = PrimitiveMachineRecipes.find(definition.kind, laneInventory);
+        if (plan == null || !canQueueAll(lane, plan.outputs())) { laneProgress[lane] = 0; return false; }
+        laneProgress[lane] += definition.speed;
+        if (laneProgress[lane] < definition.kind.processingTicks()) return true;
+        laneProgress[lane] = 0;
+        laneInventory = snapshotInputs(lane);
+        plan = PrimitiveMachineRecipes.find(definition.kind, laneInventory);
+        if (plan == null || !canQueueAll(lane, plan.outputs())) return true;
+        plan.apply(laneInventory);
+        commitInputs(lane, laneInventory);
+        queueAll(lane, plan.outputs());
+        return true;
+    }
+
+    private boolean tickExternalLane(int lane, ExternalLane external) {
+        var plan = external.plan;
+        if (plan == null || !canQueueAll(lane, plan.previewOutputs())) {
+            external.executor.release(external.context);
+            laneProgress[lane] = 0;
+            return false;
+        }
+        plan.setActive(true);
+        if (!plan.resourcesAvailable()) return false;
+        laneProgress[lane] += Math.max(1, plan.workPerTick());
+        if (laneProgress[lane] < plan.durationTicks()) return true;
+        laneProgress[lane] = 0;
+        ItemStackHandler inputs = snapshotInputs(lane);
+        ExternalLane current = externalLane((ServerLevel) level, lane, inputs);
+        if (current == null || current.plan == null) return true;
+        List<ItemStack> outputs = current.plan.complete(inputs);
+        if (outputs == null || !canQueueAll(lane, outputs)) return true;
+        commitInputs(lane, inputs);
+        queueAll(lane, outputs);
+        return true;
+    }
+
+    private CoreLane coreLane(ServerLevel server, int slot) {
         MachineSpaceEnvelope envelope = MachineSpaceComponentItem.read(inventory.getStackInSlot(slot));
         if (envelope == null || !envelope.blockId().getNamespace().equals("aeprimitives")) return null;
         MachineKind kind = Arrays.stream(MachineKind.values()).filter(candidate -> candidate.id().equals(envelope.blockId().getPath())).findFirst().orElse(null);
@@ -132,7 +180,20 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         var upgrades = appeng.api.upgrades.UpgradeInventories.forMachine(block, 4, () -> {});
         upgrades.readFromNBT(envelope.configuration(), "upgrades", server.registryAccess());
         int speed = 1 << Math.min(kind.maxSpeedCards(), upgrades.getInstalledUpgrades(AEItems.SPEED_CARD));
-        return new Lane(kind, speed);
+        return new CoreLane(kind, speed);
+    }
+
+    private ExternalLane externalLane(ServerLevel server, int slot) {
+        return externalLane(server, slot, snapshotInputs(slot));
+    }
+
+    private ExternalLane externalLane(ServerLevel server, int slot, ItemStackHandler inputs) {
+        MachineSpaceEnvelope envelope = MachineSpaceComponentItem.read(inventory.getStackInSlot(slot));
+        if (envelope == null) return null;
+        VirtualMachineLaneExecutor executor = VirtualMachineLaneExecutors.find(envelope);
+        if (executor == null) return null;
+        var context = new VirtualMachineLaneExecutor.LaneContext(server, worldPosition, slot, envelope, inputs);
+        return new ExternalLane(executor, context, executor.prepare(context));
     }
 
     private static boolean supportsVirtualExecution(MachineKind kind) {
@@ -159,8 +220,13 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         if (!(level instanceof ServerLevel server)) return;
         double idlePower = 0.0;
         for (int lane = 0; lane < COMPONENT_END; lane++) {
-            Lane definition = lane(server, lane);
-            if (definition != null) idlePower += 2.0 * definition.speed * definition.speed;
+            CoreLane core = coreLane(server, lane);
+            if (core != null) {
+                idlePower += 2.0 * core.speed * core.speed;
+                continue;
+            }
+            ExternalLane external = externalLane(server, lane);
+            if (external != null && external.plan != null) idlePower += external.plan.idleAePower();
         }
         getMainNode().setIdlePowerUsage(idlePower);
     }
@@ -240,13 +306,17 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         return false;
     }
 
-    private record Lane(MachineKind kind, int speed) {}
+    private record CoreLane(MachineKind kind, int speed) {}
+    private record ExternalLane(VirtualMachineLaneExecutor executor,
+                                VirtualMachineLaneExecutor.LaneContext context,
+                                VirtualMachineLaneExecutor.LanePlan plan) {}
 
     public enum LaneStatus {
         EMPTY("empty"),
         INVALID("invalid"),
         OFFLINE("offline"),
         WAITING_INPUT("waiting_input"),
+        WAITING_RESOURCE("waiting_resource"),
         BLOCKED_OUTPUT("blocked_output"),
         RUNNING("running");
 

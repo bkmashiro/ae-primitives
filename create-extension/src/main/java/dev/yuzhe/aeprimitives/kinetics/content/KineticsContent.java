@@ -35,6 +35,8 @@ public final class KineticsContent {
     public static final DeferredBlock<KineticMachineBlock> ME_SAW = block(KineticMachineKind.SAW);
     public static final DeferredBlock<KineticMachineBlock> ME_MILL = block(KineticMachineKind.MILL);
     public static final DeferredBlock<KineticMachineBlock> ME_POLISHER = block(KineticMachineKind.POLISHER);
+    public static final DeferredBlock<KineticFactoryPortBlock> FACTORY_PORT = BLOCKS.register("kinetic_factory_port",
+            () -> new KineticFactoryPortBlock(BlockBehaviour.Properties.of().strength(4.0f).requiresCorrectToolForDrops()));
     public static final DeferredItem<BlockItem> ME_PRESS_ITEM = item(KineticMachineKind.PRESS, ME_PRESS);
     public static final DeferredItem<BlockItem> ME_CRUSHER_ITEM = item(KineticMachineKind.CRUSHER, ME_CRUSHER);
     public static final DeferredItem<BlockItem> ME_CATALYST_CHAMBER_ITEM = item(KineticMachineKind.FAN, ME_CATALYST_CHAMBER);
@@ -44,12 +46,17 @@ public final class KineticsContent {
     public static final DeferredItem<BlockItem> ME_SAW_ITEM = item(KineticMachineKind.SAW, ME_SAW);
     public static final DeferredItem<BlockItem> ME_MILL_ITEM = item(KineticMachineKind.MILL, ME_MILL);
     public static final DeferredItem<BlockItem> ME_POLISHER_ITEM = item(KineticMachineKind.POLISHER, ME_POLISHER);
+    public static final DeferredItem<BlockItem> FACTORY_PORT_ITEM = ITEMS.register("kinetic_factory_port",
+            () -> new BlockItem(FACTORY_PORT.get(), new Item.Properties()));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KineticMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("kinetic_machine", () -> BlockEntityType.Builder.of(
                     KineticMachineBlockEntity::new, ME_PRESS.get(), ME_CRUSHER.get(), ME_CATALYST_CHAMBER.get(),
                     ME_BASIN_PROCESSOR.get(), ME_FILLING_STATION.get(), ME_DEPLOYER.get(),
                     ME_SAW.get(), ME_MILL.get(), ME_POLISHER.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KineticFactoryPortBlockEntity>> FACTORY_PORT_ENTITY =
+            BLOCK_ENTITIES.register("kinetic_factory_port", () -> BlockEntityType.Builder.of(
+                    KineticFactoryPortBlockEntity::new, FACTORY_PORT.get()).build(null));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
@@ -65,6 +72,7 @@ public final class KineticsContent {
                         output.accept(ME_SAW_ITEM.get());
                         output.accept(ME_MILL_ITEM.get());
                         output.accept(ME_POLISHER_ITEM.get());
+                        output.accept(FACTORY_PORT_ITEM.get());
                     }).build());
 
     public static void register(IEventBus modBus) {

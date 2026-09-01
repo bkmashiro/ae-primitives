@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [" S ", "AMA", " S "],
+  "key": {
+    "S": { "item": "create:shaft" },
+    "A": { "item": "ae2:engineering_processor" },
+    "M": { "item": "aeprimitives:advanced_machine_frame" }
+  },
+  "result": { "id": "aeprimitives_kinetics:kinetic_factory_port", "count": 1 }
+}
