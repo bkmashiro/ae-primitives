@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Harden the Botania extension into normal AE-managed production paths. The Pure Daisy, Petal Apothecary, Runic Altar, and Mana Pool interfaces must keep Botania's real world structures, water, catalysts, mana costs and completion timing while making input reservation and output capture transactional, persisting in-flight ownership across reload, and returning owned outputs through normal ME storage without stealing unrelated world items. Add real-grid GameTests and keep Botania entirely outside Core.
+Finish the Powah extension as a real ME Energizing Orb production path. The chamber must resolve Powah energizing recipes without over-consuming unmatched slots, reserve one independent input set and FE budget per spatial lane, persist paid energy and pending outputs without duplication across reload, pause transactionally when outputs or emitters are unavailable, reconnect to the AE grid event-driven, and return completed products through normal ME storage. Validate real recipes, linear FE scaling, blocked outputs, reload, and Core/JAR isolation.
 
 ## 1. Spatial parallel blocks
 

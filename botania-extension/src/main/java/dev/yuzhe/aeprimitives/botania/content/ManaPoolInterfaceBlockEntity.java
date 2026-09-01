@@ -36,26 +36,38 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
         @Override public void onSaveChanges(ManaPoolInterfaceBlockEntity owner, IGridNode node) { owner.setChanged(); }
     };
     private final IManagedGridNode mainNode = GridHelper.createManagedNode(this, NODE_LISTENER)
-            .setFlags(GridFlags.REQUIRE_CHANNEL).setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
+            .setInWorldNode(true).setFlags(GridFlags.REQUIRE_CHANNEL)
+            .setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
     private final ItemStackHandler inventory = new ItemStackHandler(10) {
         @Override public boolean isItemValid(int slot, ItemStack stack) { return slot == 0; }
         @Override protected void onContentsChanged(int slot) { dirty = true; setChanged(); }
     };
     private boolean dirty = true;
     @Nullable private ResourceLocation recipeId;
+    private boolean gridTopologyDirty = true;
+    private int gridBootstrapTicks = 20;
 
     public ManaPoolInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(BotaniaContent.MANA_POOL_INTERFACE_ENTITY.get(), pos, state);
     }
 
     public ItemStackHandler inventory() { return inventory; }
-    public void markDirty() { dirty = true; }
+    public void markDirty() { dirty = true; gridTopologyDirty = true; }
     public boolean hasPlanForTest() { return recipeId != null; }
     public boolean planForTest(ServerLevel level) { return tryPlan(level); }
     public boolean executeForTest(ServerLevel level) { return tryExecute(level); }
 
+    private void refreshGridConnections() {
+        var state = BotaniaGridSupport.refreshConnections(level, worldPosition, mainNode, gridTopologyDirty, gridBootstrapTicks);
+        gridTopologyDirty = state.dirty();
+        gridBootstrapTicks = state.bootstrapTicks();
+    }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, ManaPoolInterfaceBlockEntity self) {
-        if (!(level instanceof ServerLevel server) || !self.mainNode.isActive()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        self.refreshGridConnections();
+        BotaniaGridSupport.flushOutputs(self.mainNode, self.inventory, 1, 10);
+        if (!self.mainNode.isActive()) return;
         if (self.recipeId != null) self.tryExecute(server);
         else if (self.dirty) {
             self.dirty = false;
@@ -175,7 +187,12 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
         setChanged();
     }
 
-    @Override public void onLoad() { super.onLoad(); if (!level.isClientSide) mainNode.create(level, worldPosition); }
+    @Override public void onLoad() {
+        super.onLoad();
+        gridTopologyDirty = true;
+        gridBootstrapTicks = 20;
+        if (!level.isClientSide) mainNode.create(level, worldPosition);
+    }
     @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);

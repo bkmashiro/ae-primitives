@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
@@ -33,6 +34,15 @@ public final class PureDaisyInterfaceBlock extends BaseEntityBlock {
     @Override public BlockState rotate(BlockState state, Rotation rotation) { return state.setValue(HorizontalDirectionalBlock.FACING, rotation.rotate(state.getValue(HorizontalDirectionalBlock.FACING))); }
     @Override public BlockState mirror(BlockState state, Mirror mirror) { return state.rotate(mirror.getRotation(state.getValue(HorizontalDirectionalBlock.FACING))); }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) { builder.add(HorizontalDirectionalBlock.FACING); }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block,
+                                   BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, neighborPos, movedByPiston);
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof PureDaisyInterfaceBlockEntity machine) {
+            machine.markTopologyDirty();
+        }
+    }
 
     @Nullable
     @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {

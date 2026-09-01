@@ -44,19 +44,25 @@ public final class PureDaisyInterfaceBlockEntity extends BlockEntity implements 
     };
 
     private final IManagedGridNode mainNode = GridHelper.createManagedNode(this, NODE_LISTENER)
-            .setFlags(GridFlags.REQUIRE_CHANNEL).setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
+            .setInWorldNode(true).setFlags(GridFlags.REQUIRE_CHANNEL)
+            .setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
     private final ItemStackHandler inventory = new ItemStackHandler(10) {
         @Override public boolean isItemValid(int slot, ItemStack stack) { return slot == 0 && stack.getItem() instanceof BlockItem; }
         @Override protected void onContentsChanged(int slot) { setChanged(); }
     };
     private final List<OwnedPosition> owned = new ArrayList<>();
+    private boolean gridTopologyDirty = true;
+    private int gridBootstrapTicks = 20;
 
     public PureDaisyInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(BotaniaContent.PURE_DAISY_INTERFACE_ENTITY.get(), pos, state);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, PureDaisyInterfaceBlockEntity be) {
-        if (!(level instanceof ServerLevel server) || !be.mainNode.isActive()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        be.refreshGridConnections();
+        BotaniaGridSupport.flushOutputs(be.mainNode, be.inventory, 1, 10);
+        if (!be.mainNode.isActive()) return;
         be.recoverCompleted(server);
         be.dispatchAvailable(server);
     }
@@ -70,6 +76,13 @@ public final class PureDaisyInterfaceBlockEntity extends BlockEntity implements 
     }
     public void dispatchForTest(ServerLevel level) { dispatchAvailable(level); }
     public void recoverForTest(ServerLevel level) { recoverCompleted(level); }
+    public void markTopologyDirty() { gridTopologyDirty = true; }
+
+    private void refreshGridConnections() {
+        var state = BotaniaGridSupport.refreshConnections(level, worldPosition, mainNode, gridTopologyDirty, gridBootstrapTicks);
+        gridTopologyDirty = state.dirty();
+        gridBootstrapTicks = state.bootstrapTicks();
+    }
 
     private void dispatchAvailable(ServerLevel level) {
         var flower = boundFlower();
@@ -187,7 +200,12 @@ public final class PureDaisyInterfaceBlockEntity extends BlockEntity implements 
         return stack.isEmpty();
     }
 
-    @Override public void onLoad() { super.onLoad(); if (!level.isClientSide) mainNode.create(level, worldPosition); }
+    @Override public void onLoad() {
+        super.onLoad();
+        gridTopologyDirty = true;
+        gridBootstrapTicks = 20;
+        if (!level.isClientSide) mainNode.create(level, worldPosition);
+    }
     @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);

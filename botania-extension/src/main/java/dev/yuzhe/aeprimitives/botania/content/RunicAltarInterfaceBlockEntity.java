@@ -41,7 +41,8 @@ public final class RunicAltarInterfaceBlockEntity extends BlockEntity implements
         @Override public void onSaveChanges(RunicAltarInterfaceBlockEntity owner, IGridNode node) { owner.setChanged(); }
     };
     private final IManagedGridNode mainNode = GridHelper.createManagedNode(this, NODE_LISTENER)
-            .setFlags(GridFlags.REQUIRE_CHANNEL).setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
+            .setInWorldNode(true).setFlags(GridFlags.REQUIRE_CHANNEL)
+            .setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(2.0);
     private final ItemStackHandler inventory = new ItemStackHandler(25) {
         @Override public boolean isItemValid(int slot, ItemStack stack) { return slot < 16; }
         @Override protected void onContentsChanged(int slot) { dirty = true; setChanged(); }
@@ -50,17 +51,28 @@ public final class RunicAltarInterfaceBlockEntity extends BlockEntity implements
     @Nullable private ResourceLocation recipeId;
     private ItemStack reservedReagent = ItemStack.EMPTY;
     private ItemStack expectedOutput = ItemStack.EMPTY;
+    private boolean gridTopologyDirty = true;
+    private int gridBootstrapTicks = 20;
 
     public RunicAltarInterfaceBlockEntity(BlockPos pos, BlockState state) { super(BotaniaContent.RUNIC_ALTAR_INTERFACE_ENTITY.get(), pos, state); }
     public ItemStackHandler inventory() { return inventory; }
     public int comparatorSignal() { return recipeId == null ? 0 : 15; }
-    public void markTopologyDirty() { dirty = true; }
+    public void markTopologyDirty() { dirty = true; gridTopologyDirty = true; }
     public boolean hasPlanForTest() { return recipeId != null; }
     public boolean startForTest(ServerLevel level) { return tryStart(level); }
     public boolean finishForTest(ServerLevel level) { return tryFinish(level); }
 
+    private void refreshGridConnections() {
+        var state = BotaniaGridSupport.refreshConnections(level, worldPosition, mainNode, gridTopologyDirty, gridBootstrapTicks);
+        gridTopologyDirty = state.dirty();
+        gridBootstrapTicks = state.bootstrapTicks();
+    }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, RunicAltarInterfaceBlockEntity self) {
-        if (!(level instanceof ServerLevel server) || !self.mainNode.isActive()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        self.refreshGridConnections();
+        BotaniaGridSupport.flushOutputs(self.mainNode, self.inventory, 16, 25);
+        if (!self.mainNode.isActive()) return;
         if (self.recipeId != null) self.tryFinish(server);
         else if (self.dirty) { self.dirty = false; self.tryStart(server); }
     }
@@ -203,7 +215,12 @@ public final class RunicAltarInterfaceBlockEntity extends BlockEntity implements
     }
     private void clearPlan() { recipeId = null; reservedReagent = ItemStack.EMPTY; expectedOutput = ItemStack.EMPTY; dirty = true; setChanged(); }
 
-    @Override public void onLoad() { super.onLoad(); if (!level.isClientSide) mainNode.create(level, worldPosition); }
+    @Override public void onLoad() {
+        super.onLoad();
+        gridTopologyDirty = true;
+        gridBootstrapTicks = 20;
+        if (!level.isClientSide) mainNode.create(level, worldPosition);
+    }
     @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries); tag.put("inventory", inventory.serializeNBT(registries));
