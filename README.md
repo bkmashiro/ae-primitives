@@ -119,7 +119,7 @@ Generate PNG previews without opening a browser:
 ./gradlew exportVisualGallery
 ```
 
-The declarative model and texture pipeline is documented in [Machine asset pipeline](docs/machine-assets.md).
+The declarative model and texture pipeline is documented in [Machine asset pipeline](docs/machine-assets.md). The next machine and integration slices are tracked in the [roadmap](ROADMAP.md).
 
 ## License
 
