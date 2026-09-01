@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add the remaining secondary Create atomic operations on `KineticProcessBehavior`: ME Sawing, ME Milling and ME Sandpaper Polishing. Each machine must publish a distinct operation capability, preserve the source recipe's input, tool and probabilistic-output semantics, return results through normal ME storage, and remain usable as an independently dispatched AE processing step. Reuse the now-verified real AE crafting-service fixture instead of adding a coordinator or test-side routing.
+Harden the Botania extension into normal AE-managed production paths. The Pure Daisy, Petal Apothecary, Runic Altar, and Mana Pool interfaces must keep Botania's real world structures, water, catalysts, mana costs and completion timing while making input reservation and output capture transactional, persisting in-flight ownership across reload, and returning owned outputs through normal ME storage without stealing unrelated world items. Add real-grid GameTests and keep Botania entirely outside Core.
 
 ## 1. Spatial parallel blocks
 

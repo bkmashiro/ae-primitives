@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["EFE", "ACA", " B "],
+  "key": {
+    "E": { "item": "ae2:engineering_processor" },
+    "F": { "item": "aeprimitives:basic_machine_frame" },
+    "A": { "item": "ae2:annihilation_core" },
+    "C": { "item": "farmersdelight:cooking_pot" },
+    "B": { "item": "ae2:formation_core" }
+  },
+  "result": { "id": "aeprimitives_farmersdelight:me_cooking_pot", "count": 1 }
+}

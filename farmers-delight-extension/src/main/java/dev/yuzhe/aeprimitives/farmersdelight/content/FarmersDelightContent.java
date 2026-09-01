@@ -27,16 +27,26 @@ public final class FarmersDelightContent {
             () -> new BlockItem(ME_CUTTING_BOARD.get(), new Item.Properties()));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MeCuttingBoardBlockEntity>> CUTTING_BOARD_ENTITY =
             BLOCK_ENTITIES.register("me_cutting_board", () -> BlockEntityType.Builder.of(MeCuttingBoardBlockEntity::new, ME_CUTTING_BOARD.get()).build(null));
+    public static final DeferredBlock<MeCookingPotBlock> ME_COOKING_POT = BLOCKS.register("me_cooking_pot",
+            () -> new MeCookingPotBlock(BlockBehaviour.Properties.of().strength(3.5f).requiresCorrectToolForDrops().noOcclusion()));
+    public static final DeferredItem<BlockItem> ME_COOKING_POT_ITEM = ITEMS.register("me_cooking_pot",
+            () -> new BlockItem(ME_COOKING_POT.get(), new Item.Properties()));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MeCookingPotBlockEntity>> COOKING_POT_ENTITY =
+            BLOCK_ENTITIES.register("me_cooking_pot", () -> BlockEntityType.Builder.of(MeCookingPotBlockEntity::new, ME_COOKING_POT.get()).build(null));
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.aeprimitives_farmersdelight"))
             .icon(() -> ME_CUTTING_BOARD_ITEM.get().getDefaultInstance())
-            .displayItems((parameters, output) -> output.accept(ME_CUTTING_BOARD_ITEM.get())).build());
+            .displayItems((parameters, output) -> {
+                output.accept(ME_CUTTING_BOARD_ITEM.get());
+                output.accept(ME_COOKING_POT_ITEM.get());
+            }).build());
     public static void register(IEventBus bus) {
         BLOCKS.register(bus); ITEMS.register(bus); BLOCK_ENTITIES.register(bus); TABS.register(bus);
         bus.addListener(FarmersDelightContent::capabilities);
     }
     private static void capabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, CUTTING_BOARD_ENTITY.get(), (machine, side) -> machine.inventory());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, COOKING_POT_ENTITY.get(), (machine, side) -> machine.inventory());
     }
     private FarmersDelightContent() {}
 }
