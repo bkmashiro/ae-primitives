@@ -1,8 +1,13 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
+import appeng.api.stacks.KeyCounter;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
+import com.simibubi.create.content.processing.sequenced.SequencedAssemblyRecipe;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
+import dev.yuzhe.aeprimitives.kinetics.compat.create.CreateSequenceImporter;
+import dev.yuzhe.aeprimitives.operation.BoundOperationPattern;
+import dev.yuzhe.aeprimitives.sequence.OperationStepSpec;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -256,6 +261,51 @@ public final class KineticMachineGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void importedSequencesCompleteThroughOperationMachines(GameTestHelper helper) {
+        var press = placeAt(helper, new BlockPos(1, 1, 1), KineticsContent.ME_PRESS.get());
+        var filling = placeAt(helper, new BlockPos(3, 1, 1), KineticsContent.ME_FILLING_STATION.get());
+        var deployer = placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_DEPLOYER.get());
+        for (var machine : java.util.List.of(press, filling, deployer)) {
+            helper.assertTrue(appeng.api.implementations.blockentities.ICraftingMachine.of(
+                            helper.getLevel(), machine.getBlockPos(), Direction.NORTH) == machine,
+                    "AE could not discover the operation machine target");
+        }
+
+        var sturdy = importSequence(helper, ResourceLocation.fromNamespaceAndPath("create", "sequenced_assembly/sturdy_sheet"));
+        runImportedSequence(helper, sturdy.steps(), press, filling, deployer);
+        var track = importSequence(helper, ResourceLocation.fromNamespaceAndPath("create", "sequenced_assembly/track"));
+        runImportedSequence(helper, track.steps(), press, filling, deployer);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void dispatchedOperationsUseIndependentSpatialLanes(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
+        var input = new dev.yuzhe.aeprimitives.operation.OperationInput(
+                java.util.List.of(new appeng.api.stacks.GenericStack(appeng.api.stacks.AEItemKey.of(Items.IRON_INGOT), 1)), null);
+        var step = new OperationStepSpec(
+                ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "parallel_press_test"),
+                com.simibubi.create.AllRecipeTypes.PRESSING.getId(),
+                java.util.List.of(input),
+                java.util.List.of(new appeng.api.stacks.GenericStack(appeng.api.stacks.AEItemKey.of(Items.GOLD_INGOT), 1)));
+        var pattern = new BoundOperationPattern(step, ModContent.OPERATION_PATTERN.get());
+        for (int lane = 0; lane < 3; lane++) {
+            var holders = holdersFor(step);
+            helper.assertTrue(machine.pushPattern(pattern, holders, Direction.NORTH),
+                    "Spatial lane " + lane + " rejected an independent operation");
+        }
+        helper.assertTrue(!machine.pushPattern(pattern, holdersFor(step), Direction.NORTH),
+                "Machine accepted more dispatched operations than its spatial lane count");
+        helper.assertTrue(machine.calculateStressApplied() == KineticMachineKind.PRESS.stressImpact() * 3,
+                "Dispatched operation stress did not scale with active lanes");
+        helper.assertTrue(machine.completeDispatchedPlans() == 3,
+                "Spatial lanes did not complete independently");
+        helper.assertTrue(countAnySlot(machine, Items.GOLD_INGOT) == 3,
+                "Spatial lanes did not preserve one output per operation");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void activeLanesScaleStressLinearly(GameTestHelper helper) {
         var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
@@ -278,6 +328,87 @@ public final class KineticMachineGameTests {
         return helper.getBlockEntity(MACHINE);
     }
 
+    private static KineticMachineBlockEntity placeAt(
+            GameTestHelper helper, BlockPos pos, KineticMachineBlock block) {
+        helper.setBlock(pos, block);
+        return helper.getBlockEntity(pos);
+    }
+
+    private static dev.yuzhe.aeprimitives.sequence.SequencePatternSpec importSequence(
+            GameTestHelper helper, ResourceLocation id) {
+        var holder = helper.getLevel().getRecipeManager().byKey(id).orElse(null);
+        helper.assertTrue(holder != null && holder.value() instanceof SequencedAssemblyRecipe,
+                "Missing Create sequenced assembly recipe " + id);
+        var result = CreateSequenceImporter.compile(id, (SequencedAssemblyRecipe) holder.value());
+        helper.assertTrue(result.successful(), "Could not import " + id + ": " + result.error());
+        return result.sequence();
+    }
+
+    private static void runImportedSequence(
+            GameTestHelper helper,
+            java.util.List<OperationStepSpec> steps,
+            KineticMachineBlockEntity press,
+            KineticMachineBlockEntity filling,
+            KineticMachineBlockEntity deployer) {
+        appeng.api.stacks.GenericStack previous = null;
+        for (var step : steps) {
+            var holders = new KeyCounter[step.inputs().size()];
+            for (int input = 0; input < holders.length; input++) {
+                var selected = input == 0 && previous != null
+                        ? previous
+                        : step.inputs().get(input).alternatives().getFirst();
+                holders[input] = new KeyCounter();
+                holders[input].add(selected.what(), selected.amount());
+            }
+            var machine = machineFor(step, press, filling, deployer);
+            var pattern = new BoundOperationPattern(step, ModContent.OPERATION_PATTERN.get());
+            helper.assertTrue(machine.pushPattern(pattern, holders, Direction.NORTH),
+                    "Machine rejected imported operation " + step.operation());
+            for (var holder : holders) {
+                holder.removeZeros();
+                helper.assertTrue(holder.isEmpty(), "Machine did not claim all dispatched inputs");
+            }
+            helper.assertTrue(machine.completeDispatchedPlans() == 1,
+                    "Imported operation did not complete in its machine lane");
+            previous = step.outputs().getFirst();
+            helper.assertTrue(extractOutput(machine, previous),
+                    "Machine did not emit the sequence component expected by the next AE pattern");
+        }
+    }
+
+    private static KeyCounter[] holdersFor(OperationStepSpec step) {
+        var holders = new KeyCounter[step.inputs().size()];
+        for (int input = 0; input < holders.length; input++) {
+            var selected = step.inputs().get(input).alternatives().getFirst();
+            holders[input] = new KeyCounter();
+            holders[input].add(selected.what(), selected.amount());
+        }
+        return holders;
+    }
+
+    private static KineticMachineBlockEntity machineFor(
+            OperationStepSpec step,
+            KineticMachineBlockEntity press,
+            KineticMachineBlockEntity filling,
+            KineticMachineBlockEntity deployer) {
+        if (KineticMachineKind.PRESS.acceptsOperation(step.operation())) return press;
+        if (KineticMachineKind.FILLING.acceptsOperation(step.operation())) return filling;
+        if (KineticMachineKind.DEPLOYER.acceptsOperation(step.operation())) return deployer;
+        throw new IllegalArgumentException("No acceptance machine for " + step.operation());
+    }
+
+    private static boolean extractOutput(
+            KineticMachineBlockEntity machine, appeng.api.stacks.GenericStack expected) {
+        if (!(expected.what() instanceof appeng.api.stacks.AEItemKey itemKey)) return false;
+        for (int slot = 0; slot < machine.inventory().getSlots(); slot++) {
+            var stack = machine.inventory().getStackInSlot(slot);
+            if (!itemKey.matches(stack) || stack.getCount() < expected.amount()) continue;
+            machine.inventory().extractItem(slot, (int) expected.amount(), false);
+            return true;
+        }
+        return false;
+    }
+
     private static boolean hasQueuedOutput(KineticMachineBlockEntity machine) {
         for (int slot = 1; slot < machine.inventory().getSlots(); slot++) {
             if (!machine.inventory().getStackInSlot(slot).isEmpty()) return true;
@@ -288,6 +419,15 @@ public final class KineticMachineGameTests {
     private static int countOutput(KineticMachineBlockEntity machine, Item item) {
         int count = 0;
         for (int slot = 2; slot < machine.inventory().getSlots(); slot++) {
+            var stack = machine.inventory().getStackInSlot(slot);
+            if (stack.is(item)) count += stack.getCount();
+        }
+        return count;
+    }
+
+    private static int countAnySlot(KineticMachineBlockEntity machine, Item item) {
+        int count = 0;
+        for (int slot = 0; slot < machine.inventory().getSlots(); slot++) {
             var stack = machine.inventory().getStackInSlot(slot);
             if (stack.is(item)) count += stack.getCount();
         }

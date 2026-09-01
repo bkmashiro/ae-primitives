@@ -2,6 +2,7 @@ package dev.yuzhe.aeprimitives.kinetics.content;
 
 import com.simibubi.create.AllRecipeTypes;
 import dev.yuzhe.aeprimitives.content.MachineTier;
+import net.minecraft.resources.ResourceLocation;
 
 public enum KineticMachineKind {
     PRESS("me_press", AllRecipeTypes.PRESSING, 8.0f, MachineTier.ADVANCED, 8),
@@ -30,4 +31,17 @@ public enum KineticMachineKind {
     public float stressImpact() { return stressImpact; }
     public MachineTier tier() { return tier; }
     public int maxParallelLanes() { return maxParallelLanes; }
+
+    public boolean acceptsOperation(ResourceLocation operation) {
+        return switch (this) {
+            case PRESS -> operation.equals(AllRecipeTypes.PRESSING.getId());
+            case CRUSHER -> operation.equals(AllRecipeTypes.CRUSHING.getId());
+            case BASIN -> operation.equals(AllRecipeTypes.MIXING.getId())
+                    || operation.equals(AllRecipeTypes.COMPACTING.getId());
+            case FILLING -> operation.equals(AllRecipeTypes.FILLING.getId())
+                    || operation.equals(AllRecipeTypes.EMPTYING.getId());
+            case DEPLOYER -> operation.equals(AllRecipeTypes.DEPLOYING.getId());
+            case FAN -> false;
+        };
+    }
 }

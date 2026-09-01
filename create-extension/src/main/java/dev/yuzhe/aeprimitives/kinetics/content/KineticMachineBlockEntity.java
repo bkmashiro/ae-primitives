@@ -1,6 +1,9 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
 import appeng.api.config.Actionable;
+import appeng.api.crafting.IPatternDetails;
+import appeng.api.implementations.blockentities.ICraftingMachine;
+import appeng.api.implementations.blockentities.PatternContainerGroup;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNode;
@@ -11,6 +14,7 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageHelper;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import dev.yuzhe.aeprimitives.content.MachineTier;
@@ -19,6 +23,8 @@ import dev.yuzhe.aeprimitives.spatial.SpatialParallelHost;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystDefinition;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystVisual;
+import dev.yuzhe.aeprimitives.operation.BoundOperationPattern;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +33,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -35,12 +43,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public final class KineticMachineBlockEntity extends KineticBlockEntity implements IInWorldGridNodeHost, IActionHost, SpatialParallelHost {
+public final class KineticMachineBlockEntity extends KineticBlockEntity implements
+        IInWorldGridNodeHost, IActionHost, SpatialParallelHost, ICraftingMachine {
     public static final int BASIN_INPUT_SLOTS = 9;
     public static final int PROCESS_INPUT_SLOT = 0;
     public static final int TOOL_SLOT = 1;
     private static final int INVENTORY_SLOTS = 18;
-    private static final float WORK_PER_RECIPE = 4096.0f;
+    static final float WORK_PER_RECIPE = 4096.0f;
     private static final float MIN_SPEED = 16.0f;
     private static final IGridNodeListener<KineticMachineBlockEntity> NODE_LISTENER =
             new IGridNodeListener<>() {
@@ -67,6 +76,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     private boolean parallelTopologyDirty = true;
     private int parallelLanes = 1;
     private int activeLanes;
+    private final List<DispatchedOperationPlan> dispatchedPlans = new ArrayList<>();
 
     public KineticMachineBlockEntity(BlockPos pos, BlockState state) {
         this(KineticsContent.MACHINE_ENTITY.get(), pos, state);
@@ -176,6 +186,10 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         if (!(level instanceof ServerLevel server)) return;
         flushOutputs();
         flushFluidOutputs();
+        if (!dispatchedPlans.isEmpty()) {
+            tickDispatchedPlans();
+            return;
+        }
         var behavior = behavior();
         int requestedLanes = behavior.requestedLanes(this, server, parallelLanes());
         updateActiveLanes(requestedLanes);
@@ -188,6 +202,41 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
             setChanged();
             sendData();
         }
+    }
+
+    private void tickDispatchedPlans() {
+        int running = Math.min(parallelLanes(), dispatchedPlans.size());
+        updateActiveLanes(running);
+        if (!canRun()) return;
+        float speed = Math.abs(getSpeed());
+        for (int lane = 0; lane < running; lane++) dispatchedPlans.get(lane).advance(speed);
+        boolean changed = false;
+        for (int lane = running - 1; lane >= 0; lane--) {
+            var plan = dispatchedPlans.get(lane);
+            if (!plan.ready() || !plan.canComplete(this)) continue;
+            plan.complete(this);
+            dispatchedPlans.remove(lane);
+            changed = true;
+        }
+        if (changed) {
+            updateActiveLanes(Math.min(parallelLanes(), dispatchedPlans.size()));
+            setChanged();
+            sendData();
+        }
+    }
+
+    int completeDispatchedPlans() {
+        for (var plan : dispatchedPlans) plan.advance(WORK_PER_RECIPE);
+        int before = dispatchedPlans.size();
+        for (int lane = Math.min(parallelLanes(), dispatchedPlans.size()) - 1; lane >= 0; lane--) {
+            var plan = dispatchedPlans.get(lane);
+            if (!plan.ready() || !plan.canComplete(this)) continue;
+            plan.complete(this);
+            dispatchedPlans.remove(lane);
+        }
+        int completed = before - dispatchedPlans.size();
+        if (completed > 0) setChanged();
+        return completed;
     }
 
     boolean completeCycle(ServerLevel server) {
@@ -281,12 +330,33 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     @Override public IGridNode getGridNode(Direction direction) { return gridNode.isReady() ? gridNode.getNode() : null; }
     @Override public IGridNode getActionableNode() { return gridNode.getNode(); }
 
+    @Override public PatternContainerGroup getCraftingMachineInfo() { return PatternContainerGroup.nothing(); }
+
+    @Override
+    public boolean pushPattern(IPatternDetails details, KeyCounter[] inputHolder, Direction direction) {
+        if (!(details instanceof BoundOperationPattern bound)
+                || !kind().acceptsOperation(bound.step().operation())
+                || dispatchedPlans.size() >= parallelLanes()) return false;
+        var plan = DispatchedOperationPlan.claim(bound.step(), inputHolder);
+        if (plan == null) return false;
+        dispatchedPlans.add(plan);
+        updateActiveLanes(Math.min(parallelLanes(), dispatchedPlans.size()));
+        setChanged();
+        sendData();
+        return true;
+    }
+
+    @Override public boolean acceptsPlans() { return true; }
+
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putFloat("work", work);
         tag.putInt("parallelLanes", parallelLanes);
         tag.putInt("activeLanes", activeLanes);
+        var plans = new ListTag();
+        for (var plan : dispatchedPlans) plans.add(plan.save(registries));
+        tag.put("dispatchedPlans", plans);
         var fluidsTag = new CompoundTag();
         basinFluids.write(fluidsTag, registries);
         tag.put("basinFluids", fluidsTag);
@@ -308,6 +378,11 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         work = tag.getFloat("work");
         parallelLanes = Math.max(1, tag.getInt("parallelLanes"));
         activeLanes = Math.max(0, tag.getInt("activeLanes"));
+        dispatchedPlans.clear();
+        var plans = tag.getList("dispatchedPlans", Tag.TAG_COMPOUND);
+        for (int i = 0; i < plans.size(); i++) {
+            dispatchedPlans.add(DispatchedOperationPlan.load(plans.getCompound(i), registries));
+        }
         if (!clientPacket) parallelTopologyDirty = true;
         if (tag.contains("basinFluids")) basinFluids.read(tag.getCompound("basinFluids"), registries);
         catalystId = tag.contains("catalystId") ? ResourceLocation.tryParse(tag.getString("catalystId")) : null;

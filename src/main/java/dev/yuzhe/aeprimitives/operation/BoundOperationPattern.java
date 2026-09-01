@@ -20,7 +20,7 @@ public final class BoundOperationPattern implements IPatternDetails {
     private final AEItemKey definition;
     private final IInput[] inputs;
 
-    BoundOperationPattern(OperationStepSpec step, ItemLike definitionItem) {
+    public BoundOperationPattern(OperationStepSpec step, ItemLike definitionItem) {
         this.step = step;
         var stack = new ItemStack(definitionItem);
         var data = new CompoundTag();

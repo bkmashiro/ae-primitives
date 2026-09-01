@@ -51,7 +51,7 @@ public abstract class PatternProviderLogicMixin {
         // can expose the newly bound operations in this same update pass.
         var boundOperations = new ArrayList<IPatternDetails>();
         for (var operation : operations) {
-            boundOperations.addAll(SequenceRuntime.boundPatterns().patternsFor(
+            boundOperations.addAll(SequenceRuntime.boundPatterns(self).patternsFor(
                     operation.spec(), operation.definition().getItem()));
         }
 

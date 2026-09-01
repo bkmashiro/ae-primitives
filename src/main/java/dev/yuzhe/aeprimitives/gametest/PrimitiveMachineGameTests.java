@@ -214,7 +214,7 @@ public final class PrimitiveMachineGameTests {
                 operationProvider.getLogic().getPatternInv().setItemDirect(0, operationStack.copy());
             }
             SequenceRuntime.update(sequenceProvider.getLogic(), List.of(sequence));
-            helper.assertTrue(SequenceRuntime.boundPatterns().patternsFor(
+            helper.assertTrue(SequenceRuntime.boundPatterns(operationProvider.getLogic().getGrid()).patternsFor(
                             OperationPatternSpec.all(pressing), ModContent.OPERATION_PATTERN.get()).size() == 1,
                     "live sequence did not enter the bound operation registry");
             helper.assertTrue(OperationPatternData.decode(AEItemKey.of(operationStack)) != null,

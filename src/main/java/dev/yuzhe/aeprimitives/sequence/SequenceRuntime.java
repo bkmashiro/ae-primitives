@@ -25,12 +25,16 @@ public final class SequenceRuntime {
             new WeakHashMap<>();
     private static final WeakHashMap<PatternProviderLogic, OperationProviderState> OPERATION_PROVIDERS =
             new WeakHashMap<>();
-    private static final BoundOperationRegistry BOUND = new BoundOperationRegistry();
+    private static final WeakHashMap<IGrid, BoundOperationRegistry> BOUND_BY_GRID = new WeakHashMap<>();
     private static boolean refreshing;
     private static int diagnosticRevision;
 
-    public static synchronized BoundOperationRegistry boundPatterns() {
-        return BOUND;
+    public static synchronized BoundOperationRegistry boundPatterns(IGrid grid) {
+        return BOUND_BY_GRID.computeIfAbsent(grid, ignored -> new BoundOperationRegistry());
+    }
+
+    public static synchronized BoundOperationRegistry boundPatterns(PatternProviderLogic provider) {
+        return boundPatterns(provider.getGrid());
     }
 
     public static synchronized void updateOperationProvider(
@@ -53,14 +57,15 @@ public final class SequenceRuntime {
         else previous = SEQUENCE_SOURCES.put(owner, List.copyOf(sequences));
         var current = SEQUENCE_SOURCES.get(owner);
         if (!java.util.Objects.equals(previous, current)) diagnosticRevision++;
-        rebuild(owner);
+        rebuild(owner.getGrid(), owner);
     }
 
     public static synchronized void remove(PatternProviderLogic owner) {
+        var grid = owner.getGrid();
         boolean changed = OPERATION_PROVIDERS.remove(owner) != null;
         boolean removedSequence = SEQUENCE_SOURCES.remove(owner) != null;
         if (changed || removedSequence) diagnosticRevision++;
-        if (removedSequence) rebuild(owner);
+        if (removedSequence) rebuild(grid, owner);
     }
 
     public static synchronized ProcessDiagnosticSnapshot snapshot(IGrid grid) {
@@ -83,18 +88,21 @@ public final class SequenceRuntime {
         return ProcessDiagnosticModel.build(diagnosticRevision, sequences, providers);
     }
 
-    private static void rebuild(PatternProviderLogic owner) {
+    private static void rebuild(IGrid grid, PatternProviderLogic owner) {
         var combined = new ArrayList<SequencePatternSpec>();
-        SEQUENCE_SOURCES.values().forEach(combined::addAll);
+        SEQUENCE_SOURCES.forEach((provider, sequences) -> {
+            if (provider.getGrid() == grid) combined.addAll(sequences);
+        });
         combined.sort(Comparator.comparing(spec -> spec.id().toString()));
-        int before = BOUND.revision();
-        BOUND.replaceSequences(combined);
-        if (BOUND.revision() == before || refreshing) return;
+        var bound = boundPatterns(grid);
+        int before = bound.revision();
+        bound.replaceSequences(combined);
+        if (bound.revision() == before || refreshing) return;
 
         refreshing = true;
         try {
             for (var provider : List.copyOf(OPERATION_PROVIDERS.keySet())) {
-                if (provider != owner) provider.updatePatterns();
+                if (provider != owner && provider.getGrid() == grid) provider.updatePatterns();
             }
         } finally {
             refreshing = false;

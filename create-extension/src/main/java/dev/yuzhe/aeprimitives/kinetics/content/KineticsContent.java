@@ -1,5 +1,6 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
+import appeng.api.AECapabilities;
 import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -78,6 +79,8 @@ public final class KineticsContent {
                 (machine, side) -> machine.inventory());
         event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, MACHINE_ENTITY.get(),
                 (machine, side) -> machine.supportsFluids() ? machine.fluids() : null);
+        event.registerBlockEntity(AECapabilities.CRAFTING_MACHINE, MACHINE_ENTITY.get(),
+                (machine, side) -> machine);
     }
 
     private KineticsContent() {}

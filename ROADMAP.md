@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Verify a real press, deploy, fill and press sequenced-assembly path through imported operation patterns and machine providers before adding secondary Create operations.
+Add and verify the secondary Create operations: ME Saw, ME Mill and ME Polisher, keeping milling distinct from crushing and reusing spatial lanes plus AE operation dispatch.
 
 ## 1. Spatial parallel blocks
 
