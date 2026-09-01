@@ -2,3 +2,4 @@ pluginManagement { repositories { gradlePluginPortal(); maven { url = 'https://m
 rootProject.name = 'ae-primitives'
 include 'create-extension'
 include 'farmers-delight-extension'
+include 'botania-extension'

@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Create the Botania extension and verify its first bounded integration slice: a Pure Daisy transmutation chamber that uses Botania's own recipe registry, preserves recipe time, and reuses spatial lanes without adding Botania to Core.
+Create the Powah extension and verify an ME Energizing Chamber that consumes the exact Energizing Orb recipe inputs and energy, supports independent spatial lanes, and never adds Powah classes to Core.
 
 ## 1. Spatial parallel blocks
 
