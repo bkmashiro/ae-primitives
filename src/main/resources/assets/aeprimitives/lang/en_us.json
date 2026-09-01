@@ -22,6 +22,7 @@
   "block.aeprimitives.advanced_spatial_parallel": "Advanced Spatial Parallel Unit",
   "block.aeprimitives.ultimate_spatial_parallel": "Ultimate Spatial Parallel Unit",
   "block.aeprimitives.machine_assembly_table": "Machine Assembly Table",
+  "block.aeprimitives.heterogeneous_spatial_factory": "Heterogeneous Spatial Factory",
   "item.aeprimitives.machine_space_component": "Machine Space Component",
   "item.aeprimitives.basic_machine_frame": "Basic Machine Frame",
   "item.aeprimitives.advanced_machine_frame": "Advanced Machine Frame",

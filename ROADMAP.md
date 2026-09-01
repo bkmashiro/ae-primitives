@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add the first heterogeneous spatial factory controller: accept validated machine space components as distinct persisted lanes and execute one Core machine operation through an event-driven scheduler without materializing world block entities.
+Make the heterogeneous spatial factory usable without external item pipes: add a compact four-lane menu that installs machine space components, exposes each lane's three inputs and three outputs, and reports identity, progress and blocked state without creating world machine instances.
 
 ## 1. Spatial parallel blocks
 
@@ -138,7 +138,7 @@ Do not add Mekanism integration. Its existing Pattern Provider processing workfl
 
 ## 5. Machine space components and heterogeneous factory
 
-This remains a later phase, not part of the current execution pointer.
+This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities.
 
 ### Packaging model
 

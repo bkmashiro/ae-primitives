@@ -64,6 +64,8 @@ public final class ModContent {
     public static final DeferredBlock<SpatialParallelBlock> ULTIMATE_SPATIAL_PARALLEL = spatialParallel("ultimate_spatial_parallel", MachineTier.ULTIMATE, 4);
     public static final DeferredBlock<MachineAssemblyTableBlock> MACHINE_ASSEMBLY_TABLE = BLOCKS.register("machine_assembly_table", () ->
             new MachineAssemblyTableBlock(BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops()));
+    public static final DeferredBlock<HeterogeneousFactoryBlock> HETEROGENEOUS_SPATIAL_FACTORY = BLOCKS.register("heterogeneous_spatial_factory", () ->
+            new HeterogeneousFactoryBlock(BlockBehaviour.Properties.of().strength(4.0f, 8.0f).requiresCorrectToolForDrops()));
 
     public static final DeferredItem<BlockItem> FORTUNE_CHAMBER_ITEM = item(MachineKind.FORTUNE, FORTUNE_CHAMBER);
     public static final DeferredItem<BlockItem> TRANSFORMATION_CHAMBER_ITEM = item(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER);
@@ -103,6 +105,7 @@ public final class ModContent {
     public static final DeferredItem<BlockItem> MACHINE_ASSEMBLY_TABLE_ITEM = simpleItem("machine_assembly_table", MACHINE_ASSEMBLY_TABLE);
     public static final DeferredItem<MachineSpaceComponentItem> MACHINE_SPACE_COMPONENT = ITEMS.register("machine_space_component", () ->
             new MachineSpaceComponentItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> HETEROGENEOUS_SPATIAL_FACTORY_ITEM = simpleItem("heterogeneous_spatial_factory", HETEROGENEOUS_SPATIAL_FACTORY);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -137,6 +140,12 @@ public final class ModContent {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MachineAssemblyTableBlockEntity>> MACHINE_ASSEMBLY_TABLE_ENTITY =
             BLOCK_ENTITIES.register("machine_assembly_table", () -> BlockEntityType.Builder.of(
                     MachineAssemblyTableBlockEntity::new, MACHINE_ASSEMBLY_TABLE.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HeterogeneousFactoryBlockEntity>> HETEROGENEOUS_FACTORY_ENTITY =
+            BLOCK_ENTITIES.register("heterogeneous_spatial_factory", () -> {
+                var type = BlockEntityType.Builder.of(HeterogeneousFactoryBlockEntity::new, HETEROGENEOUS_SPATIAL_FACTORY.get()).build(null);
+                HETEROGENEOUS_SPATIAL_FACTORY.get().bind(type);
+                return type;
+            });
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.aeprimitives"))
@@ -173,6 +182,7 @@ public final class ModContent {
                         output.accept(PROCESS_ANALYZER.get());
                         output.accept(MACHINE_ASSEMBLY_TABLE_ITEM.get());
                         output.accept(MACHINE_SPACE_COMPONENT.get());
+                        output.accept(HETEROGENEOUS_SPATIAL_FACTORY_ITEM.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {
@@ -248,6 +258,8 @@ public final class ModContent {
                 (be, side) -> be.inventory());
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ASSEMBLY_TABLE_ENTITY.get(),
                 (be, side) -> be.componentSlot());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, HETEROGENEOUS_FACTORY_ENTITY.get(),
+                (be, side) -> be.inventory());
     }
     private ModContent() {}
 }

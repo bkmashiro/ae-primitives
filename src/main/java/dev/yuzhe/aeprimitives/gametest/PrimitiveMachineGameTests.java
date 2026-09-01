@@ -400,6 +400,70 @@ public final class PrimitiveMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void heterogeneousFactoryRunsIndependentLinearLanes(GameTestHelper helper) {
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        factory.inventory().setStackInSlot(1, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0), new ItemStack(Items.RED_CONCRETE_POWDER));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0), new ItemStack(Items.BLUE_CONCRETE_POWDER));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0)).is(Items.RED_CONCRETE),
+                    "first virtual lane produced no red concrete; active=" + factory.getMainNode().isActive()
+                            + ", scheduled=" + factory.isScheduled() + ", progress=" + factory.laneProgress(0)
+                            + ", input=" + factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)));
+            helper.assertTrue(factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(1, 0)).is(Items.BLUE_CONCRETE),
+                    "second virtual lane produced no blue concrete");
+            helper.assertTrue(factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).isEmpty()
+                    && factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0)).isEmpty(),
+                    "two lanes did not consume two independent inputs");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void heterogeneousFactoryRunsDifferentCoreMachineKinds(GameTestHelper helper) {
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        factory.inventory().setStackInSlot(1, machineComponent(helper, ModContent.SOIL_PROCESSOR.get()));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0), new ItemStack(Items.WHITE_CONCRETE_POWDER));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0), new ItemStack(Items.MUD));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0)).is(Items.WHITE_CONCRETE),
+                    "concrete lane did not retain its own operation");
+            helper.assertTrue(factory.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(1, 0)).is(Items.CLAY),
+                    "soil lane did not retain its own operation");
+        });
+    }
+
+    @GameTest(template = "empty")
+    public static void heterogeneousFactoryPersistsDistinctLaneState(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0), new ItemStack(Items.RED_CONCRETE_POWDER));
+        var tag = new net.minecraft.nbt.CompoundTag();
+        factory.saveAdditional(tag, helper.getLevel().registryAccess());
+        var restored = new dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity(new BlockPos(8, 1, 1), ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get().defaultBlockState());
+        restored.loadTag(tag, helper.getLevel().registryAccess());
+        helper.assertTrue(restored.inventory().getStackInSlot(0).is(ModContent.MACHINE_SPACE_COMPONENT.get())
+                && restored.inventory().getStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).is(Items.RED_CONCRETE_POWDER),
+                "factory lane identity or input did not survive persistence");
+        helper.assertTrue(restored.isScheduled(), "persisted lane work lost its wake-up state");
+        helper.succeed();
+    }
+
+    private static ItemStack machineComponent(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block),
+                block.defaultBlockState(), new net.minecraft.nbt.CompoundTag());
+        return dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope);
+    }
+
     private static PrimitiveMachineBlockEntity setup(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
         helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
         helper.setBlock(MACHINE, block);

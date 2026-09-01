@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","pattern":["PSP","EFE","PSP"],"key":{"P":{"item":"ae2:spatial_pylon"},"S":{"item":"ae2:spatial_cell_component_128"},"E":{"item":"ae2:engineering_processor"},"F":{"item":"aeprimitives:ultimate_machine_frame"}},"result":{"id":"aeprimitives:heterogeneous_spatial_factory","count":1}}

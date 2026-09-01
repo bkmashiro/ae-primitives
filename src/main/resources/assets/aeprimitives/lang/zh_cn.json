@@ -22,6 +22,7 @@
   "block.aeprimitives.advanced_spatial_parallel": "高级空间并行单元",
   "block.aeprimitives.ultimate_spatial_parallel": "究极空间并行单元",
   "block.aeprimitives.machine_assembly_table": "机器装配台",
+  "block.aeprimitives.heterogeneous_spatial_factory": "异构空间工厂",
   "item.aeprimitives.machine_space_component": "机器空间组件",
   "item.aeprimitives.basic_machine_frame": "基础机器框架",
   "item.aeprimitives.advanced_machine_frame": "高级机器框架",
