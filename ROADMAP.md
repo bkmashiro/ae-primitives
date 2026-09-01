@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add a stateful Petal Apothecary interface that dispatches recipe ingredients into a real Botania apothecary, observes the structure's native recipe state and recovers its result without replacing the apothecary or inventing a parallel mana/energy model.
+Add a stateful Runic Altar interface that dispatches ingredients into a real Botania altar, leaves mana accumulation and native recipe progress authoritative, then supplies the completion reagent and recovers the crafted rune.
 
 ## 1. Spatial parallel blocks
 
