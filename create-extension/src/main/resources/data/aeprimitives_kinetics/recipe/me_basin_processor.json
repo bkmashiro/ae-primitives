@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SAS",
+    "MFM",
+    "SBS"
+  ],
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "M": {
+      "item": "create:mechanical_mixer"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "B": {
+      "item": "create:basin"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_basin_processor"
+  }
+}

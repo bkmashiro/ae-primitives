@@ -9,6 +9,7 @@ import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
@@ -31,11 +32,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public final class KineticMachineBlockEntity extends KineticBlockEntity implements IInWorldGridNodeHost, IActionHost, SpatialParallelHost {
-    private static final int OUTPUT_START = 1;
-    private static final int OUTPUT_END = 10;
+    public static final int BASIN_INPUT_SLOTS = 9;
+    private static final int INVENTORY_SLOTS = 18;
     private static final float WORK_PER_RECIPE = 4096.0f;
     private static final float MIN_SPEED = 16.0f;
     private static final IGridNodeListener<KineticMachineBlockEntity> NODE_LISTENER =
@@ -49,10 +51,13 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
             .setFlags(GridFlags.REQUIRE_CHANNEL)
             .setExposedOnSides(EnumSet.allOf(Direction.class))
             .setIdlePowerUsage(2.0);
-    private final ItemStackHandler inventory = new ItemStackHandler(OUTPUT_END) {
-        @Override public boolean isItemValid(int slot, ItemStack stack) { return slot == 0; }
+    private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_SLOTS) {
+        @Override public boolean isItemValid(int slot, ItemStack stack) {
+            return behavior().acceptsInput(slot);
+        }
         @Override protected void onContentsChanged(int slot) { setChanged(); sendData(); }
     };
+    private final BasinFluidBuffer basinFluids = new BasinFluidBuffer(() -> { setChanged(); sendData(); });
     private float work;
     private ResourceLocation catalystId;
     private ItemStack catalystStack = ItemStack.EMPTY;
@@ -73,7 +78,14 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         return ((KineticMachineBlock) getBlockState().getBlock()).kind();
     }
 
+    private KineticProcessBehavior behavior() {
+        return KineticProcessBehavior.forKind(kind());
+    }
+
     public ItemStackHandler inventory() { return inventory; }
+    public IFluidHandler fluids() { return basinFluids; }
+    public net.neoforged.neoforge.fluids.FluidStack basinFluidVisual() { return basinFluids.firstInput(); }
+    BasinFluidBuffer basinFluids() { return basinFluids; }
     public float workFraction() { return Math.min(1.0f, work / WORK_PER_RECIPE); }
     public Optional<ResourceLocation> catalystId() { return Optional.ofNullable(catalystId); }
     public ItemStack catalystStack() { return catalystStack.copy(); }
@@ -160,16 +172,17 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.tick();
         if (!(level instanceof ServerLevel server)) return;
         flushOutputs();
-        var input = inventory.getStackInSlot(0);
-        boolean hasRecipe = !input.isEmpty() && hasRecipe(server, input);
-        int requestedLanes = hasRecipe ? Math.min(parallelLanes(), input.getCount()) : 0;
+        flushFluidOutputs();
+        var behavior = behavior();
+        int requestedLanes = behavior.requestedLanes(this, server, parallelLanes());
         updateActiveLanes(requestedLanes);
         if (!canRun()) return;
-        if (!hasRecipe) { work = 0; return; }
+        if (requestedLanes == 0) { work = 0; return; }
         work += Math.abs(getSpeed());
         if (work < WORK_PER_RECIPE) return;
-        if (completeCycles(server, requestedLanes) > 0) {
+        if (behavior.completeCycles(this, server, requestedLanes) > 0) {
             work = 0;
+            setChanged();
             sendData();
         }
     }
@@ -179,17 +192,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     }
 
     int completeCycles(ServerLevel server, int laneLimit) {
-        int completed = 0;
-        for (int lane = 0; lane < laneLimit; lane++) {
-            var input = inventory.getStackInSlot(0);
-            if (input.isEmpty()) break;
-            // Processing is invoked per lane so probabilistic recipes roll independently.
-            var outputs = rollOutputs(server, input);
-            if (outputs == null || !canQueueAll(outputs)) break;
-            inventory.extractItem(0, 1, false);
-            queueAll(outputs);
-            completed++;
-        }
+        int completed = behavior().completeCycles(this, server, laneLimit);
         if (completed > 0) setChanged();
         return completed;
     }
@@ -202,22 +205,18 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         sendData();
     }
 
-    private boolean hasRecipe(ServerLevel server, ItemStack input) {
-        return KineticProcessBehavior.forKind(kind()).canProcess(this, server, input);
-    }
-
-    private List<ItemStack> rollOutputs(ServerLevel server, ItemStack input) {
-        return KineticProcessBehavior.forKind(kind()).process(this, server, input);
-    }
 
     Optional<CatalystDefinition> catalystDefinition() {
         return catalystId == null ? Optional.empty() : CatalystRegistry.get(catalystId);
     }
 
+    private int outputStart() { return behavior().outputStart(); }
+    private int outputEnd() { return behavior().outputEnd(); }
+
     private void flushOutputs() {
         var grid = gridNode.getGrid();
         if (grid == null) return;
-        for (int slot = OUTPUT_START; slot < OUTPUT_END; slot++) {
+        for (int slot = outputStart(); slot < outputEnd(); slot++) {
             var stack = inventory.getStackInSlot(slot);
             var key = AEItemKey.of(stack);
             if (key == null) continue;
@@ -228,9 +227,24 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         }
     }
 
-    private boolean canQueueAll(List<ItemStack> outputs) {
-        var copy = new ItemStackHandler(OUTPUT_END - OUTPUT_START);
-        for (int i = 0; i < copy.getSlots(); i++) copy.setStackInSlot(i, inventory.getStackInSlot(i + OUTPUT_START).copy());
+    private void flushFluidOutputs() {
+        if (!behavior().supportsFluids()) return;
+        var grid = gridNode.getGrid();
+        if (grid == null) return;
+        for (int tank = 0; tank < BasinFluidBuffer.TANKS; tank++) {
+            var stack = basinFluids.getFluidInTank(BasinFluidBuffer.TANKS + tank);
+            var key = AEFluidKey.of(stack);
+            if (key == null) continue;
+            long inserted = StorageHelper.poweredInsert(
+                    grid.getEnergyService(), grid.getStorageService().getInventory(), key,
+                    stack.getAmount(), IActionSource.ofMachine(this), Actionable.MODULATE);
+            if (inserted > 0) basinFluids.drain(stack.copyWithAmount((int) inserted), IFluidHandler.FluidAction.EXECUTE);
+        }
+    }
+
+    boolean canQueueAll(List<ItemStack> outputs) {
+        var copy = new ItemStackHandler(outputEnd() - outputStart());
+        for (int i = 0; i < copy.getSlots(); i++) copy.setStackInSlot(i, inventory.getStackInSlot(i + outputStart()).copy());
         for (var output : outputs) {
             var rest = output.copy();
             for (int slot = 0; slot < copy.getSlots() && !rest.isEmpty(); slot++) rest = copy.insertItem(slot, rest, false);
@@ -239,10 +253,10 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         return true;
     }
 
-    private void queueAll(List<ItemStack> outputs) {
+    void queueAll(List<ItemStack> outputs) {
         for (var output : outputs) {
             var rest = output.copy();
-            for (int slot = OUTPUT_START; slot < OUTPUT_END && !rest.isEmpty(); slot++) {
+            for (int slot = outputStart(); slot < outputEnd() && !rest.isEmpty(); slot++) {
                 var existing = inventory.getStackInSlot(slot);
                 if (existing.isEmpty()) {
                     inventory.setStackInSlot(slot, rest);
@@ -270,6 +284,9 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         tag.putFloat("work", work);
         tag.putInt("parallelLanes", parallelLanes);
         tag.putInt("activeLanes", activeLanes);
+        var fluidsTag = new CompoundTag();
+        basinFluids.write(fluidsTag, registries);
+        tag.put("basinFluids", fluidsTag);
         if (catalystId != null) {
             tag.putString("catalystId", catalystId.toString());
             tag.put("catalystStack", catalystStack.saveOptional(registries));
@@ -289,6 +306,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         parallelLanes = Math.max(1, tag.getInt("parallelLanes"));
         activeLanes = Math.max(0, tag.getInt("activeLanes"));
         if (!clientPacket) parallelTopologyDirty = true;
+        if (tag.contains("basinFluids")) basinFluids.read(tag.getCompound("basinFluids"), registries);
         catalystId = tag.contains("catalystId") ? ResourceLocation.tryParse(tag.getString("catalystId")) : null;
         catalystStack = tag.contains("catalystStack")
                 ? ItemStack.parseOptional(registries, tag.getCompound("catalystStack")) : ItemStack.EMPTY;

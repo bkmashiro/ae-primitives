@@ -8,12 +8,59 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 
 interface KineticProcessBehavior {
+    int DEFAULT_OUTPUT_START = 1;
+    int DEFAULT_OUTPUT_END = 10;
+    int BASIN_OUTPUT_START = KineticMachineBlockEntity.BASIN_INPUT_SLOTS;
+    int BASIN_OUTPUT_END = 18;
+
     boolean canProcess(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input);
 
     List<ItemStack> process(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input);
 
+    default boolean acceptsInput(int slot) {
+        return slot == 0;
+    }
+
+    default int outputStart() {
+        return DEFAULT_OUTPUT_START;
+    }
+
+    default int outputEnd() {
+        return DEFAULT_OUTPUT_END;
+    }
+
+    default boolean supportsFluids() {
+        return false;
+    }
+
+    default int requestedLanes(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+        var input = machine.inventory().getStackInSlot(0);
+        return !input.isEmpty() && canProcess(machine, level, input)
+                ? Math.min(laneLimit, input.getCount())
+                : 0;
+    }
+
+    default int completeCycles(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+        int completed = 0;
+        for (int lane = 0; lane < laneLimit; lane++) {
+            var input = machine.inventory().getStackInSlot(0);
+            if (input.isEmpty()) break;
+            // Invoke processing per lane so probabilistic recipes roll independently.
+            var outputs = process(machine, level, input);
+            if (outputs == null || !machine.canQueueAll(outputs)) break;
+            machine.inventory().extractItem(0, 1, false);
+            machine.queueAll(outputs);
+            completed++;
+        }
+        return completed;
+    }
+
     static KineticProcessBehavior forKind(KineticMachineKind kind) {
-        return kind == KineticMachineKind.FAN ? Fan.INSTANCE : CreateRecipe.INSTANCE;
+        return switch (kind) {
+            case FAN -> Fan.INSTANCE;
+            case BASIN -> Basin.INSTANCE;
+            default -> CreateRecipe.INSTANCE;
+        };
     }
 
     enum CreateRecipe implements KineticProcessBehavior {
@@ -67,6 +114,57 @@ interface KineticProcessBehavior {
                         }
                     })
                     .orElse(null);
+        }
+    }
+
+    enum Basin implements KineticProcessBehavior {
+        INSTANCE;
+
+        @Override
+        public boolean canProcess(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            return BasinProcessPlan.find(machine, level) != null;
+        }
+
+        @Override
+        public List<ItemStack> process(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            throw new UnsupportedOperationException("Basin recipes commit through their multi-input process plan");
+        }
+
+        @Override
+        public boolean acceptsInput(int slot) {
+            return slot < KineticMachineBlockEntity.BASIN_INPUT_SLOTS;
+        }
+
+        @Override
+        public int outputStart() {
+            return BASIN_OUTPUT_START;
+        }
+
+        @Override
+        public int outputEnd() {
+            return BASIN_OUTPUT_END;
+        }
+
+        @Override
+        public boolean supportsFluids() {
+            return true;
+        }
+
+        @Override
+        public int requestedLanes(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            var plan = BasinProcessPlan.find(machine, level);
+            return plan == null ? 0 : plan.availableRuns(machine, laneLimit);
+        }
+
+        @Override
+        public int completeCycles(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            int completed = 0;
+            for (int lane = 0; lane < laneLimit; lane++) {
+                var plan = BasinProcessPlan.find(machine, level);
+                if (plan == null || !plan.commit(machine, level)) break;
+                completed++;
+            }
+            return completed;
         }
     }
 }

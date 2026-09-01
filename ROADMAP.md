@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Implement the ME Basin Processor as the first additional Create atomic-operation machine, reusing spatial lanes and preserving Create heat/stress semantics.
+Implement the ME Filling Station for Create Filling and Emptying recipes, reusing the verified multi-resource process behavior and spatial lanes while preserving container components and remainders.
 
 ## 1. Spatial parallel blocks
 

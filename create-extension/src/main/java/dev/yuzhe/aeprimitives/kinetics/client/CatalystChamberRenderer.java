@@ -27,12 +27,48 @@ public final class CatalystChamberRenderer extends KineticBlockEntityRenderer<Ki
                               MultiBufferSource buffers, int light, int overlay) {
         super.renderSafe(machine, partialTicks, pose, buffers, light, overlay);
         renderLaneStatus(machine, pose, buffers, light);
+        if (machine.kind() == KineticMachineKind.BASIN) {
+            renderBasinContents(machine, pose, buffers, light, overlay);
+            return;
+        }
         if (machine.kind() != KineticMachineKind.FAN || machine.catalystId().isEmpty()) return;
         var visual = machine.catalystVisual();
         switch (visual.kind()) {
             case FLUID -> renderFluid(machine, visual, pose, buffers, light, overlay);
             case BLOCK -> renderBlock(machine, visual, pose, buffers, light, overlay);
             case ITEM -> renderItem(machine, pose, buffers, light, overlay);
+        }
+    }
+
+    private static void renderBasinContents(KineticMachineBlockEntity machine, PoseStack pose,
+                                            MultiBufferSource buffers, int light, int overlay) {
+        var fluidStack = machine.basinFluidVisual();
+        if (!fluidStack.isEmpty()) {
+            var state = fluidStack.getFluid().defaultFluidState();
+            var extension = IClientFluidTypeExtensions.of(state);
+            var texture = extension.getStillTexture(state, machine.getLevel(), machine.getBlockPos());
+            var sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
+            int tint = extension.getTintColor(state, machine.getLevel(), machine.getBlockPos());
+            int alpha = tint >>> 24; if (alpha == 0) alpha = 220;
+            int red = tint >> 16 & 255, green = tint >> 8 & 255, blue = tint & 255;
+            float y = .28f + .38f * Math.min(1, fluidStack.getAmount() / 4000f);
+            var consumer = buffers.getBuffer(RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS));
+            quad(consumer, pose.last().pose(), .2f,y,.2f, .2f,y,.8f, .8f,y,.8f, .8f,y,.2f,
+                    sprite.getU0(),sprite.getV0(),sprite.getU1(),sprite.getV1(), red,green,blue,alpha,
+                    Math.max(light, LightTexture.FULL_BRIGHT / 2), 0,1,0);
+        }
+        int rendered = 0;
+        for (int slot = 0; slot < KineticMachineBlockEntity.BASIN_INPUT_SLOTS && rendered < 3; slot++) {
+            var stack = machine.inventory().getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            pose.pushPose();
+            pose.translate(.36 + rendered * .14, .54, .5);
+            pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(90));
+            pose.scale(.28f, .28f, .28f);
+            Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemDisplayContext.FIXED,
+                    light, overlay, pose, buffers, machine.getLevel(), slot);
+            pose.popPose();
+            rendered++;
         }
     }
 

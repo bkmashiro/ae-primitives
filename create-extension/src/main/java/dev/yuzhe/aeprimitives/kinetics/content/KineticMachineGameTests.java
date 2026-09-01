@@ -1,14 +1,20 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
+import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -130,6 +136,59 @@ public final class KineticMachineGameTests {
                 "Catalyst chamber did not complete three independent lanes");
         helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "Catalyst chamber did not consume one input per lane");
         helper.assertTrue(machine.catalystId().isPresent(), "Parallel lanes consumed the shared catalyst");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void basinRunsItemMixingAndCompactingRecipes(GameTestHelper helper) {
+        var machine = place(helper, KineticsContent.ME_BASIN_PROCESSOR.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.ANDESITE));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.IRON_NUGGET));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Basin did not mix andesite alloy");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty()
+                && machine.inventory().getStackInSlot(1).isEmpty(), "Basin did not consume mixing ingredients");
+        for (int slot = 0; slot < 9; slot++) machine.inventory().setStackInSlot(slot, new ItemStack(Items.SNOW_BLOCK));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Basin did not compact nine snow blocks");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void basinConsumesAndProducesFluids(GameTestHelper helper) {
+        var machine = place(helper, KineticsContent.ME_BASIN_PROCESSOR.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.DIRT));
+        machine.fluids().fill(new FluidStack(Fluids.WATER, 250), IFluidHandler.FluidAction.EXECUTE);
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Basin did not run a fluid-input mud recipe");
+        helper.assertTrue(machine.fluids().getFluidInTank(0).isEmpty(), "Basin did not consume recipe fluid");
+
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.HONEY_BLOCK));
+        helper.setBlock(MACHINE.below(), BuiltInRegistries.BLOCK
+                .get(ResourceLocation.fromNamespaceAndPath("create", "blaze_burner"))
+                .defaultBlockState()
+                .setValue(BlazeBurnerBlock.HEAT_LEVEL, BlazeBurnerBlock.HeatLevel.KINDLED));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Heated Basin recipe did not run above a kindled burner");
+        var fluidOutput = machine.fluids().drain(1000, IFluidHandler.FluidAction.SIMULATE);
+        helper.assertTrue(!fluidOutput.isEmpty() && fluidOutput.getAmount() == 1000,
+                "Basin did not retain its fluid result for network extraction");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void basinHonorsCreateHeatAndSpatialLanes(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_BASIN_PROCESSOR.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.COPPER_INGOT));
+        machine.inventory().setStackInSlot(1, new ItemStack(BuiltInRegistries.ITEM
+                .get(ResourceLocation.fromNamespaceAndPath("create", "zinc_ingot"))));
+        helper.assertTrue(!machine.completeCycle(helper.getLevel()), "Heated brass recipe ran without a heat source");
+        helper.setBlock(MACHINE.below(), BuiltInRegistries.BLOCK
+                .get(ResourceLocation.fromNamespaceAndPath("create", "blaze_burner"))
+                .defaultBlockState()
+                .setValue(BlazeBurnerBlock.HEAT_LEVEL, BlazeBurnerBlock.HeatLevel.KINDLED));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Basin ignored a valid Create heat source");
+
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.ANDESITE, 3));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.IRON_NUGGET, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "Basin did not execute three independently committed spatial lanes");
         helper.succeed();
     }
 

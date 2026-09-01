@@ -7,5 +7,6 @@
   "itemGroup.aeprimitives_kinetics": "AE Primitives: Kinetics",
   "block.aeprimitives_kinetics.me_press": "ME Kinetic Press",
   "block.aeprimitives_kinetics.me_crusher": "ME Crushing Chamber",
-  "block.aeprimitives_kinetics.me_catalyst_chamber": "ME Catalyst Processing Chamber"
+  "block.aeprimitives_kinetics.me_catalyst_chamber": "ME Catalyst Processing Chamber",
+  "block.aeprimitives_kinetics.me_basin_processor": "ME Basin Processor"
 }

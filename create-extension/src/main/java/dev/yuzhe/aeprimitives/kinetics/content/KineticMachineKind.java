@@ -6,7 +6,8 @@ import dev.yuzhe.aeprimitives.content.MachineTier;
 public enum KineticMachineKind {
     PRESS("me_press", AllRecipeTypes.PRESSING, 8.0f, MachineTier.ADVANCED, 8),
     CRUSHER("me_crusher", AllRecipeTypes.CRUSHING, 16.0f, MachineTier.ADVANCED, 8),
-    FAN("me_catalyst_chamber", null, 8.0f, MachineTier.ADVANCED, 8);
+    FAN("me_catalyst_chamber", null, 8.0f, MachineTier.ADVANCED, 8),
+    BASIN("me_basin_processor", null, 16.0f, MachineTier.ADVANCED, 8);
 
     private final String id;
     private final AllRecipeTypes recipeType;
