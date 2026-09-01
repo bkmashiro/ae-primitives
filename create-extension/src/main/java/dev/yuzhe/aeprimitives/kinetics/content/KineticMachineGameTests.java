@@ -262,22 +262,113 @@ public final class KineticMachineGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty")
-    public static void importedSequencesCompleteThroughOperationMachines(GameTestHelper helper) {
-        var press = placeAt(helper, new BlockPos(1, 1, 1), KineticsContent.ME_PRESS.get());
-        var filling = placeAt(helper, new BlockPos(3, 1, 1), KineticsContent.ME_FILLING_STATION.get());
-        var deployer = placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_DEPLOYER.get());
-        for (var machine : java.util.List.of(press, filling, deployer)) {
-            helper.assertTrue(appeng.api.implementations.blockentities.ICraftingMachine.of(
-                            helper.getLevel(), machine.getBlockPos(), Direction.NORTH) == machine,
-                    "AE could not discover the operation machine target");
-        }
+    @GameTest(template = "empty", timeoutTicks = 3000)
+    public static void importedSequenceCompletesThroughAeCraftingService(GameTestHelper helper) {
+        BlockPos providerPos = new BlockPos(4, 2, 4);
+        BlockPos sequencePos = providerPos.south();
+        BlockPos drivePos = providerPos.below();
+        BlockPos controllerPos = providerPos.above();
+        BlockPos cpuPos = controllerPos.above();
+        BlockPos energyPos = cpuPos.above();
+        var press = placeAt(helper, providerPos.east(), KineticsContent.ME_PRESS.get());
+        var filling = placeAt(helper, providerPos.west(), KineticsContent.ME_FILLING_STATION.get());
+        var deployer = placeAt(helper, providerPos.north(), KineticsContent.ME_DEPLOYER.get());
+        helper.setBlock(providerPos, AEBlocks.PATTERN_PROVIDER.block());
+        helper.setBlock(sequencePos, AEBlocks.PATTERN_PROVIDER.block());
+        helper.setBlock(drivePos, AEBlocks.DRIVE.block());
+        helper.setBlock(cpuPos, AEBlocks.CRAFTING_STORAGE_64K.block());
+        helper.setBlock(controllerPos, AEBlocks.CONTROLLER.block());
+        helper.setBlock(energyPos, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(providerPos.east().above(), AEBlocks.ENERGY_CELL.block());
+        helper.setBlock(providerPos.west().above(), AEBlocks.ENERGY_CELL.block());
+        helper.setBlock(providerPos.north().above(), AEBlocks.ENERGY_CELL.block());
+        helper.setBlock(sequencePos.above(), AEBlocks.ENERGY_CELL.block());
 
-        var sturdy = importSequence(helper, ResourceLocation.fromNamespaceAndPath("create", "sequenced_assembly/sturdy_sheet"));
-        runImportedSequence(helper, sturdy.steps(), press, filling, deployer);
-        var track = importSequence(helper, ResourceLocation.fromNamespaceAndPath("create", "sequenced_assembly/track"));
-        runImportedSequence(helper, track.steps(), press, filling, deployer);
-        helper.succeed();
+        var operationProvider = (appeng.blockentity.crafting.PatternProviderBlockEntity) helper.getBlockEntity(providerPos);
+        var sequenceProvider = (appeng.blockentity.crafting.PatternProviderBlockEntity) helper.getBlockEntity(sequencePos);
+        var drive = (appeng.blockentity.storage.DriveBlockEntity) helper.getBlockEntity(drivePos);
+        drive.getInternalInventory().setItemDirect(0, appeng.core.definitions.AEItems.ITEM_CELL_64K.stack());
+        drive.getInternalInventory().setItemDirect(1, appeng.core.definitions.AEItems.FLUID_CELL_64K.stack());
+
+        ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath("create", "sequenced_assembly/sturdy_sheet");
+        var sequence = importSequence(helper, recipeId);
+        var operationKinds = sequence.steps().stream().map(OperationStepSpec::operation).distinct().toList();
+        helper.assertTrue(operationKinds.size() <= operationProvider.getLogic().getPatternInv().size(),
+                "imported sequence needs more operation markers than one provider can hold");
+        for (int slot = 0; slot < operationKinds.size(); slot++) {
+            operationProvider.getLogic().getPatternInv().setItemDirect(slot,
+                    dev.yuzhe.aeprimitives.operation.OperationPatternData.encode(
+                            ModContent.OPERATION_PATTERN.get(),
+                            dev.yuzhe.aeprimitives.operation.OperationPatternSpec.all(operationKinds.get(slot))));
+        }
+        sequenceProvider.getLogic().getPatternInv().setItemDirect(0,
+                dev.yuzhe.aeprimitives.sequence.SequencePatternData.encode(
+                        ModContent.SEQUENCE_PATTERN.get(), recipeId));
+
+        var target = sequence.steps().getLast().outputs().getFirst();
+        var calculation = new java.util.concurrent.Future<?>[1];
+        var submittedCpu = new appeng.api.networking.crafting.ICraftingCPU[1];
+        boolean[] submitted = {false};
+        boolean[] stocked = {false};
+        helper.onEachTick(() -> {
+            press.setSpeed(256);
+            filling.setSpeed(256);
+            deployer.setSpeed(256);
+            var grid = operationProvider.getLogic().getGrid();
+            if (grid == null) return;
+            var crafting = grid.getCraftingService();
+            if (!stocked[0]) {
+                helper.assertTrue(crafting.isCraftable(target.what()),
+                        "AE did not index the imported sequence final output");
+                for (var step : sequence.steps()) {
+                    helper.assertTrue(crafting.getCraftingFor(step.outputs().getFirst().what()).stream()
+                                    .anyMatch(BoundOperationPattern.class::isInstance),
+                            "AE did not index bound step " + step.recipeId());
+                }
+                if (!stockImportedSequence(grid, sequence)) return;
+                stocked[0] = true;
+                return;
+            }
+            if (calculation[0] == null) {
+                var source = appeng.api.networking.security.IActionSource.ofMachine(operationProvider);
+                calculation[0] = crafting.beginCraftingCalculation(
+                        helper.getLevel(),
+                        () -> source,
+                        target.what(), target.amount(),
+                        appeng.api.networking.crafting.CalculationStrategy.REPORT_MISSING_ITEMS);
+                return;
+            }
+            if (!submitted[0]) {
+                if (!calculation[0].isDone() || crafting.getCpus().isEmpty()) return;
+                appeng.api.networking.crafting.ICraftingPlan plan;
+                try {
+                    plan = (appeng.api.networking.crafting.ICraftingPlan) calculation[0].get();
+                } catch (Exception e) {
+                    throw new AssertionError("AE crafting calculation failed", e);
+                }
+                helper.assertTrue(!plan.simulation() && plan.missingItems().isEmpty(),
+                        "AE could not plan the imported sequence; missing "
+                                + plan.missingItems().keySet().stream()
+                                .map(key -> key + " x" + plan.missingItems().get(key)).toList());
+                var cpu = crafting.getCpus().stream().filter(candidate -> !candidate.isBusy()).findFirst().orElse(null);
+                if (cpu == null) return;
+                var submittedResult = crafting.submitJob(
+                        plan, null, cpu, false,
+                        appeng.api.networking.security.IActionSource.ofMachine(operationProvider));
+                helper.assertTrue(submittedResult.successful(),
+                        "AE rejected imported sequence job: " + submittedResult.errorCode());
+                submittedCpu[0] = cpu;
+                submitted[0] = true;
+                return;
+            }
+            if (submittedCpu[0].isBusy()) return;
+            long available = grid.getStorageService().getInventory().extract(
+                    target.what(), target.amount(), appeng.api.config.Actionable.SIMULATE,
+                    appeng.api.networking.security.IActionSource.empty());
+            helper.assertTrue(available == target.amount(),
+                    "completed imported sequence did not return its final output to ME storage");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty")
@@ -671,36 +762,36 @@ public final class KineticMachineGameTests {
         return result.sequence();
     }
 
-    private static void runImportedSequence(
-            GameTestHelper helper,
-            java.util.List<OperationStepSpec> steps,
-            KineticMachineBlockEntity press,
-            KineticMachineBlockEntity filling,
-            KineticMachineBlockEntity deployer) {
-        appeng.api.stacks.GenericStack previous = null;
-        for (var step : steps) {
-            var holders = new KeyCounter[step.inputs().size()];
-            for (int input = 0; input < holders.length; input++) {
-                var selected = input == 0 && previous != null
-                        ? previous
-                        : step.inputs().get(input).alternatives().getFirst();
-                holders[input] = new KeyCounter();
-                holders[input].add(selected.what(), selected.amount());
+    private static boolean stockImportedSequence(
+            appeng.api.networking.IGrid grid,
+            dev.yuzhe.aeprimitives.sequence.SequencePatternSpec sequence) {
+        var seeds = new java.util.LinkedHashMap<appeng.api.stacks.AEKey, Long>();
+        for (int stepIndex = 0; stepIndex < sequence.steps().size(); stepIndex++) {
+            var step = sequence.steps().get(stepIndex);
+            for (int inputIndex = 0; inputIndex < step.inputs().size(); inputIndex++) {
+                if (inputIndex == 0 && stepIndex > 0) continue;
+                var input = step.inputs().get(inputIndex);
+                var selected = input.alternatives().getFirst();
+                if (selected.what().equals(input.remainingKey())) {
+                    seeds.merge(selected.what(), selected.amount(), Math::max);
+                } else {
+                    seeds.merge(selected.what(), selected.amount(), Math::addExact);
+                }
             }
-            var machine = machineFor(step, press, filling, deployer);
-            var pattern = new BoundOperationPattern(step, ModContent.OPERATION_PATTERN.get());
-            helper.assertTrue(machine.pushPattern(pattern, holders, Direction.NORTH),
-                    "Machine rejected imported operation " + step.operation());
-            for (var holder : holders) {
-                holder.removeZeros();
-                helper.assertTrue(holder.isEmpty(), "Machine did not claim all dispatched inputs");
-            }
-            helper.assertTrue(machine.completeDispatchedPlans() == 1,
-                    "Imported operation did not complete in its machine lane");
-            previous = step.outputs().getFirst();
-            helper.assertTrue(extractOutput(machine, previous),
-                    "Machine did not emit the sequence component expected by the next AE pattern");
         }
+        var storage = grid.getStorageService().getInventory();
+        var source = appeng.api.networking.security.IActionSource.empty();
+        for (var seed : seeds.entrySet()) {
+            long inserted = storage.insert(seed.getKey(), seed.getValue(), appeng.api.config.Actionable.SIMULATE, source);
+            if (inserted != seed.getValue()) return false;
+        }
+        seeds.forEach((key, amount) -> {
+            long inserted = storage.insert(key, amount, appeng.api.config.Actionable.MODULATE, source);
+            if (inserted != amount) {
+                throw new AssertionError("ME test storage accepted " + inserted + " of " + amount + " " + key);
+            }
+        });
+        return true;
     }
 
     private static KeyCounter[] holdersFor(OperationStepSpec step) {
@@ -713,28 +804,6 @@ public final class KineticMachineGameTests {
         return holders;
     }
 
-    private static KineticMachineBlockEntity machineFor(
-            OperationStepSpec step,
-            KineticMachineBlockEntity press,
-            KineticMachineBlockEntity filling,
-            KineticMachineBlockEntity deployer) {
-        if (KineticMachineKind.PRESS.acceptsOperation(step.operation())) return press;
-        if (KineticMachineKind.FILLING.acceptsOperation(step.operation())) return filling;
-        if (KineticMachineKind.DEPLOYER.acceptsOperation(step.operation())) return deployer;
-        throw new IllegalArgumentException("No acceptance machine for " + step.operation());
-    }
-
-    private static boolean extractOutput(
-            KineticMachineBlockEntity machine, appeng.api.stacks.GenericStack expected) {
-        if (!(expected.what() instanceof appeng.api.stacks.AEItemKey itemKey)) return false;
-        for (int slot = 0; slot < machine.inventory().getSlots(); slot++) {
-            var stack = machine.inventory().getStackInSlot(slot);
-            if (!itemKey.matches(stack) || stack.getCount() < expected.amount()) continue;
-            machine.inventory().extractItem(slot, (int) expected.amount(), false);
-            return true;
-        }
-        return false;
-    }
 
     private static boolean hasQueuedOutput(KineticMachineBlockEntity machine) {
         for (int slot = 1; slot < machine.inventory().getSlots(); slot++) {

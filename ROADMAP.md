@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Replace the manual imported-sequence test driver with a real AE crafting-service path. A live sequence macro and operation capabilities must publish concrete dependency patterns, AE must plan and dispatch the chain through the matching Create machines, and intermediate items must return through normal ME storage rather than test-side extraction and direct `pushPattern` calls.
+Add the remaining secondary Create atomic operations on `KineticProcessBehavior`: ME Sawing, ME Milling and ME Sandpaper Polishing. Each machine must publish a distinct operation capability, preserve the source recipe's input, tool and probabilistic-output semantics, return results through normal ME storage, and remain usable as an independently dispatched AE processing step. Reuse the now-verified real AE crafting-service fixture instead of adding a coordinator or test-side routing.
 
 ## 1. Spatial parallel blocks
 

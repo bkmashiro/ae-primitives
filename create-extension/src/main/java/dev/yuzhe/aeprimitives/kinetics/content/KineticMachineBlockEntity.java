@@ -60,6 +60,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
             };
 
     private final IManagedGridNode gridNode = GridHelper.createManagedNode(this, NODE_LISTENER)
+            .setInWorldNode(true)
             .setFlags(GridFlags.REQUIRE_CHANNEL)
             .setExposedOnSides(EnumSet.allOf(Direction.class))
             .setIdlePowerUsage(2.0);
@@ -75,6 +76,8 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     private ItemStack catalystStack = ItemStack.EMPTY;
     private CatalystVisual catalystVisual = CatalystVisual.item();
     private boolean parallelTopologyDirty = true;
+    private boolean gridTopologyDirty = true;
+    private int gridBootstrapTicks = 20;
     private int parallelLanes = 1;
     private int activeLanes;
     private final List<DispatchedOperationPlan> dispatchedPlans = new ArrayList<>();
@@ -173,9 +176,37 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         return gridNode.isActive() && !isOverStressed() && Math.abs(getSpeed()) >= MIN_SPEED;
     }
 
+    void markGridTopologyDirty() {
+        gridTopologyDirty = true;
+    }
+
+    private void refreshGridConnections() {
+        if (level == null || level.isClientSide || !gridNode.isReady()
+                || (!gridTopologyDirty && gridBootstrapTicks <= 0)) return;
+        if (gridBootstrapTicks > 0) gridBootstrapTicks--;
+        var node = gridNode.getNode();
+        boolean pendingNeighbor = false;
+        for (var direction : Direction.values()) {
+            if (node.getInWorldConnections().containsKey(direction)) continue;
+            var neighborPos = worldPosition.relative(direction);
+            var host = GridHelper.getNodeHost(level, neighborPos);
+            if (host == null) continue;
+            var neighbor = GridHelper.getExposedNode(level, neighborPos, direction.getOpposite());
+            if (neighbor == null) {
+                pendingNeighbor = true;
+            } else if (neighbor != node && node.getConnections().stream()
+                    .noneMatch(connection -> connection.getOtherSide(node) == neighbor)) {
+                GridHelper.createConnection(node, neighbor);
+            }
+        }
+        gridTopologyDirty = pendingNeighbor;
+    }
+
     @Override public void initialize() {
         super.initialize();
         parallelTopologyDirty = true;
+        gridTopologyDirty = true;
+        gridBootstrapTicks = 20;
         if (level != null && !level.isClientSide && !gridNode.isReady()) {
             gridNode.setVisualRepresentation(getBlockState().getBlock());
             gridNode.create(level, worldPosition);
@@ -185,6 +216,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     @Override public void tick() {
         super.tick();
         if (!(level instanceof ServerLevel server)) return;
+        refreshGridConnections();
         flushOutputs();
         flushFluidOutputs();
         if (!dispatchedPlans.isEmpty()) {
