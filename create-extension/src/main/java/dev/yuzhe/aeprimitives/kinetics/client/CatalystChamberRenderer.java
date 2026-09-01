@@ -27,7 +27,7 @@ public final class CatalystChamberRenderer extends KineticBlockEntityRenderer<Ki
                               MultiBufferSource buffers, int light, int overlay) {
         super.renderSafe(machine, partialTicks, pose, buffers, light, overlay);
         renderLaneStatus(machine, pose, buffers, light);
-        if (machine.kind() == KineticMachineKind.BASIN) {
+        if (machine.kind() == KineticMachineKind.BASIN || machine.kind() == KineticMachineKind.FILLING) {
             renderBasinContents(machine, pose, buffers, light, overlay);
             return;
         }

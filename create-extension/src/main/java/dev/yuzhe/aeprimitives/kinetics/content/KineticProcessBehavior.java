@@ -59,6 +59,7 @@ interface KineticProcessBehavior {
         return switch (kind) {
             case FAN -> Fan.INSTANCE;
             case BASIN -> Basin.INSTANCE;
+            case FILLING -> Filling.INSTANCE;
             default -> CreateRecipe.INSTANCE;
         };
     }
@@ -161,6 +162,39 @@ interface KineticProcessBehavior {
             int completed = 0;
             for (int lane = 0; lane < laneLimit; lane++) {
                 var plan = BasinProcessPlan.find(machine, level);
+                if (plan == null || !plan.commit(machine, level)) break;
+                completed++;
+            }
+            return completed;
+        }
+    }
+
+    enum Filling implements KineticProcessBehavior {
+        INSTANCE;
+
+        @Override
+        public boolean canProcess(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            return FillingProcessPlan.find(machine, level) != null;
+        }
+
+        @Override
+        public List<ItemStack> process(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            throw new UnsupportedOperationException("Filling recipes commit through their fluid process plan");
+        }
+
+        @Override public boolean supportsFluids() { return true; }
+
+        @Override
+        public int requestedLanes(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            var plan = FillingProcessPlan.find(machine, level);
+            return plan == null ? 0 : plan.availableRuns(machine, laneLimit);
+        }
+
+        @Override
+        public int completeCycles(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            int completed = 0;
+            for (int lane = 0; lane < laneLimit; lane++) {
+                var plan = FillingProcessPlan.find(machine, level);
                 if (plan == null || !plan.commit(machine, level)) break;
                 completed++;
             }

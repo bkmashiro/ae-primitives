@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SAS",
+    "PFP",
+    "SCS"
+  ],
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "P": {
+      "item": "create:spout"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "C": {
+      "item": "create:copper_casing"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_filling_station"
+  }
+}

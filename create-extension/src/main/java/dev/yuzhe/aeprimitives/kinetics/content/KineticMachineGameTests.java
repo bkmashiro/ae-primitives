@@ -193,6 +193,35 @@ public final class KineticMachineGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void fillingStationFillsAcrossSpatialLanes(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_FILLING_STATION.get());
+        var honey = BuiltInRegistries.FLUID.get(ResourceLocation.fromNamespaceAndPath("create", "honey"));
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.GLASS_BOTTLE, 3));
+        machine.fluids().fill(new FluidStack(honey, 750), IFluidHandler.FluidAction.EXECUTE);
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "Filling station did not complete three independent lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(),
+                "Filling station did not consume one container per lane");
+        helper.assertTrue(machine.fluids().getFluidInTank(0).isEmpty(),
+                "Filling station did not consume fluid linearly with lane count");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void fillingStationEmptiesContainersToFluidOutput(GameTestHelper helper) {
+        var machine = place(helper, KineticsContent.ME_FILLING_STATION.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.HONEY_BOTTLE));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Filling station did not run an Emptying recipe");
+        var output = machine.fluids().drain(250, IFluidHandler.FluidAction.SIMULATE);
+        helper.assertTrue(output.getAmount() == 250
+                        && BuiltInRegistries.FLUID.getKey(output.getFluid()).equals(
+                                ResourceLocation.fromNamespaceAndPath("create", "honey")),
+                "Emptying recipe did not retain its fluid output");
+        helper.assertTrue(hasQueuedOutput(machine), "Emptying recipe did not retain its container result");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void activeLanesScaleStressLinearly(GameTestHelper helper) {
         var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));

@@ -84,6 +84,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
 
     public ItemStackHandler inventory() { return inventory; }
     public IFluidHandler fluids() { return basinFluids; }
+    public boolean supportsFluids() { return behavior().supportsFluids(); }
     public net.neoforged.neoforge.fluids.FluidStack basinFluidVisual() { return basinFluids.firstInput(); }
     BasinFluidBuffer basinFluids() { return basinFluids; }
     public float workFraction() { return Math.min(1.0f, work / WORK_PER_RECIPE); }

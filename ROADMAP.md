@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Implement the ME Filling Station for Create Filling and Emptying recipes, reusing the verified multi-resource process behavior and spatial lanes while preserving container components and remainders.
+Implement the ME Deployer for Create Deploying recipes, preserving installed tool identity, durability and remainders while reusing spatial lanes without fake-player world interaction.
 
 ## 1. Spatial parallel blocks
 
