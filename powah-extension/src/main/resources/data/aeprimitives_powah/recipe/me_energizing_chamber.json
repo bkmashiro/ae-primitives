@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ENE",
+    "FOF",
+    "ENE"
+  ],
+  "key": {
+    "E": {
+      "item": "powah:capacitor_niotic"
+    },
+    "N": {
+      "item": "ae2:fluix_crystal"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "O": {
+      "item": "powah:energizing_orb"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_powah:me_energizing_chamber",
+    "count": 1
+  }
+}

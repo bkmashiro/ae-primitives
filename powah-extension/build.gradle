@@ -1,0 +1,34 @@
+plugins { id 'java'; id 'net.neoforged.moddev' version '2.0.78' }
+group='dev.yuzhe.aeprimitives'; version=rootProject.version
+base { archivesName='ae-primitives-powah' }
+repositories {
+ maven { url='https://maven.blamejared.com' }
+ exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } }
+}
+dependencies {
+ implementation project(':')
+ implementation "maven.modrinth:ae2:${ae2_version}"
+ implementation 'maven.modrinth:powah:6.2.10-neoforge'
+ runtimeOnly 'maven.modrinth:cloth-config:15.0.140+neoforge'
+ runtimeOnly 'maven.modrinth:guideme:21.1.10'
+}
+neoForge {
+ version='21.1.243'
+ parchment { minecraftVersion='1.21.1'; mappingsVersion='2024.11.17' }
+ runs {
+  client { client(); gameDirectory=file('run/client') }
+  server { server(); gameDirectory=file('run/server'); programArgument '--nogui' }
+  gameTestServer { type='gameTestServer'; gameDirectory=file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives_powah' }
+ }
+ mods {
+  aeprimitives { sourceSet rootProject.sourceSets.main }
+  aeprimitivesPowah { sourceSet sourceSets.main }
+ }
+}
+java { toolchain { languageVersion=JavaLanguageVersion.of(21) } }
+def expandedModVersion=providers.gradleProperty('mod_version').get()
+processResources { inputs.property 'version',expandedModVersion; filesMatching('META-INF/neoforge.mods.toml'){ expand version:expandedModVersion } }
+tasks.named('jar', Jar) {
+ exclude 'dev/yuzhe/aeprimitives/powah/content/PowahGameTests.class'
+ exclude 'data/aeprimitives_powah/structure/empty.nbt'
+}

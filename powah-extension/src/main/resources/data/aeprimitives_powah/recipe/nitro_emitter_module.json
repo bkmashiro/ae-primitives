@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "RFR",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "powah:crystal_nitro"
+    },
+    "R": {
+      "item": "powah:energizing_rod_nitro"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_powah:nitro_emitter_module",
+    "count": 1
+  }
+}

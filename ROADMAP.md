@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Create the Powah extension and verify an ME Energizing Chamber that consumes the exact Energizing Orb recipe inputs and energy, supports independent spatial lanes, and never adds Powah classes to Core.
+Replace the provisional Pure Daisy replacement machine with a stateful AE interface for a real Botania Pure Daisy setup. Botania's world structure and timing remain authoritative; the interface only dispatches materials, tracks owned positions and recovers results.
 
 ## 1. Spatial parallel blocks
 

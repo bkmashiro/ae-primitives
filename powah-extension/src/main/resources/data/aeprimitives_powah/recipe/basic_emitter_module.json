@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "RFR",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "powah:crystal_blazing"
+    },
+    "R": {
+      "item": "powah:energizing_rod_basic"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_powah:basic_emitter_module",
+    "count": 1
+  }
+}
