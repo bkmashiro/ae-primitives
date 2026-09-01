@@ -40,7 +40,8 @@ public final class EnergizingChamberRenderer implements BlockEntityRenderer<MeEn
     }
 
     private static void renderBeam(float progress, PoseStack pose, MultiBufferSource buffers, int overlay) {
-        float intensity = Math.max(.12f, Math.min(1, progress));
+        if (progress <= 0) return;
+        float intensity = Math.min(1, progress);
         float radius = .012f + .035f * intensity;
         int alpha = 48 + Math.round(150 * intensity);
         TextureAtlasSprite sprite = Minecraft.getInstance()

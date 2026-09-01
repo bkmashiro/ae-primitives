@@ -26,6 +26,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -253,6 +254,15 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
 
     @Override public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.handleUpdateTag(tag, registries);
+        readVisualTag(tag, registries);
+    }
+
+    @Override public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet,
+                                       HolderLookup.Provider registries) {
+        readVisualTag(packet.getTag(), registries);
+    }
+
+    private void readVisualTag(CompoundTag tag, HolderLookup.Provider registries) {
         clientVisualItem = ItemStack.parseOptional(registries, tag.getCompound("visualItem"));
         clientVisualProgress = tag.getFloat("visualProgress");
     }

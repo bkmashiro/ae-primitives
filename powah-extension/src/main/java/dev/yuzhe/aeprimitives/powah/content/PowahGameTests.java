@@ -120,16 +120,17 @@ public final class PowahGameTests {
         machine.energy().receiveEnergy(5000, false);
         machine.runExternalEnergyTickForTest();
 
-        CompoundTag visual = machine.getUpdateTag(helper.getLevel().registryAccess());
         var clientCopy = new MeEnergizingChamberBlockEntity(pos, machine.getBlockState());
-        clientCopy.handleUpdateTag(visual, helper.getLevel().registryAccess());
+        clientCopy.onDataPacket(null, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(machine),
+                helper.getLevel().registryAccess());
         helper.assertTrue(clientCopy.visualItem().is(Items.IRON_INGOT),
                 "active renderer state did not preserve the concrete primary input");
         helper.assertTrue(Math.abs(clientCopy.visualProgress() - 0.5f) < 0.001f,
                 "active renderer state did not expose paid versus required FE");
 
         var idle = new MeEnergizingChamberBlockEntity(pos, machine.getBlockState());
-        clientCopy.handleUpdateTag(idle.getUpdateTag(helper.getLevel().registryAccess()),
+        idle.setLevel(helper.getLevel());
+        clientCopy.onDataPacket(null, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(idle),
                 helper.getLevel().registryAccess());
         helper.assertTrue(clientCopy.visualItem().isEmpty() && clientCopy.visualProgress() == 0,
                 "inactive renderer update did not clear stale active presentation state");
