@@ -13,6 +13,7 @@ public final class AePrimitivesPneumatic {
     public AePrimitivesPneumatic(IEventBus bus) {
         bus.addListener(AePrimitivesPneumatic::registerKeyType);
         PneumaticContent.register(bus);
+        PneumaticMetricProviders.register();
     }
 
     private static void registerKeyType(RegisterEvent event) {

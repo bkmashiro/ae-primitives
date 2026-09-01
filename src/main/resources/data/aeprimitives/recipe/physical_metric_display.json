@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["QGQ", "RPR", "QFQ"],
+  "key": {
+    "Q": { "item": "ae2:quartz_vibrant_glass" },
+    "G": { "item": "ae2:calculation_processor" },
+    "R": { "item": "minecraft:redstone" },
+    "P": { "item": "ae2:illuminated_panel" },
+    "F": { "item": "aeprimitives:basic_machine_frame" }
+  },
+  "result": { "id": "aeprimitives:physical_metric_display", "count": 1 }
+}

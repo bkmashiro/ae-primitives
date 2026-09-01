@@ -22,6 +22,10 @@ Ports use PneumaticCraft's native air handler and keep its pressure state across
 
 The ports are an escape hatch for external tube networks. AE Primitives machines that support PneumaticCraft draw from compatible cells anywhere on their ME network without requiring a tube on every machine.
 
+## Physical Metric Display
+
+The Core display attaches to an ME network and shows one selected metric. With this extension installed it can display basic or reinforced pressure, stored air, available volume and the maximum pressure tier. Storage watchers invalidate only the selected metric, so a stable display does not rescan the network every tick. The selection persists across reloads and remains visibly unavailable if its provider disappears.
+
 ## ME Pneumatic Assembly Chamber
 
 - Install a Basic or Reinforced Pneumatic Assembly Head by using it on the chamber. Shift-use the empty hand to remove it.

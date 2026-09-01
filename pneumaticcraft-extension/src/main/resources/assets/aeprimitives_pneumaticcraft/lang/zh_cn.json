@@ -12,5 +12,12 @@
   "key.aeprimitives_pneumatic.basic_compressed_air": "基础压缩空气",
   "key.aeprimitives_pneumatic.reinforced_compressed_air": "强化压缩空气",
   "tooltip.aeprimitives_pneumatic.pressure_rating": "额定压力：%s bar",
-  "tooltip.aeprimitives_pneumatic.normal_drive": "可放入普通 ME 驱动器和 ME 箱子"
+  "tooltip.aeprimitives_pneumatic.normal_drive": "可放入普通 ME 驱动器和 ME 箱子",
+  "metric.aeprimitives_pneumaticcraft.basic_pressure": "基础网络压力",
+  "metric.aeprimitives_pneumaticcraft.reinforced_pressure": "强化网络压力",
+  "metric.aeprimitives_pneumaticcraft.basic_stored_air": "基础空气储量",
+  "metric.aeprimitives_pneumaticcraft.reinforced_stored_air": "强化空气储量",
+  "metric.aeprimitives_pneumaticcraft.basic_volume": "基础空气容积",
+  "metric.aeprimitives_pneumaticcraft.reinforced_volume": "强化空气容积",
+  "metric.aeprimitives_pneumaticcraft.maximum_pressure_tier": "最高压力等级"
 }

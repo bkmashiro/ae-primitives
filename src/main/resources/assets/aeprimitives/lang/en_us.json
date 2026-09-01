@@ -48,5 +48,9 @@
   "gui.aeprimitives.factory.status.waiting_resource": "No power",
   "gui.aeprimitives.factory.status.blocked_output": "Blocked",
   "gui.aeprimitives.factory.status.running": "Running",
-  "itemGroup.aeprimitives": "AE Primitives"
+  "itemGroup.aeprimitives": "AE Primitives",
+  "block.aeprimitives.physical_metric_display": "Physical Metric Display",
+  "message.aeprimitives.metric.none": "No physical metrics are available",
+  "message.aeprimitives.metric.selected": "Selected metric: %s",
+  "metric.aeprimitives.unavailable": "Unavailable"
 }

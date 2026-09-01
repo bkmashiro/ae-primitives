@@ -48,5 +48,9 @@
   "gui.aeprimitives.factory.status.waiting_resource": "等待动力",
   "gui.aeprimitives.factory.status.blocked_output": "输出堵塞",
   "gui.aeprimitives.factory.status.running": "运行中",
-  "itemGroup.aeprimitives": "AE 原语"
+  "itemGroup.aeprimitives": "AE 原语",
+  "block.aeprimitives.physical_metric_display": "物理量显示器",
+  "message.aeprimitives.metric.none": "没有可用的物理量",
+  "message.aeprimitives.metric.selected": "已选择物理量：%s",
+  "metric.aeprimitives.unavailable": "不可用"
 }

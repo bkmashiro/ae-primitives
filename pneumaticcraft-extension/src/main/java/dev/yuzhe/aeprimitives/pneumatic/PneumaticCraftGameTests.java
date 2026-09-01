@@ -6,6 +6,8 @@ import appeng.api.networking.GridHelper;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
+import dev.yuzhe.aeprimitives.content.ModContent;
+import dev.yuzhe.aeprimitives.metrics.PhysicalMetricDisplayBlockEntity;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
@@ -129,6 +131,68 @@ public final class PneumaticCraftGameTests {
         helper.assertTrue(!reinforced.isBlackListed(reinforced.getDefaultInstance(), AirKey.of(AirPressureTier.REINFORCED)),
                 "reinforced air cell rejected reinforced compressed air");
         helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 240)
+    public static void physicalMetricDisplayTracksSelectedNetworkPressure(GameTestHelper helper) {
+        BlockPos displayPos = new BlockPos(1, 1, 1);
+        BlockPos drivePos = new BlockPos(3, 1, 1);
+        helper.setBlock(displayPos, ModContent.PHYSICAL_METRIC_DISPLAY.get());
+        helper.setBlock(displayPos.east(), AEBlocks.ENERGY_CELL.block());
+        helper.setBlock(drivePos, AEBlocks.DRIVE.block());
+        helper.setBlock(drivePos.above(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+
+        var display = helper.<PhysicalMetricDisplayBlockEntity>getBlockEntity(displayPos);
+        var drive = helper.<DriveBlockEntity>getBlockEntity(drivePos);
+        var configured = new AtomicBoolean();
+        var firstPressure = new java.util.concurrent.atomic.AtomicReference<Double>();
+        var ticks = new AtomicInteger();
+
+        helper.onEachTick(() -> {
+            int tick = ticks.incrementAndGet();
+            var node = display.getActionableNode();
+            if (node == null || node.getGrid() == null || drive.getMainNode().getNode() == null) {
+                if (tick == 220) helper.fail("physical metric display never joined an active ME grid");
+                return;
+            }
+            if (drive.getMainNode().getGrid() != node.getGrid()) {
+                GridHelper.createConnection(node, drive.getMainNode().getNode());
+                return;
+            }
+            if (!configured.get() && drive.getMainNode().isOnline()) {
+                drive.getInternalInventory().setItemDirect(0,
+                        new ItemStack(PneumaticContent.BASIC_AIR_CELL.get()));
+                drive.onChangeInventory(null, 0);
+                long inserted = node.getGrid().getStorageService().getInventory().insert(
+                        AirKey.of(AirPressureTier.BASIC), 1_000,
+                        Actionable.MODULATE, IActionSource.empty());
+                helper.assertTrue(inserted == 1_000, "metric fixture could not insert initial compressed air");
+                configured.set(true);
+                return;
+            }
+            if (!configured.get()) return;
+
+            var sample = display.visibleSample();
+            if (sample == null || !"basic_pressure".equals(sample.id().getPath())) return;
+            if (firstPressure.get() == null) {
+                helper.assertTrue(sample.value() > 0, "display reported no pressure after storage changed");
+                firstPressure.set(sample.value());
+                long inserted = node.getGrid().getStorageService().getInventory().insert(
+                        AirKey.of(AirPressureTier.BASIC), 1_000,
+                        Actionable.MODULATE, IActionSource.empty());
+                helper.assertTrue(inserted == 1_000, "metric fixture could not increase compressed air");
+                return;
+            }
+            if (sample.value() > firstPressure.get()) {
+                var saved = display.saveWithoutMetadata(helper.getLevel().registryAccess());
+                helper.assertTrue(saved.getString("selectedMetric").endsWith(":basic_pressure"),
+                        "display did not persist its selected physical metric");
+                helper.succeed();
+            }
+            if (tick == 220) {
+                helper.fail("display did not refresh after the watched pressure key changed: sample=" + sample);
+            }
+        });
     }
 
     @GameTest(template = "empty", timeoutTicks = 240)

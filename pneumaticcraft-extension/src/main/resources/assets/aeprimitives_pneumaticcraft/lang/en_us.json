@@ -12,5 +12,12 @@
   "key.aeprimitives_pneumatic.basic_compressed_air": "Basic Compressed Air",
   "key.aeprimitives_pneumatic.reinforced_compressed_air": "Reinforced Compressed Air",
   "tooltip.aeprimitives_pneumatic.pressure_rating": "Pressure rating: %s bar",
-  "tooltip.aeprimitives_pneumatic.normal_drive": "Fits standard ME Drives and ME Chests"
+  "tooltip.aeprimitives_pneumatic.normal_drive": "Fits standard ME Drives and ME Chests",
+  "metric.aeprimitives_pneumaticcraft.basic_pressure": "Basic Network Pressure",
+  "metric.aeprimitives_pneumaticcraft.reinforced_pressure": "Reinforced Network Pressure",
+  "metric.aeprimitives_pneumaticcraft.basic_stored_air": "Basic Stored Air",
+  "metric.aeprimitives_pneumaticcraft.reinforced_stored_air": "Reinforced Stored Air",
+  "metric.aeprimitives_pneumaticcraft.basic_volume": "Basic Air Volume",
+  "metric.aeprimitives_pneumaticcraft.reinforced_volume": "Reinforced Air Volume",
+  "metric.aeprimitives_pneumaticcraft.maximum_pressure_tier": "Maximum Pressure Tier"
 }

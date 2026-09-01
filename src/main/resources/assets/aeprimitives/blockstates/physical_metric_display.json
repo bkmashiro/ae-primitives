@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "aeprimitives:block/physical_metric_display" },
+    "facing=east": { "model": "aeprimitives:block/physical_metric_display", "y": 90 },
+    "facing=south": { "model": "aeprimitives:block/physical_metric_display", "y": 180 },
+    "facing=west": { "model": "aeprimitives:block/physical_metric_display", "y": 270 }
+  }
+}

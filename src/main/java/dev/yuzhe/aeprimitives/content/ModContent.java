@@ -9,6 +9,8 @@ import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
 import dev.yuzhe.aeprimitives.menu.HeterogeneousFactoryMenu;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerItem;
+import dev.yuzhe.aeprimitives.metrics.PhysicalMetricDisplayBlock;
+import dev.yuzhe.aeprimitives.metrics.PhysicalMetricDisplayBlockEntity;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock;
@@ -67,6 +69,8 @@ public final class ModContent {
             new MachineAssemblyTableBlock(BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops()));
     public static final DeferredBlock<HeterogeneousFactoryBlock> HETEROGENEOUS_SPATIAL_FACTORY = BLOCKS.register("heterogeneous_spatial_factory", () ->
             new HeterogeneousFactoryBlock(BlockBehaviour.Properties.of().strength(4.0f, 8.0f).requiresCorrectToolForDrops()));
+    public static final DeferredBlock<PhysicalMetricDisplayBlock> PHYSICAL_METRIC_DISPLAY = BLOCKS.register("physical_metric_display", () ->
+            new PhysicalMetricDisplayBlock(BlockBehaviour.Properties.of().strength(2.0f, 4.0f).requiresCorrectToolForDrops().noOcclusion()));
 
     public static final DeferredItem<BlockItem> FORTUNE_CHAMBER_ITEM = item(MachineKind.FORTUNE, FORTUNE_CHAMBER);
     public static final DeferredItem<BlockItem> TRANSFORMATION_CHAMBER_ITEM = item(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER);
@@ -107,6 +111,7 @@ public final class ModContent {
     public static final DeferredItem<MachineSpaceComponentItem> MACHINE_SPACE_COMPONENT = ITEMS.register("machine_space_component", () ->
             new MachineSpaceComponentItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<BlockItem> HETEROGENEOUS_SPATIAL_FACTORY_ITEM = simpleItem("heterogeneous_spatial_factory", HETEROGENEOUS_SPATIAL_FACTORY);
+    public static final DeferredItem<BlockItem> PHYSICAL_METRIC_DISPLAY_ITEM = simpleItem("physical_metric_display", PHYSICAL_METRIC_DISPLAY);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -149,6 +154,12 @@ public final class ModContent {
                 HETEROGENEOUS_SPATIAL_FACTORY.get().bind(type);
                 return type;
             });
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PhysicalMetricDisplayBlockEntity>> PHYSICAL_METRIC_DISPLAY_ENTITY =
+            BLOCK_ENTITIES.register("physical_metric_display", () -> {
+                var type = BlockEntityType.Builder.of(PhysicalMetricDisplayBlockEntity::new, PHYSICAL_METRIC_DISPLAY.get()).build(null);
+                PHYSICAL_METRIC_DISPLAY.get().bind(type);
+                return type;
+            });
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.aeprimitives"))
@@ -186,6 +197,7 @@ public final class ModContent {
                         output.accept(MACHINE_ASSEMBLY_TABLE_ITEM.get());
                         output.accept(MACHINE_SPACE_COMPONENT.get());
                         output.accept(HETEROGENEOUS_SPATIAL_FACTORY_ITEM.get());
+                        output.accept(PHYSICAL_METRIC_DISPLAY_ITEM.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {

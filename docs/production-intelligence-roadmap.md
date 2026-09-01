@@ -67,6 +67,8 @@ Machine and lane owners emit transitions such as reserved, started, waiting reso
 
 ## Phase 1: selectable physical-quantity display
 
+**Status: complete.** Core now provides the watched metric contract and cable-attached display. PneumaticCraft registers pressure, stored-air, volume and maximum-tier metrics. The display persists one selection, samples only after selection or watched-storage changes, and synchronizes only the visible immutable sample.
+
 Deliver the next PneumaticCraft slice as the first vertical use of the metric contract.
 
 ### Product
