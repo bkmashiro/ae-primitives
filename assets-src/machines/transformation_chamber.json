@@ -23,6 +23,7 @@
         "layers": [
           {"type": "vertical_gradient", "top": "#cad5dd", "bottom": "#a8b6c2"},
           {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 701},
+          {"type": "bevel", "width": 1, "top": "#d8e0e5", "left": "#bdc9d2", "bottom": "#657286", "right": "#59677a"},
           {"type": "rect", "bounds": [2, 4, 3, 12], "color": "#465064"},
           {"type": "rect", "bounds": [13, 4, 14, 12], "color": "#465064"},
           {"type": "rect", "bounds": [5, 1, 11, 2], "color": "#465064"},
@@ -41,6 +42,7 @@
         "layers": [
           {"type": "vertical_gradient", "top": "#c0ccd5", "bottom": "#a1afbc"},
           {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 709},
+          {"type": "bevel", "width": 1, "top": "#d2dbe1", "left": "#b5c1cb", "bottom": "#5f6c80", "right": "#536175"},
           {"type": "rect", "bounds": [2, 2, 14, 3], "color": "#68758a"},
           {"type": "rect", "bounds": [2, 13, 14, 14], "color": "#465064"},
           {"type": "rect", "bounds": [2, 3, 3, 13], "color": "#68758a"},
@@ -56,7 +58,8 @@
         "size": 16,
         "layers": [
           {"type": "vertical_gradient", "top": "#c4d0d8", "bottom": "#a2b0bd"},
-          {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 719}
+          {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 719},
+          {"type": "bevel", "width": 1, "top": "#d6dfe4", "left": "#bbc7d0", "bottom": "#617084", "right": "#536276"}
         ]
       }
     },
@@ -67,6 +70,7 @@
         "layers": [
           {"type": "vertical_gradient", "top": "#d7e0e5", "bottom": "#bdcad3"},
           {"type": "clustered_noise", "amount": 9, "scale": 4, "steps": 5, "seed": 727},
+          {"type": "bevel", "width": 1, "top": "#edf1f3", "left": "#d3dde2", "bottom": "#768598", "right": "#68778a"},
           {"type": "rect", "bounds": [2, 2, 14, 3], "color": "#8794a4"},
           {"type": "rect", "bounds": [2, 13, 14, 14], "color": "#647185"},
           {"type": "rect", "bounds": [2, 3, 3, 13], "color": "#8794a4"},
@@ -85,7 +89,7 @@
         "layers": [
           {"type": "vertical_gradient", "top": "#687688", "bottom": "#455164"},
           {"type": "clustered_noise", "amount": 8, "scale": 4, "steps": 4, "seed": 733},
-          {"type": "border", "width": 2, "color": "#384557"},
+          {"type": "bevel", "width": 2, "top": "#718095", "left": "#5f6d82", "bottom": "#2f3a4a", "right": "#273342"},
           {"type": "rect", "bounds": [2, 2, 4, 4], "color": "#536075"},
           {"type": "rect", "bounds": [12, 2, 14, 4], "color": "#536075"},
           {"type": "rect", "bounds": [2, 12, 4, 14], "color": "#536075"},

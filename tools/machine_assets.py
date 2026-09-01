@@ -635,6 +635,22 @@ def render_texture(spec: dict[str, Any]) -> list[list[Color]]:
         if layer_type == "fill":
             color = _color(layer["color"])
             pixels = [[color for _ in range(size)] for _ in range(size)]
+        elif layer_type == "bevel":
+            width = max(1, int(layer.get("width", 1)))
+            top = _color(layer["top"])
+            left = _color(layer["left"])
+            bottom = _color(layer["bottom"])
+            right = _color(layer["right"])
+            for y in range(size):
+                for x in range(size):
+                    if y < width:
+                        pixels[y][x] = top
+                    elif y >= size - width:
+                        pixels[y][x] = bottom
+                    elif x < width:
+                        pixels[y][x] = left
+                    elif x >= size - width:
+                        pixels[y][x] = right
         elif layer_type == "border":
             color = _color(layer["color"])
             width = int(layer.get("width", 1))

@@ -258,6 +258,27 @@ class TextureCompilerTest(unittest.TestCase):
 
         self.assertLess(adjacent_delta(clustered), adjacent_delta(render_texture(random_spec)))
 
+    def test_bevel_shades_only_the_texture_perimeter(self):
+        pixels = render_texture({
+            "size": 16,
+            "layers": [
+                {"type": "fill", "color": "#888888"},
+                {
+                    "type": "bevel",
+                    "width": 1,
+                    "top": "#ffffff",
+                    "left": "#cccccc",
+                    "bottom": "#222222",
+                    "right": "#444444",
+                },
+            ],
+        })
+        self.assertEqual((255, 255, 255, 255), pixels[0][8])
+        self.assertEqual((204, 204, 204, 255), pixels[8][0])
+        self.assertEqual((34, 34, 34, 255), pixels[15][8])
+        self.assertEqual((68, 68, 68, 255), pixels[8][15])
+        self.assertEqual((136, 136, 136, 255), pixels[8][8])
+
 
 class AnimationCompilerTest(unittest.TestCase):
     def test_compiles_simple_runtime_tracks(self):

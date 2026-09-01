@@ -5,10 +5,7 @@
       "layers": [
         {"type": "vertical_gradient", "top": "#cad5dd", "bottom": "#a8b6c2"},
         {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 401},
-        {"type": "rect", "bounds": [0, 0, 16, 1], "color": "#d7e0e5"},
-        {"type": "rect", "bounds": [0, 1, 1, 16], "color": "#c7d2da"},
-        {"type": "rect", "bounds": [1, 15, 16, 16], "color": "#8d9aa8"},
-        {"type": "rect", "bounds": [15, 1, 16, 15], "color": "#8795a3"}
+        {"type": "bevel", "width": 1, "top": "#d8e0e5", "left": "#bdc9d2", "bottom": "#657286", "right": "#59677a"}
       ]
     },
     "casing_top": {
@@ -16,10 +13,7 @@
       "layers": [
         {"type": "vertical_gradient", "top": "#dbe3e8", "bottom": "#bdcad3"},
         {"type": "clustered_noise", "amount": 9, "scale": 4, "steps": 5, "seed": 409},
-        {"type": "rect", "bounds": [0, 0, 16, 1], "color": "#e4eaed"},
-        {"type": "rect", "bounds": [0, 1, 1, 16], "color": "#d2dce2"},
-        {"type": "rect", "bounds": [1, 15, 16, 16], "color": "#9aa8b5"},
-        {"type": "rect", "bounds": [15, 1, 16, 15], "color": "#94a2af"}
+        {"type": "bevel", "width": 1, "top": "#e5ebee", "left": "#d0dae0", "bottom": "#7b899a", "right": "#6f7d8e"}
       ]
     }
   }
