@@ -119,6 +119,130 @@ public final class BotaniaGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void onlyIdleEmptyPetalInterfaceCanBePackaged(GameTestHelper helper) {
+        BlockPos interfacePos = new BlockPos(3, 1, 3);
+        helper.setBlock(interfacePos, BotaniaContent.PETAL_APOTHECARY_INTERFACE.get());
+        var machine = (PetalApothecaryInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        helper.assertTrue(machine.canPackIntoMachineSpace(), "idle empty Petal interface rejected packaging");
+        machine.inventory().setStackInSlot(0, new ItemStack(item("botania:white_petal")));
+        helper.assertTrue(!machine.canPackIntoMachineSpace(), "Petal interface with owned input was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void factoryRunsPackagedPetalInterfaceThroughRealApothecary(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos apothecaryPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.PETAL_APOTHECARY_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(apothecaryPos, BotaniaBlocks.ALL_APOTHECARIES[0].defaultBlockState()
+                .setValue(PetalApothecaryBlock.FLUID, PetalApothecary.State.WATER));
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var apothecary = (PetalApothecaryBlockEntity) helper.getBlockEntity(apothecaryPos);
+        installPetalLane(factory, 0);
+        helper.succeedWhen(() -> {
+            helper.assertTrue(countFactoryLane(factory, 0, item("botania:pure_daisy")) == 1,
+                    "packaged Petal interface did not recover the native apothecary output");
+            helper.assertTrue(apothecary.isEmpty() && apothecary.getFluid() == PetalApothecary.State.EMPTY,
+                    "real apothecary did not consume its ingredients and water");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void factoryPetalReservationSurvivesReloadAndBlockedOutput(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos apothecaryPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.PETAL_APOTHECARY_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(apothecaryPos, BotaniaBlocks.ALL_APOTHECARIES[0].defaultBlockState()
+                .setValue(PetalApothecaryBlock.FLUID, PetalApothecary.State.WATER));
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var apothecary = (PetalApothecaryBlockEntity) helper.getBlockEntity(apothecaryPos);
+        boolean[] blocked = {false};
+        installPetalLane(factory, 0);
+        helper.onEachTick(() -> {
+            if (blocked[0] || apothecary.isEmpty()) return;
+            blocked[0] = true;
+            CompoundTag saved = new CompoundTag();
+            factory.saveAdditional(saved, level.registryAccess());
+            factory.loadTag(saved, level.registryAccess());
+            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+                factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                        new ItemStack(Blocks.COBBLESTONE, 64));
+            helper.runAfterDelay(20, () -> {
+                helper.assertTrue(!apothecary.isEmpty()
+                                && apothecary.getFluid() == PetalApothecary.State.WATER,
+                        "blocked output consumed the persisted Petal stage");
+                helper.assertTrue(factory.inventory().extractItem(0, 1, false).isEmpty(),
+                        "factory released the component while a Petal stage was owned");
+                factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, 0), ItemStack.EMPTY);
+                factory.scheduleExternalWork();
+            });
+        });
+        helper.succeedWhen(() -> helper.assertTrue(blocked[0]
+                        && countFactoryLane(factory, 0, item("botania:pure_daisy")) == 1
+                        && apothecary.isEmpty() && apothecary.getFluid() == PetalApothecary.State.EMPTY,
+                "reloaded Petal stage did not complete exactly once after output unblocked"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void oneRealApothecaryServesOnlyOneFactoryLaneAtATime(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos apothecaryPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.PETAL_APOTHECARY_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(apothecaryPos, BotaniaBlocks.ALL_APOTHECARIES[0].defaultBlockState()
+                .setValue(PetalApothecaryBlock.FLUID, PetalApothecary.State.WATER));
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var apothecary = (PetalApothecaryBlockEntity) helper.getBlockEntity(apothecaryPos);
+        installPetalLane(factory, 0);
+        installPetalLane(factory, 1);
+        boolean[] refilled = {false};
+        helper.onEachTick(() -> {
+            int completed = countFactoryLane(factory, 0, item("botania:pure_daisy"))
+                    + countFactoryLane(factory, 1, item("botania:pure_daisy"));
+            if (completed == 1 && !refilled[0]) {
+                refilled[0] = true;
+                levelSetWater(helper, apothecaryPos);
+                factory.scheduleExternalWork();
+            }
+        });
+        helper.succeedWhen(() -> helper.assertTrue(refilled[0]
+                        && countFactoryLane(factory, 0, item("botania:pure_daisy")) == 1
+                        && countFactoryLane(factory, 1, item("botania:pure_daisy")) == 1
+                        && apothecary.isEmpty(),
+                "exclusive real apothecary did not hand off to the waiting Petal lane"));
+    }
+
+    private static void installPetalLane(HeterogeneousFactoryBlockEntity factory, int lane) {
+        var envelope = MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(BotaniaContent.PETAL_APOTHECARY_INTERFACE.get()),
+                BotaniaContent.PETAL_APOTHECARY_INTERFACE.get().defaultBlockState(), new CompoundTag());
+        factory.inventory().setStackInSlot(lane,
+                MachineSpaceComponentItem.create(ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        for (int offset = 0; offset < 4; offset++)
+            factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(lane, offset),
+                    new ItemStack(item("botania:white_petal")));
+        factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(lane, 4),
+                new ItemStack(item("minecraft:wheat_seeds")));
+    }
+
+    private static void levelSetWater(GameTestHelper helper, BlockPos apothecaryPos) {
+        ((PetalApothecaryBlockEntity) helper.getBlockEntity(apothecaryPos))
+                .setFluid(PetalApothecary.State.WATER);
+    }
+
+    @GameTest(template = "empty")
     public static void runicInterfaceWaitsForNativeManaAndCompletion(GameTestHelper helper) {
         ServerLevel level = (ServerLevel) helper.getLevel();
         BlockPos altarPos = new BlockPos(3, 1, 3), interfacePos = altarPos.east();
