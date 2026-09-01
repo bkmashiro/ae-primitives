@@ -3,12 +3,13 @@ group='dev.yuzhe.aeprimitives'; version=rootProject.version
 base { archivesName='ae-primitives-pneumaticcraft' }
 repositories {
  mavenCentral()
+ maven { name='PneumaticCraft'; url='https://modmaven.dev/' }
  exclusiveContent { forRepository { maven { name='Modrinth'; url='https://api.modrinth.com/maven' } }; filter { includeGroup 'maven.modrinth' } }
 }
 dependencies {
  implementation project(':')
  implementation "maven.modrinth:ae2:${ae2_version}"
- implementation 'maven.modrinth:pneumaticcraft-repressurized:8.2.23'
+ implementation 'me.desht.pneumaticcraft:pneumaticcraft-repressurized:8.2.23+mc1.21.1'
  runtimeOnly 'maven.modrinth:guideme:21.1.10'
  testImplementation platform('org.junit:junit-bom:5.11.4')
  testImplementation 'org.junit.jupiter:junit-jupiter'
