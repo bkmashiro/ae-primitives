@@ -40,5 +40,12 @@
   "screen.aeprimitives.process_analyzer.status.busy": "%s 个执行端忙碌",
   "screen.aeprimitives.process_analyzer.status.missing": "缺少工序",
   "screen.aeprimitives.process_analyzer.missing": "缺少 %s。请在该网络的样板供应器中安装匹配的工序样板。",
+  "gui.aeprimitives.factory.lane": "通道 %s",
+  "gui.aeprimitives.factory.status.empty": "未安装",
+  "gui.aeprimitives.factory.status.invalid": "不支持",
+  "gui.aeprimitives.factory.status.offline": "ME 离线",
+  "gui.aeprimitives.factory.status.waiting_input": "等待输入",
+  "gui.aeprimitives.factory.status.blocked_output": "输出堵塞",
+  "gui.aeprimitives.factory.status.running": "运行中",
   "itemGroup.aeprimitives": "AE 原语"
 }

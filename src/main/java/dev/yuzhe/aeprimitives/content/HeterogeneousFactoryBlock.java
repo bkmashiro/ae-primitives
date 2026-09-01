@@ -2,10 +2,14 @@ package dev.yuzhe.aeprimitives.content;
 
 import appeng.block.AEBaseEntityBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 public final class HeterogeneousFactoryBlock extends AEBaseEntityBlock<HeterogeneousFactoryBlockEntity> {
     public HeterogeneousFactoryBlock(Properties properties) {
@@ -15,6 +19,16 @@ public final class HeterogeneousFactoryBlock extends AEBaseEntityBlock<Heterogen
     void bind(BlockEntityType<HeterogeneousFactoryBlockEntity> type) {
         setBlockEntity(HeterogeneousFactoryBlockEntity.class, type, null,
                 (level, pos, state, blockEntity) -> blockEntity.serverTick());
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            var factory = getBlockEntity(level, pos);
+            if (factory != null) serverPlayer.openMenu(factory, pos);
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     @Override public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {

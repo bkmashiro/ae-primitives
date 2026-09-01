@@ -6,6 +6,7 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.core.definitions.AEItems;
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
+import dev.yuzhe.aeprimitives.menu.HeterogeneousFactoryMenu;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerItem;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
@@ -137,6 +138,8 @@ public final class ModContent {
 
     public static final DeferredHolder<MenuType<?>, MenuType<PrimitiveMachineMenu>> MACHINE_MENU =
             MENUS.register("primitive_machine", () -> IMenuTypeExtension.create(PrimitiveMachineMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<HeterogeneousFactoryMenu>> HETEROGENEOUS_FACTORY_MENU =
+            MENUS.register("heterogeneous_spatial_factory", () -> IMenuTypeExtension.create(HeterogeneousFactoryMenu::new));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MachineAssemblyTableBlockEntity>> MACHINE_ASSEMBLY_TABLE_ENTITY =
             BLOCK_ENTITIES.register("machine_assembly_table", () -> BlockEntityType.Builder.of(
                     MachineAssemblyTableBlockEntity::new, MACHINE_ASSEMBLY_TABLE.get()).build(null));

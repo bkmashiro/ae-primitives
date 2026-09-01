@@ -456,6 +456,24 @@ public final class PrimitiveMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void heterogeneousFactoryReportsBlockedLane(GameTestHelper helper) {
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.RED_CONCRETE_POWDER));
+        for (int offset = 0; offset < 3; offset++) {
+            factory.inventory().setStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                    new ItemStack(Items.COBBLESTONE, 64));
+        }
+        helper.succeedWhen(() -> helper.assertTrue(
+                factory.menuData().get(2) == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.BLOCKED_OUTPUT.ordinal(),
+                "factory menu did not report a blocked lane"));
+    }
+
     private static ItemStack machineComponent(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
         var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block),

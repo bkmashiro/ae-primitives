@@ -40,5 +40,12 @@
   "screen.aeprimitives.process_analyzer.status.busy": "%s provider(s) busy",
   "screen.aeprimitives.process_analyzer.status.missing": "Missing operation",
   "screen.aeprimitives.process_analyzer.missing": "Missing %s. Add a matching Operation Pattern to a provider on this network.",
+  "gui.aeprimitives.factory.lane": "Lane %s",
+  "gui.aeprimitives.factory.status.empty": "Empty",
+  "gui.aeprimitives.factory.status.invalid": "Invalid",
+  "gui.aeprimitives.factory.status.offline": "Offline",
+  "gui.aeprimitives.factory.status.waiting_input": "No input",
+  "gui.aeprimitives.factory.status.blocked_output": "Blocked",
+  "gui.aeprimitives.factory.status.running": "Running",
   "itemGroup.aeprimitives": "AE Primitives"
 }

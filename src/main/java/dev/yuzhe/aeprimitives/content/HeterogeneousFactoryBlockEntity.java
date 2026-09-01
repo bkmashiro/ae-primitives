@@ -22,11 +22,14 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import dev.yuzhe.aeprimitives.menu.HeterogeneousFactoryMenu;
 
 public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntity implements MenuProvider {
+    public static final int LANE_COUNT = 4;
     public static final int COMPONENT_START = 0;
     public static final int COMPONENT_END = 4;
     public static final int INPUT_START = 4;
@@ -34,7 +37,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     public static final int OUTPUT_START = 16;
     public static final int OUTPUT_END = 28;
 
-    private final int[] laneProgress = new int[4];
+    private final int[] laneProgress = new int[LANE_COUNT];
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private boolean scheduled;
     private final ItemStackHandler inventory = new ItemStackHandler(28) {
@@ -60,6 +63,38 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     public ItemStackHandler inventory() { return inventory; }
     public int laneProgress(int lane) { return laneProgress[lane]; }
     public boolean isScheduled() { return scheduled; }
+
+    public ContainerData menuData() {
+        return new ContainerData() {
+            @Override public int get(int index) {
+                int lane = index / 3;
+                return switch (index % 3) {
+                    case 0 -> laneProgress[lane];
+                    case 1 -> laneDuration(lane);
+                    default -> laneStatus(lane).ordinal();
+                };
+            }
+            @Override public void set(int index, int value) {}
+            @Override public int getCount() { return LANE_COUNT * 3; }
+        };
+    }
+
+    private int laneDuration(int lane) {
+        if (!(level instanceof ServerLevel server)) return 0;
+        Lane definition = lane(server, lane);
+        return definition == null ? 0 : definition.kind.processingTicks();
+    }
+
+    private LaneStatus laneStatus(int lane) {
+        if (inventory.getStackInSlot(lane).isEmpty()) return LaneStatus.EMPTY;
+        if (!(level instanceof ServerLevel server)) return LaneStatus.OFFLINE;
+        Lane definition = lane(server, lane);
+        if (definition == null) return LaneStatus.INVALID;
+        if (!getMainNode().isActive()) return LaneStatus.OFFLINE;
+        var plan = PrimitiveMachineRecipes.find(definition.kind, snapshotInputs(lane));
+        if (plan == null) return LaneStatus.WAITING_INPUT;
+        return canQueueAll(lane, plan.outputs()) ? LaneStatus.RUNNING : LaneStatus.BLOCKED_OUTPUT;
+    }
 
     public void serverTick() {
         if (!(level instanceof ServerLevel server) || !scheduled || !getMainNode().isActive()) return;
@@ -175,7 +210,9 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     @Override public Component getDisplayName() { return Component.translatable("block.aeprimitives.heterogeneous_spatial_factory"); }
-    @Override public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) { return null; }
+    @Override public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) {
+        return new HeterogeneousFactoryMenu(id, playerInventory, this);
+    }
 
     @Override public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
@@ -204,4 +241,17 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     private record Lane(MachineKind kind, int speed) {}
+
+    public enum LaneStatus {
+        EMPTY("empty"),
+        INVALID("invalid"),
+        OFFLINE("offline"),
+        WAITING_INPUT("waiting_input"),
+        BLOCKED_OUTPUT("blocked_output"),
+        RUNNING("running");
+
+        private final String id;
+        LaneStatus(String id) { this.id = id; }
+        public String id() { return id; }
+    }
 }

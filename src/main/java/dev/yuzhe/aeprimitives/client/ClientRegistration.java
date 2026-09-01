@@ -39,6 +39,7 @@ public final class ClientRegistration {
     }
     private static void screens(RegisterMenuScreensEvent event) {
         event.register(ModContent.MACHINE_MENU.get(), PrimitiveMachineScreen::new);
+        event.register(ModContent.HETEROGENEOUS_FACTORY_MENU.get(), HeterogeneousFactoryScreen::new);
     }
     private static void reloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager ->
