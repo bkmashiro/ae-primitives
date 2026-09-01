@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "aeprimitives_botania:block/pure_daisy_interface" },
+    "facing=east": { "model": "aeprimitives_botania:block/pure_daisy_interface", "y": 90 },
+    "facing=south": { "model": "aeprimitives_botania:block/pure_daisy_interface", "y": 180 },
+    "facing=west": { "model": "aeprimitives_botania:block/pure_daisy_interface", "y": 270 }
+  }
+}
