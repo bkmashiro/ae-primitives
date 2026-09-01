@@ -21,6 +21,7 @@ MODELS = (
     "concrete_curing_chamber", "soil_processor", "dripstone_reservoir", "oxidation_chamber",
     "crop_cultivator", "tree_nursery", "growth_rack", "apiary_chamber", "batch_gate", "cooling_plate",
     "resonance_foundry", "me_press", "me_crusher", "me_catalyst_chamber", "me_basin_processor", "me_filling_station", "me_deployer",
+    "me_saw", "me_mill", "me_polisher",
     "basic_spatial_parallel", "advanced_spatial_parallel", "ultimate_spatial_parallel",
 )
 CHROME_CANDIDATES = (

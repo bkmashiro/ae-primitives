@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "AFA",
+    " M "
+  ],
+  "key": {
+    "S": {
+      "item": "create:iron_sheet"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "M": {
+      "item": "create:mechanical_saw"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_saw",
+    "count": 1
+  }
+}

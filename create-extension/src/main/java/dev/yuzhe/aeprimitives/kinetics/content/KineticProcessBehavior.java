@@ -5,7 +5,10 @@ import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.wrapper.RecipeWrapper;
 
 interface KineticProcessBehavior {
     int DEFAULT_OUTPUT_START = 1;
@@ -79,13 +82,22 @@ interface KineticProcessBehavior {
             return recipe == null ? null : recipe.rollResults(level.random);
         }
 
-        @SuppressWarnings("unchecked")
-        private static ProcessingRecipe<SingleRecipeInput, ?> findRecipe(
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private static ProcessingRecipe<?, ?> findRecipe(
                 KineticMachineKind kind, ServerLevel level, ItemStack input) {
             if (kind.recipeType() == null) return null;
-            return (ProcessingRecipe<SingleRecipeInput, ?>) kind.recipeType()
-                    .find(new SingleRecipeInput(input.copyWithCount(1)), level)
-                    .map(holder -> holder.value())
+            RecipeInput recipeInput;
+            if (kind == KineticMachineKind.SAW) {
+                var handler = new ItemStackHandler(1);
+                handler.setStackInSlot(0, input.copyWithCount(1));
+                recipeInput = new RecipeWrapper(handler);
+            } else {
+                recipeInput = new SingleRecipeInput(input.copyWithCount(1));
+            }
+            return (ProcessingRecipe<?, ?>) level.getRecipeManager()
+                    .getRecipeFor((net.minecraft.world.item.crafting.RecipeType) kind.recipeType().getType(),
+                            recipeInput, level)
+                    .map(holder -> ((net.minecraft.world.item.crafting.RecipeHolder<?>) holder).value())
                     .orElse(null);
         }
     }

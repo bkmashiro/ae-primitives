@@ -306,6 +306,75 @@ public final class KineticMachineGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void secondaryMachinesRunTheirCreateRecipes(GameTestHelper helper) {
+        var saw = placeAt(helper, new BlockPos(1, 1, 1), KineticsContent.ME_SAW.get());
+        saw.inventory().setStackInSlot(0, new ItemStack(BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("create", "andesite_alloy"))));
+        helper.assertTrue(saw.completeCycle(helper.getLevel()), "ME saw did not run Create cutting");
+        helper.assertTrue(countAnySlot(saw, BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("create", "shaft"))) == 6,
+                "ME saw did not preserve the cutting recipe count");
+
+        var mill = placeAt(helper, new BlockPos(3, 1, 1), KineticsContent.ME_MILL.get());
+        mill.inventory().setStackInSlot(0, new ItemStack(Items.DRIPSTONE_BLOCK));
+        helper.assertTrue(mill.completeCycle(helper.getLevel()), "ME mill did not run Create milling");
+        helper.assertTrue(countAnySlot(mill, Items.CLAY_BALL) == 1,
+                "ME mill did not retain the milling result");
+
+        var polisher = placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_POLISHER.get());
+        polisher.inventory().setStackInSlot(0, new ItemStack(BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("create", "rose_quartz"))));
+        helper.assertTrue(polisher.completeCycle(helper.getLevel()), "ME polisher did not run Create polishing");
+        helper.assertTrue(countAnySlot(polisher, BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("create", "polished_rose_quartz"))) == 1,
+                "ME polisher did not retain the polishing result");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void millUsesIndependentSpatialLanes(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_MILL.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.RED_TULIP, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "ME mill did not execute three independent milling lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(),
+                "ME mill did not consume one input per lane");
+        helper.assertTrue(countAnySlot(machine, Items.RED_DYE) >= 6,
+                "ME mill did not preserve guaranteed output per independent lane");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void secondaryOperationsDispatchOnlyToMatchingMachines(GameTestHelper helper) {
+        var machines = java.util.List.of(
+                placeAt(helper, new BlockPos(1, 1, 1), KineticsContent.ME_SAW.get()),
+                placeAt(helper, new BlockPos(3, 1, 1), KineticsContent.ME_MILL.get()),
+                placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_POLISHER.get()));
+        var kinds = java.util.List.of(KineticMachineKind.SAW, KineticMachineKind.MILL, KineticMachineKind.POLISHER);
+        for (int index = 0; index < machines.size(); index++) {
+            var machine = machines.get(index);
+            var kind = kinds.get(index);
+            var input = new dev.yuzhe.aeprimitives.operation.OperationInput(
+                    java.util.List.of(new appeng.api.stacks.GenericStack(
+                            appeng.api.stacks.AEItemKey.of(Items.COBBLESTONE), 1)), null);
+            var step = new OperationStepSpec(
+                    ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "secondary_" + kind.id()),
+                    kind.recipeType().getId(), java.util.List.of(input),
+                    java.util.List.of(new appeng.api.stacks.GenericStack(
+                            appeng.api.stacks.AEItemKey.of(Items.STONE), 1)));
+            helper.assertTrue(machine.pushPattern(
+                            new BoundOperationPattern(step, ModContent.OPERATION_PATTERN.get()),
+                            holdersFor(step), Direction.NORTH),
+                    kind + " rejected its matching operation pattern");
+            helper.assertTrue(machine.completeDispatchedPlans() == 1 && countAnySlot(machine, Items.STONE) == 1,
+                    kind + " did not complete its dispatched operation");
+            helper.assertTrue(!kind.acceptsOperation(com.simibubi.create.AllRecipeTypes.CRUSHING.getId()),
+                    kind + " incorrectly collapsed crushing into its operation family");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void activeLanesScaleStressLinearly(GameTestHelper helper) {
         var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));

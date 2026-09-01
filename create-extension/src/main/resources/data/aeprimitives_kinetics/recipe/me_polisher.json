@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "AFA",
+    " M "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:quartz"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "M": {
+      "item": "create:sand_paper"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_polisher",
+    "count": 1
+  }
+}

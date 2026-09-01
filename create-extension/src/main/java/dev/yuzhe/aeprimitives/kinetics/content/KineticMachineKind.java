@@ -10,7 +10,10 @@ public enum KineticMachineKind {
     FAN("me_catalyst_chamber", null, 8.0f, MachineTier.ADVANCED, 8),
     BASIN("me_basin_processor", null, 16.0f, MachineTier.ADVANCED, 8),
     FILLING("me_filling_station", null, 8.0f, MachineTier.ADVANCED, 8),
-    DEPLOYER("me_deployer", null, 8.0f, MachineTier.ADVANCED, 8);
+    DEPLOYER("me_deployer", null, 8.0f, MachineTier.ADVANCED, 8),
+    SAW("me_saw", AllRecipeTypes.CUTTING, 8.0f, MachineTier.ADVANCED, 8),
+    MILL("me_mill", AllRecipeTypes.MILLING, 4.0f, MachineTier.ADVANCED, 8),
+    POLISHER("me_polisher", AllRecipeTypes.SANDPAPER_POLISHING, 4.0f, MachineTier.ADVANCED, 8);
 
     private final String id;
     private final AllRecipeTypes recipeType;
@@ -41,6 +44,9 @@ public enum KineticMachineKind {
             case FILLING -> operation.equals(AllRecipeTypes.FILLING.getId())
                     || operation.equals(AllRecipeTypes.EMPTYING.getId());
             case DEPLOYER -> operation.equals(AllRecipeTypes.DEPLOYING.getId());
+            case SAW -> operation.equals(AllRecipeTypes.CUTTING.getId());
+            case MILL -> operation.equals(AllRecipeTypes.MILLING.getId());
+            case POLISHER -> operation.equals(AllRecipeTypes.SANDPAPER_POLISHING.getId());
             case FAN -> false;
         };
     }

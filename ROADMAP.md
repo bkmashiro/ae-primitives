@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add and verify the secondary Create operations: ME Saw, ME Mill and ME Polisher, keeping milling distinct from crushing and reusing spatial lanes plus AE operation dispatch.
+Create the Farmer's Delight extension and verify the first reusable integration slice: an ME Cutting Board that uses real Farmer's Delight recipes, installed knife durability and the existing spatial-lane contract without adding Farmer's Delight to Core.
 
 ## 1. Spatial parallel blocks
 

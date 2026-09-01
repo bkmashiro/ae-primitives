@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "AFA",
+    " M "
+  ],
+  "key": {
+    "S": {
+      "item": "create:andesite_alloy"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "M": {
+      "item": "create:millstone"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_mill",
+    "count": 1
+  }
+}
