@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Define and verify the machine space component envelope and assembly-table packaging rules for configured, idle and empty machines, without yet building the heterogeneous factory scheduler.
+Add the first heterogeneous spatial factory controller: accept validated machine space components as distinct persisted lanes and execute one Core machine operation through an event-driven scheduler without materializing world block entities.
 
 ## 1. Spatial parallel blocks
 

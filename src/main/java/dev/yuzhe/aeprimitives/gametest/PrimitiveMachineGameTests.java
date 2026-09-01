@@ -331,6 +331,75 @@ public final class PrimitiveMachineGameTests {
         });
     }
 
+    @GameTest(template = "empty")
+    public static void machineAssemblyTableRoundTripsConfiguredIdleMachine(GameTestHelper helper) {
+        BlockPos tablePos = new BlockPos(3, 1, 1);
+        BlockPos targetPos = tablePos.east();
+        helper.setBlock(tablePos, ModContent.MACHINE_ASSEMBLY_TABLE.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock.FACING, net.minecraft.core.Direction.EAST));
+        helper.setBlock(targetPos, ModContent.GROWTH_CHAMBER.get());
+        var original = helper.<PrimitiveMachineBlockEntity>getBlockEntity(targetPos);
+        original.getUpgrades().setItemDirect(0, AEItems.SPEED_CARD.stack());
+        var table = helper.<dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlockEntity>getBlockEntity(tablePos);
+
+        helper.assertTrue(table.operate(), "idle configured machine was not packaged");
+        helper.assertTrue(helper.getBlockState(targetPos).isAir(), "packaged machine remained in the world");
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.read(table.componentSlot().getStackInSlot(0));
+        helper.assertTrue(envelope != null && envelope.blockId().toString().equals("aeprimitives:growth_chamber"),
+                "component did not retain the concrete machine identity");
+
+        helper.assertTrue(table.operate(), "component did not unpack into its empty target");
+        var restored = helper.<PrimitiveMachineBlockEntity>getBlockEntity(targetPos);
+        helper.assertTrue(restored != null && restored.kind() == dev.yuzhe.aeprimitives.content.MachineKind.GROWTH,
+                "unpacked machine type changed");
+        helper.assertTrue(restored.getInstalledUpgrades(AEItems.SPEED_CARD) == 1,
+                "machine configuration did not survive the round trip");
+        helper.assertTrue(table.componentSlot().getStackInSlot(0).isEmpty(), "successful unpack retained the component");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void machineAssemblyTableRejectsNonEmptyMachine(GameTestHelper helper) {
+        BlockPos tablePos = new BlockPos(3, 1, 1), targetPos = tablePos.east();
+        helper.setBlock(tablePos, ModContent.MACHINE_ASSEMBLY_TABLE.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock.FACING, net.minecraft.core.Direction.EAST));
+        helper.setBlock(targetPos, ModContent.GROWTH_CHAMBER.get());
+        var machine = helper.<PrimitiveMachineBlockEntity>getBlockEntity(targetPos);
+        machine.inventory().setStackInSlot(0, AEItems.CERTUS_QUARTZ_DUST.stack());
+        var table = helper.<dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlockEntity>getBlockEntity(tablePos);
+        helper.assertTrue(!table.operate(), "non-empty machine was packaged");
+        helper.assertTrue(helper.getBlockState(targetPos).is(ModContent.GROWTH_CHAMBER.get())
+                && machine.inventory().getStackInSlot(0).is(AEItems.CERTUS_QUARTZ_DUST.asItem()),
+                "failed packaging changed the machine or its input");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void machineAssemblyTableRejectsMultiblockController(GameTestHelper helper) {
+        BlockPos tablePos = new BlockPos(3, 1, 1), targetPos = tablePos.east();
+        helper.setBlock(tablePos, ModContent.MACHINE_ASSEMBLY_TABLE.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock.FACING, net.minecraft.core.Direction.EAST));
+        helper.setBlock(targetPos, ModContent.RESONANCE_CONTROLLER.get());
+        var table = helper.<dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlockEntity>getBlockEntity(tablePos);
+        helper.assertTrue(!table.operate(), "a non-atomic multiblock controller was packaged without its structure");
+        helper.assertTrue(helper.getBlockState(targetPos).is(ModContent.RESONANCE_CONTROLLER.get()),
+                "rejected multiblock packaging removed the controller");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void machineAssemblyTableKeepsInvalidComponent(GameTestHelper helper) {
+        BlockPos tablePos = new BlockPos(3, 1, 1);
+        helper.setBlock(tablePos, ModContent.MACHINE_ASSEMBLY_TABLE.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock.FACING, net.minecraft.core.Direction.EAST));
+        var table = helper.<dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlockEntity>getBlockEntity(tablePos);
+        table.componentSlot().setStackInSlot(0, new ItemStack(ModContent.MACHINE_SPACE_COMPONENT.get()));
+        helper.assertTrue(!table.operate(), "component without a versioned envelope was unpacked");
+        helper.assertTrue(table.componentSlot().getStackInSlot(0).is(ModContent.MACHINE_SPACE_COMPONENT.get()),
+                "failed unpack consumed the invalid component");
+        helper.succeed();
+    }
+
     private static PrimitiveMachineBlockEntity setup(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
         helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
         helper.setBlock(MACHINE, block);

@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","pattern":["SES","AFA","SSS"],"key":{"S":{"item":"ae2:smooth_sky_stone_block"},"E":{"item":"ae2:engineering_processor"},"A":{"item":"ae2:annihilation_core"},"F":{"item":"aeprimitives:advanced_machine_frame"}},"result":{"id":"aeprimitives:machine_assembly_table","count":1}}

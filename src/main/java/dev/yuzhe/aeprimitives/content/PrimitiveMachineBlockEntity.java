@@ -17,6 +17,7 @@ import appeng.core.definitions.AEItems;
 import dev.yuzhe.aeprimitives.crafting.DynamicPatternProvider;
 import dev.yuzhe.aeprimitives.crafting.LazyPrimitivePattern;
 import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
+import dev.yuzhe.aeprimitives.space.MachineSpacePackable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -41,7 +42,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity implements MenuProvider, IUpgradeableObject {
+public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity implements MenuProvider, IUpgradeableObject, MachineSpacePackable {
     private static final int OUTPUT_START = 3;
     private static final int OUTPUT_END = 12;
     private final ItemStackHandler inventory = new ItemStackHandler(12) {
@@ -95,6 +96,25 @@ public final class PrimitiveMachineBlockEntity extends AENetworkedBlockEntity im
     }
     @Override public IUpgradeInventory getUpgrades() { return upgrades; }
     public void markStructureDirty() { structureDirty = true; }
+
+    @Override public boolean canPackIntoMachineSpace() {
+        if (kind() == MachineKind.FOUNDRY || patternJobActive || compostProgress != 0.0f) return false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        return true;
+    }
+
+    @Override public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
+        CompoundTag configuration = new CompoundTag();
+        upgrades.writeToNBT(configuration, "upgrades", registries);
+        return configuration;
+    }
+
+    @Override public boolean restoreMachineSpaceConfiguration(CompoundTag configuration, HolderLookup.Provider registries) {
+        if (!canPackIntoMachineSpace()) return false;
+        upgrades.readFromNBT(configuration, "upgrades", registries);
+        onUpgradesChanged();
+        return true;
+    }
 
     private void onUpgradesChanged() {
         progress = 0;

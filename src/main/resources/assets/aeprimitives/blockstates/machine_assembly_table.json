@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"aeprimitives:block/machine_assembly_table"},"facing=east":{"model":"aeprimitives:block/machine_assembly_table","y":90},"facing=south":{"model":"aeprimitives:block/machine_assembly_table","y":180},"facing=west":{"model":"aeprimitives:block/machine_assembly_table","y":270}}}

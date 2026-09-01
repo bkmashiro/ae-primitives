@@ -10,6 +10,9 @@ import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerItem;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
+import dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlock;
+import dev.yuzhe.aeprimitives.space.MachineAssemblyTableBlockEntity;
+import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -59,6 +62,8 @@ public final class ModContent {
     public static final DeferredBlock<SpatialParallelBlock> BASIC_SPATIAL_PARALLEL = spatialParallel("basic_spatial_parallel", MachineTier.BASIC, 1);
     public static final DeferredBlock<SpatialParallelBlock> ADVANCED_SPATIAL_PARALLEL = spatialParallel("advanced_spatial_parallel", MachineTier.ADVANCED, 2);
     public static final DeferredBlock<SpatialParallelBlock> ULTIMATE_SPATIAL_PARALLEL = spatialParallel("ultimate_spatial_parallel", MachineTier.ULTIMATE, 4);
+    public static final DeferredBlock<MachineAssemblyTableBlock> MACHINE_ASSEMBLY_TABLE = BLOCKS.register("machine_assembly_table", () ->
+            new MachineAssemblyTableBlock(BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops()));
 
     public static final DeferredItem<BlockItem> FORTUNE_CHAMBER_ITEM = item(MachineKind.FORTUNE, FORTUNE_CHAMBER);
     public static final DeferredItem<BlockItem> TRANSFORMATION_CHAMBER_ITEM = item(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER);
@@ -95,6 +100,9 @@ public final class ModContent {
                     .itemProperties(new Item.Properties().stacksTo(1)).build());
     public static final DeferredItem<Item> PROCESS_ANALYZER = ITEMS.register("process_analyzer", () ->
             new ProcessAnalyzerItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> MACHINE_ASSEMBLY_TABLE_ITEM = simpleItem("machine_assembly_table", MACHINE_ASSEMBLY_TABLE);
+    public static final DeferredItem<MachineSpaceComponentItem> MACHINE_SPACE_COMPONENT = ITEMS.register("machine_space_component", () ->
+            new MachineSpaceComponentItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PrimitiveMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("primitive_machine", () -> {
@@ -126,6 +134,9 @@ public final class ModContent {
 
     public static final DeferredHolder<MenuType<?>, MenuType<PrimitiveMachineMenu>> MACHINE_MENU =
             MENUS.register("primitive_machine", () -> IMenuTypeExtension.create(PrimitiveMachineMenu::new));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MachineAssemblyTableBlockEntity>> MACHINE_ASSEMBLY_TABLE_ENTITY =
+            BLOCK_ENTITIES.register("machine_assembly_table", () -> BlockEntityType.Builder.of(
+                    MachineAssemblyTableBlockEntity::new, MACHINE_ASSEMBLY_TABLE.get()).build(null));
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.aeprimitives"))
@@ -160,6 +171,8 @@ public final class ModContent {
                         output.accept(OPERATION_PATTERN.get());
                         output.accept(SEQUENCE_PATTERN.get());
                         output.accept(PROCESS_ANALYZER.get());
+                        output.accept(MACHINE_ASSEMBLY_TABLE_ITEM.get());
+                        output.accept(MACHINE_SPACE_COMPONENT.get());
                     }).build());
 
     private static DeferredBlock<PrimitiveMachineBlock> block(MachineKind kind) {
@@ -233,6 +246,8 @@ public final class ModContent {
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ENTITY.get(),
                 (be, side) -> be.inventory());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, MACHINE_ASSEMBLY_TABLE_ENTITY.get(),
+                (be, side) -> be.componentSlot());
     }
     private ModContent() {}
 }

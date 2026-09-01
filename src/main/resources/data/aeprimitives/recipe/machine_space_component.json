@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","pattern":["QEQ","SFS","QEQ"],"key":{"Q":{"item":"ae2:quartz_vibrant_glass"},"E":{"item":"ae2:engineering_processor"},"S":{"item":"ae2:spatial_cell_component_16"},"F":{"item":"aeprimitives:advanced_machine_frame"}},"result":{"id":"aeprimitives:machine_space_component","count":1}}
