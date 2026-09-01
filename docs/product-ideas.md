@@ -26,6 +26,26 @@ Render installed machine-space components as readable miniature host-mod machine
 
 Keep a bounded event-driven history of lane reservations, resource transitions, completion, pending output and reload recovery. It should serve both player diagnosis and focused development evidence without becoming a database or permanent trace system.
 
+### Capability inspection and pattern laboratory
+
+Use one inspection surface for resource contracts, operation capabilities, machine-space components and sequence compilation. Reuse the existing operation graph rather than creating another recipe model.
+
+### Bounded crafting forecast
+
+Estimate known costs, safe parallelism and structural bottlenecks from immutable snapshots. Unknown external throughput must remain explicit rather than being converted into fake precision.
+
+### Deterministic virtual commissioning
+
+Commission only deterministic virtual machines against copied configuration and isolated in-memory inputs. It must never run a real machine, touch ME storage, emit collectible outputs, invoke random rolls or execute native world behavior. Probabilistic and world-native machines are unsupported.
+
+### ME Network Lens
+
+On demand, reveal machine ownership, spatial bindings, responsible resource ports and diagnostic targets in the world without permanent overlays or broad chunk scans.
+
+### Resource-aware visual surfaces
+
+Reuse the same read model for component inspection, blueprint ghosts, coarse machine history and subtle non-persistent wear. Visual state must never become production authority.
+
 ### Factory orchestra easter egg
 
 A restrained, opt-in or rare easter egg may synchronize subtle machine sounds across resource domains. It must never become the normal feedback path, must be easy to disable and must not make ordinary factories noisy.
