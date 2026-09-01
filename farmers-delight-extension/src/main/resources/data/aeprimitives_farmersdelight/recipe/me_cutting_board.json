@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "KFK",
+    "ACA",
+    " B "
+  ],
+  "key": {
+    "K": {
+      "tag": "c:tools/knife"
+    },
+    "F": {
+      "item": "aeprimitives:basic_machine_frame"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    },
+    "C": {
+      "item": "farmersdelight:cutting_board"
+    },
+    "B": {
+      "item": "ae2:formation_core"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_farmersdelight:me_cutting_board",
+    "count": 1
+  }
+}

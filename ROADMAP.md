@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Create the Farmer's Delight extension and verify the first reusable integration slice: an ME Cutting Board that uses real Farmer's Delight recipes, installed knife durability and the existing spatial-lane contract without adding Farmer's Delight to Core.
+Create the Botania extension and verify its first bounded integration slice: a Pure Daisy transmutation chamber that uses Botania's own recipe registry, preserves recipe time, and reuses spatial lanes without adding Botania to Core.
 
 ## 1. Spatial parallel blocks
 
