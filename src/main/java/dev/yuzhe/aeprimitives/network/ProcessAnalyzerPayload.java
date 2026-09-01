@@ -2,13 +2,18 @@ package dev.yuzhe.aeprimitives.network;
 
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.client.ProcessAnalyzerClient;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsightRequirement;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsightRequirementKind;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticSnapshot;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessEdgeView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessProviderView;
+import dev.yuzhe.aeprimitives.diagnostics.ProcessResourceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessSequenceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepView;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -24,7 +29,7 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             ProcessAnalyzerPayload::decode);
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
+        event.registrar("2").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
     }
 
     private static void handle(ProcessAnalyzerPayload payload, IPayloadContext context) {
@@ -51,12 +56,35 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                     buffer.writeBlockPos(provider.pos());
                     buffer.writeBoolean(provider.busy());
                 }
+                writeResources(buffer, step.inputs());
+                writeResources(buffer, step.outputs());
             }
             buffer.writeVarInt(sequence.edges().size());
             for (var edge : sequence.edges()) {
                 buffer.writeVarInt(edge.fromStep());
                 buffer.writeVarInt(edge.toStep());
             }
+        }
+        buffer.writeVarInt(snapshot.machineInsights().size());
+        for (var insight : snapshot.machineInsights()) {
+            buffer.writeResourceLocation(insight.identity());
+            buffer.writeVarInt(insight.operations().size());
+            for (var operation : insight.operations()) {
+                buffer.writeResourceLocation(operation.operation());
+                writeIds(buffer, operation.allowedRecipes());
+                writeIds(buffer, operation.deniedRecipes());
+            }
+            buffer.writeVarInt(insight.requirements().size());
+            for (var requirement : insight.requirements()) {
+                buffer.writeEnum(requirement.kind());
+                buffer.writeResourceLocation(requirement.id());
+                buffer.writeDouble(requirement.amount());
+                buffer.writeUtf(requirement.unit(), 32);
+                buffer.writeBoolean(requirement.exact());
+            }
+            buffer.writeVarInt(insight.maxParallelCapacity());
+            buffer.writeUtf(insight.blockedReason(), 256);
+            buffer.writeVarLong(insight.revision());
         }
     }
 
@@ -81,8 +109,10 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                     providers.add(new ProcessProviderView(
                             buffer.readUtf(256), buffer.readBlockPos(), buffer.readBoolean()));
                 }
+                var inputs = readResources(buffer);
+                var outputs = readResources(buffer);
                 steps.add(new ProcessStepView(
-                        index, recipe, operation, inputIcon, outputIcon, status, providers));
+                        index, recipe, operation, inputIcon, outputIcon, status, providers, inputs, outputs));
             }
             var edges = new ArrayList<ProcessEdgeView>();
             int edgeCount = bounded(buffer.readVarInt(), 1024);
@@ -91,7 +121,59 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             }
             sequences.add(new ProcessSequenceView(id, steps, edges));
         }
-        return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences));
+        var insights = new ArrayList<MachineInsight>();
+        int insightCount = bounded(buffer.readVarInt(), 256);
+        for (int insightIndex = 0; insightIndex < insightCount; insightIndex++) {
+            var identity = buffer.readResourceLocation();
+            var operations = new ArrayList<dev.yuzhe.aeprimitives.operation.OperationPatternSpec>();
+            int operationCount = bounded(buffer.readVarInt(), 256);
+            for (int operationIndex = 0; operationIndex < operationCount; operationIndex++) {
+                operations.add(new dev.yuzhe.aeprimitives.operation.OperationPatternSpec(
+                        buffer.readResourceLocation(), readIds(buffer), readIds(buffer)));
+            }
+            var requirements = new ArrayList<MachineInsightRequirement>();
+            int requirementCount = bounded(buffer.readVarInt(), 1024);
+            for (int requirementIndex = 0; requirementIndex < requirementCount; requirementIndex++) {
+                requirements.add(new MachineInsightRequirement(
+                        buffer.readEnum(MachineInsightRequirementKind.class), buffer.readResourceLocation(),
+                        buffer.readDouble(), buffer.readUtf(32), buffer.readBoolean()));
+            }
+            insights.add(new MachineInsight(identity, operations, requirements, buffer.readVarInt(),
+                    buffer.readUtf(256), buffer.readVarLong()));
+        }
+        return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences, insights));
+    }
+
+    private static void writeResources(RegistryFriendlyByteBuf buffer,
+                                       java.util.List<ProcessResourceView> resources) {
+        buffer.writeVarInt(resources.size());
+        for (var resource : resources) {
+            buffer.writeUtf(resource.kind(), 32);
+            buffer.writeResourceLocation(resource.id());
+            buffer.writeVarLong(resource.amount());
+        }
+    }
+
+    private static java.util.List<ProcessResourceView> readResources(RegistryFriendlyByteBuf buffer) {
+        int count = bounded(buffer.readVarInt(), 1024);
+        var resources = new ArrayList<ProcessResourceView>();
+        for (int index = 0; index < count; index++) {
+            resources.add(new ProcessResourceView(buffer.readUtf(32), buffer.readResourceLocation(),
+                    buffer.readVarLong()));
+        }
+        return resources;
+    }
+
+    private static void writeIds(RegistryFriendlyByteBuf buffer, java.util.Set<ResourceLocation> ids) {
+        buffer.writeVarInt(ids.size());
+        for (var id : ids) buffer.writeResourceLocation(id);
+    }
+
+    private static java.util.Set<ResourceLocation> readIds(RegistryFriendlyByteBuf buffer) {
+        int count = bounded(buffer.readVarInt(), 1024);
+        var ids = new LinkedHashSet<ResourceLocation>();
+        for (int index = 0; index < count; index++) ids.add(buffer.readResourceLocation());
+        return ids;
     }
 
     private static void writeOptionalId(RegistryFriendlyByteBuf buffer, ResourceLocation id) {

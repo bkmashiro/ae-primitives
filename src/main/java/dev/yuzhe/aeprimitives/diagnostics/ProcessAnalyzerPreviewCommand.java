@@ -2,6 +2,7 @@ package dev.yuzhe.aeprimitives.diagnostics;
 
 import com.mojang.brigadier.CommandDispatcher;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
+import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
 import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -49,7 +50,13 @@ public final class ProcessAnalyzerPreviewCommand {
                                 vanilla("cut_copper"), vanilla("lightning_rod"), ProcessStepStatus.READY,
                                 List.of(new ProcessProviderView(overworld, new BlockPos(12, 64, 2), false)))),
                 List.of(new ProcessEdgeView(0, 1)));
-        return new ProcessDiagnosticSnapshot(42, List.of(sequence, nested));
+        var press = new MachineInsight(
+                ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "me_press"),
+                List.of(OperationPatternSpec.all(ResourceLocation.fromNamespaceAndPath("create", "pressing"))),
+                List.of(new MachineInsightRequirement(MachineInsightRequirementKind.EXTERNAL_RESOURCE,
+                        ResourceLocation.fromNamespaceAndPath("create", "rotation"), 8, "SU/RPM", true)),
+                8, "", 42);
+        return new ProcessDiagnosticSnapshot(42, List.of(sequence, nested), List.of(press));
     }
 
     private static ResourceLocation id(String path) {

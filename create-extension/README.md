@@ -19,6 +19,8 @@ Every machine consumes a real Create stress load. Shaft speed controls processin
 
 Operation Patterns advertise a concrete Create recipe or an operation family through an ordinary AE Pattern Provider. Sequence Patterns import Create Sequenced Assembly and expose its real intermediate steps to AE's crafting service.
 
+The Core ME Process Analyzer can inspect a live or packaged Create machine. Its read-only capability card keeps stress impact and minimum shaft speed as separate physical requirements and reports the machine's supported operation and parallel limit.
+
 With JEI installed, use the AE Primitives button on a supported recipe to encode it. Shift-click encodes the operation family where supported.
 
 ## Requirements

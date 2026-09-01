@@ -52,7 +52,7 @@ This keeps the number of registered patterns proportional to the sequences actua
 
 ### Process Analyzer
 
-Use the **ME Process Analyzer** on any Pattern Provider to inspect the process graph for that ME network. It shows each sequence as an ordered graph and marks every operation as:
+Use the **ME Process Analyzer** on a Pattern Provider to inspect the process graph for that ME network, or inspect a live machine, Machine Space Component, Operation Pattern or Sequence Pattern directly. Machine cards report supported operations, tools and catalysts, external resource contracts and safe parallel capacity without reserving inputs or invoking machine execution. Network graphs mark every operation as:
 
 - **Ready** when a matching provider is available.
 - **Busy** when matching providers exist but are currently occupied.

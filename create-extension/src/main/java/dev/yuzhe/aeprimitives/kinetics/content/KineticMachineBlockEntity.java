@@ -51,7 +51,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     public static final int TOOL_SLOT = 1;
     private static final int INVENTORY_SLOTS = 18;
     static final float WORK_PER_RECIPE = 4096.0f;
-    private static final float MIN_SPEED = 16.0f;
+    static final float MIN_SPEED = 16.0f;
     private static final IGridNodeListener<KineticMachineBlockEntity> NODE_LISTENER =
             new IGridNodeListener<>() {
                 @Override public void onSaveChanges(KineticMachineBlockEntity owner, IGridNode node) {

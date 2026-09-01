@@ -32,6 +32,7 @@
   "item.aeprimitives.sequence_pattern": "Sequence Pattern",
   "item.aeprimitives.process_analyzer": "ME Process Analyzer",
   "message.aeprimitives.process_analyzer.target": "Use the analyzer on an ME Pattern Provider",
+  "message.aeprimitives.process_analyzer.subject": "Put a machine-space component, operation pattern or sequence pattern in the other hand",
   "screen.aeprimitives.process_analyzer": "ME Process Analyzer",
   "screen.aeprimitives.process_analyzer.title": "Process graph · %s sequences · revision %s",
   "screen.aeprimitives.process_analyzer.hint": "Select a sequence or operation node to inspect its live providers.",

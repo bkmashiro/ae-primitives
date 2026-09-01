@@ -13,6 +13,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import dev.vfyjxf.taffy.style.TaffyPosition;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticSnapshot;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessSequenceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
@@ -81,20 +82,22 @@ public final class ProcessAnalyzerClient {
                 .gridSize(24).gridMinPixels(10)
                 .gridLineColor(0x183f7180).gridAccentColor(0x383f7180));
 
-        if (snapshot.sequences().isEmpty()) {
+        if (snapshot.sequences().isEmpty() && snapshot.machineInsights().isEmpty()) {
             detail.setText(Component.translatable("screen.aeprimitives.process_analyzer.empty"));
         } else {
+            for (var insight : snapshot.machineInsights()) {
+                var tab = tab(insight.identity().getPath());
+                tab.setOnClick(event -> {
+                    event.stopLaterPropagation();
+                    renderInsight(graph, detail, insight);
+                    graph.fitToChildren(20, 0.8f);
+                });
+                tabs.addChild(tab);
+            }
             for (var sequence : snapshot.sequences()) {
-                var tab = new Button();
                 String tabName = sequence.id().getPath();
-                tab.setText(Component.literal(tabName));
-                tab.layout(layout -> layout.width(Math.min(140, 12 + tabName.length() * 6)).height(16).paddingHorizontal(5));
+                var tab = tab(tabName);
                 tab.textStyle(style -> style.fontSize(9).textColor(sequence.blocked() ? 0xffffa2a7 : 0xff9fe7e5));
-                tab.buttonStyle(style -> style
-                        .baseTexture(new ColorRectTexture(0xff23313d))
-                        .hoverTexture(new ColorRectTexture(0xff304554))
-                        .pressedTexture(new ColorRectTexture(0xff18242e)));
-                tab.style(style -> style.zIndex(2));
                 tab.setOnClick(event -> {
                     event.stopLaterPropagation();
                     renderSequence(graph, detail, sequence);
@@ -102,11 +105,60 @@ public final class ProcessAnalyzerClient {
                 });
                 tabs.addChild(tab);
             }
-            renderSequence(graph, detail, snapshot.sequences().getFirst());
+            if (!snapshot.machineInsights().isEmpty()) {
+                renderInsight(graph, detail, snapshot.machineInsights().getFirst());
+            } else {
+                renderSequence(graph, detail, snapshot.sequences().getFirst());
+            }
         }
 
         root.addChildren(title, tabs, graph, detail);
         return ModularUI.of(UI.of(root));
+    }
+
+    private static Button tab(String name) {
+        var tab = new Button();
+        tab.setText(Component.literal(name));
+        tab.layout(layout -> layout.width(Math.min(140, 12 + name.length() * 6)).height(16).paddingHorizontal(5));
+        tab.textStyle(style -> style.fontSize(9).textColor(0xff9fe7e5));
+        tab.buttonStyle(style -> style
+                .baseTexture(new ColorRectTexture(0xff23313d))
+                .hoverTexture(new ColorRectTexture(0xff304554))
+                .pressedTexture(new ColorRectTexture(0xff18242e)));
+        tab.style(style -> style.zIndex(2));
+        return tab;
+    }
+
+    private static void renderInsight(GraphView graph, Label detail, MachineInsight insight) {
+        graph.clearAllContentChildren();
+        var card = new UIElement();
+        card.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE)
+                .left(18).top(12).width(340).height(92).paddingAll(8).gapAll(4));
+        card.style(style -> style.background(new ColorRectTexture(0xff1d3540))
+                .overlay(new ColorBorderTexture(-2, 0xff4d8792)));
+
+        var title = new Label();
+        title.setText(Component.literal(insight.identity().toString()));
+        title.textStyle(style -> style.fontSize(11).textColor(0xff9fe7e5).textShadow(true));
+        var operations = new Label();
+        operations.setText(Component.literal("Operations: " + (insight.operations().isEmpty() ? "none" :
+                insight.operations().stream().map(operation -> operation.operation().getPath())
+                        .collect(Collectors.joining(", ")))));
+        operations.textStyle(style -> style.fontSize(9).textColor(0xffd7e5e7));
+        var resources = new Label();
+        resources.setText(Component.literal(insight.requirements().isEmpty() ? "Resources: none declared" :
+                insight.requirements().stream().map(requirement -> "%s %s %s%s".formatted(
+                                requirement.kind().name().toLowerCase(), requirement.amount(),
+                                requirement.unit(), requirement.exact() ? " exact" : " bounded"))
+                        .collect(Collectors.joining("  ·  "))));
+        resources.textStyle(style -> style.fontSize(9).textColor(0xffc6d6db).adaptiveHeight(true));
+        var capacity = new Label();
+        capacity.setText(Component.literal("Parallel capacity: " + insight.maxParallelCapacity()
+                + (insight.blockedReason().isBlank() ? "" : "  ·  blocked: " + insight.blockedReason())));
+        capacity.textStyle(style -> style.fontSize(9).textColor(0xffc6d6db));
+        card.addChildren(title, operations, resources, capacity);
+        graph.addContentChild(card);
+        detail.setText(Component.literal("Read-only machine capability snapshot · revision " + insight.revision()));
     }
 
     private static void renderSequence(GraphView graph, Label detail, ProcessSequenceView sequence) {
@@ -182,7 +234,15 @@ public final class ProcessAnalyzerClient {
                         provider.dimension(), provider.pos().getX(), provider.pos().getY(), provider.pos().getZ(),
                         provider.busy() ? " (busy)" : ""))
                 .collect(Collectors.joining("  ·  "));
-        return Component.literal(providers);
+        String inputs = step.inputs().stream()
+                .map(resource -> resource.amount() + " " + resource.id()
+                        + (resource.kind().endsWith("alternative") ? " (alternative)" : ""))
+                .collect(Collectors.joining(", "));
+        String outputs = step.outputs().stream()
+                .map(resource -> resource.amount() + " " + resource.id())
+                .collect(Collectors.joining(", "));
+        return Component.literal((inputs.isBlank() ? "" : "Inputs: " + inputs + "  ·  ")
+                + (outputs.isBlank() ? "" : "Outputs: " + outputs + "  ·  ") + providers);
     }
 
     private static UIElement panel(int background, int border) {

@@ -39,6 +39,10 @@ class ProcessDiagnosticModelTest {
                     .containsExactly(id("minecraft", "iron_ingot"), id("minecraft", "iron_ingot"));
             assertThat(view.steps()).extracting(ProcessStepView::outputIcon)
                     .containsExactly(id("minecraft", "iron_nugget"), id("minecraft", "iron_block"));
+            assertThat(view.steps().getFirst().inputs()).containsExactly(
+                    new ProcessResourceView("item", id("minecraft", "iron_ingot"), 1));
+            assertThat(view.steps().getFirst().outputs()).containsExactly(
+                    new ProcessResourceView("item", id("minecraft", "iron_nugget"), 1));
             assertThat(view.steps().getFirst().providers()).singleElement().satisfies(provider -> {
                 assertThat(provider.dimension()).isEqualTo("minecraft:overworld");
                 assertThat(provider.pos()).isEqualTo(new BlockPos(4, 5, 6));

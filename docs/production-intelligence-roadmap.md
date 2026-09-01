@@ -96,6 +96,8 @@ Deliver the next PneumaticCraft slice as the first vertical use of the metric co
 
 Combine resource contract cards and the pattern laboratory into one inspection surface rather than two overlapping tools.
 
+**Status: complete.** The ME Process Analyzer now inspects live machines, machine-space components, operation patterns and sequence patterns through immutable server snapshots. Core owns the compact insight contract and UI; Create registers its operation, distinct stress and minimum-speed requirements, catalyst contract and parallel capacity without exposing execution hooks to the inspector.
+
 ### Product
 
 - Inspect a live machine, machine-space component, operation pattern or sequence pattern.

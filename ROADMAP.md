@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-The original spatial-factory roadmap is complete. PneumaticCraft now has tiered compressed-air cells for normal AE2 drives, bounded pressure import/export ports and an ME Pneumatic Assembly Chamber that consumes the matching air domain directly from its grid. The selectable physical-quantity display is also complete: optional extensions register watched metrics while Core owns selection, persistence and rendering without stable-tick network scans. The current pointer is Phase 2 of the [production intelligence roadmap](docs/production-intelligence-roadmap.md): capability inspection and the Pattern Laboratory.
+The original spatial-factory roadmap is complete. PneumaticCraft now has tiered compressed-air cells for normal AE2 drives, bounded pressure import/export ports and an ME Pneumatic Assembly Chamber that consumes the matching air domain directly from its grid. The selectable physical-quantity display and capability inspector are complete: optional extensions register watched metrics and immutable machine insights while Core owns selection, snapshots and rendering. The current pointer is Phase 3 of the [production intelligence roadmap](docs/production-intelligence-roadmap.md): bounded crafting forecasts over the existing compiled graph.
 
 The production intelligence roadmap incrementally reuses the current operation, sequence, machine-space and diagnostic models for selectable metrics, capability inspection, bounded forecasts, deterministic virtual commissioning, causal diagnostics and world overlays.
 

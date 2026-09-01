@@ -32,6 +32,7 @@
   "item.aeprimitives.sequence_pattern": "序列样板",
   "item.aeprimitives.process_analyzer": "ME 工序分析仪",
   "message.aeprimitives.process_analyzer.target": "请用分析仪点击 ME 样板供应器",
+  "message.aeprimitives.process_analyzer.subject": "请在另一只手中拿着机器空间组件、工序样板或序列样板",
   "screen.aeprimitives.process_analyzer": "ME 工序分析仪",
   "screen.aeprimitives.process_analyzer.title": "工序图 · %s 个序列 · 修订 %s",
   "screen.aeprimitives.process_analyzer.hint": "选择一个序列或工序节点，查看当前执行端。",
