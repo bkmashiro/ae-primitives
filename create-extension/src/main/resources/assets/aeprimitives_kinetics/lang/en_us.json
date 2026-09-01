@@ -9,5 +9,6 @@
   "block.aeprimitives_kinetics.me_crusher": "ME Crushing Chamber",
   "block.aeprimitives_kinetics.me_catalyst_chamber": "ME Catalyst Processing Chamber",
   "block.aeprimitives_kinetics.me_basin_processor": "ME Basin Processor",
-  "block.aeprimitives_kinetics.me_filling_station": "ME Filling Station"
+  "block.aeprimitives_kinetics.me_filling_station": "ME Filling Station",
+  "block.aeprimitives_kinetics.me_deployer": "ME Deployer"
 }

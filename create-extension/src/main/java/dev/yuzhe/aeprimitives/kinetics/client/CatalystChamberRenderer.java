@@ -31,6 +31,10 @@ public final class CatalystChamberRenderer extends KineticBlockEntityRenderer<Ki
             renderBasinContents(machine, pose, buffers, light, overlay);
             return;
         }
+        if (machine.kind() == KineticMachineKind.DEPLOYER) {
+            renderInstalledTool(machine, pose, buffers, light, overlay);
+            return;
+        }
         if (machine.kind() != KineticMachineKind.FAN || machine.catalystId().isEmpty()) return;
         var visual = machine.catalystVisual();
         switch (visual.kind()) {
@@ -38,6 +42,19 @@ public final class CatalystChamberRenderer extends KineticBlockEntityRenderer<Ki
             case BLOCK -> renderBlock(machine, visual, pose, buffers, light, overlay);
             case ITEM -> renderItem(machine, pose, buffers, light, overlay);
         }
+    }
+
+    private static void renderInstalledTool(KineticMachineBlockEntity machine, PoseStack pose,
+                                            MultiBufferSource buffers, int light, int overlay) {
+        var stack = machine.inventory().getStackInSlot(KineticMachineBlockEntity.TOOL_SLOT);
+        if (stack.isEmpty()) return;
+        pose.pushPose();
+        pose.translate(.5, .48, .5);
+        pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(90));
+        pose.scale(.45f, .45f, .45f);
+        Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemDisplayContext.FIXED,
+                light, overlay, pose, buffers, machine.getLevel(), KineticMachineBlockEntity.TOOL_SLOT);
+        pose.popPose();
     }
 
     private static void renderBasinContents(KineticMachineBlockEntity machine, PoseStack pose,

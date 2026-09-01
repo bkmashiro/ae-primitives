@@ -30,16 +30,18 @@ public final class KineticsContent {
     public static final DeferredBlock<KineticMachineBlock> ME_CATALYST_CHAMBER = block(KineticMachineKind.FAN);
     public static final DeferredBlock<KineticMachineBlock> ME_BASIN_PROCESSOR = block(KineticMachineKind.BASIN);
     public static final DeferredBlock<KineticMachineBlock> ME_FILLING_STATION = block(KineticMachineKind.FILLING);
+    public static final DeferredBlock<KineticMachineBlock> ME_DEPLOYER = block(KineticMachineKind.DEPLOYER);
     public static final DeferredItem<BlockItem> ME_PRESS_ITEM = item(KineticMachineKind.PRESS, ME_PRESS);
     public static final DeferredItem<BlockItem> ME_CRUSHER_ITEM = item(KineticMachineKind.CRUSHER, ME_CRUSHER);
     public static final DeferredItem<BlockItem> ME_CATALYST_CHAMBER_ITEM = item(KineticMachineKind.FAN, ME_CATALYST_CHAMBER);
     public static final DeferredItem<BlockItem> ME_BASIN_PROCESSOR_ITEM = item(KineticMachineKind.BASIN, ME_BASIN_PROCESSOR);
     public static final DeferredItem<BlockItem> ME_FILLING_STATION_ITEM = item(KineticMachineKind.FILLING, ME_FILLING_STATION);
+    public static final DeferredItem<BlockItem> ME_DEPLOYER_ITEM = item(KineticMachineKind.DEPLOYER, ME_DEPLOYER);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<KineticMachineBlockEntity>> MACHINE_ENTITY =
             BLOCK_ENTITIES.register("kinetic_machine", () -> BlockEntityType.Builder.of(
                     KineticMachineBlockEntity::new, ME_PRESS.get(), ME_CRUSHER.get(), ME_CATALYST_CHAMBER.get(),
-                    ME_BASIN_PROCESSOR.get(), ME_FILLING_STATION.get()).build(null));
+                    ME_BASIN_PROCESSOR.get(), ME_FILLING_STATION.get(), ME_DEPLOYER.get()).build(null));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> CREATIVE_TAB = TABS.register("main", () ->
             CreativeModeTab.builder()
@@ -51,6 +53,7 @@ public final class KineticsContent {
                         output.accept(ME_CATALYST_CHAMBER_ITEM.get());
                         output.accept(ME_BASIN_PROCESSOR_ITEM.get());
                         output.accept(ME_FILLING_STATION_ITEM.get());
+                        output.accept(ME_DEPLOYER_ITEM.get());
                     }).build());
 
     public static void register(IEventBus modBus) {

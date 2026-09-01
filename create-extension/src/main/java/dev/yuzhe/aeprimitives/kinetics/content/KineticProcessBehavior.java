@@ -60,6 +60,7 @@ interface KineticProcessBehavior {
             case FAN -> Fan.INSTANCE;
             case BASIN -> Basin.INSTANCE;
             case FILLING -> Filling.INSTANCE;
+            case DEPLOYER -> Deployer.INSTANCE;
             default -> CreateRecipe.INSTANCE;
         };
     }
@@ -195,6 +196,40 @@ interface KineticProcessBehavior {
             int completed = 0;
             for (int lane = 0; lane < laneLimit; lane++) {
                 var plan = FillingProcessPlan.find(machine, level);
+                if (plan == null || !plan.commit(machine, level)) break;
+                completed++;
+            }
+            return completed;
+        }
+    }
+
+    enum Deployer implements KineticProcessBehavior {
+        INSTANCE;
+
+        @Override
+        public boolean canProcess(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            return DeployerProcessPlan.find(machine, level) != null;
+        }
+
+        @Override
+        public List<ItemStack> process(KineticMachineBlockEntity machine, ServerLevel level, ItemStack input) {
+            throw new UnsupportedOperationException("Deploying recipes commit through their tool process plan");
+        }
+
+        @Override public boolean acceptsInput(int slot) { return slot < 2; }
+        @Override public int outputStart() { return 2; }
+
+        @Override
+        public int requestedLanes(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            var plan = DeployerProcessPlan.find(machine, level);
+            return plan == null ? 0 : plan.availableRuns(machine, laneLimit);
+        }
+
+        @Override
+        public int completeCycles(KineticMachineBlockEntity machine, ServerLevel level, int laneLimit) {
+            int completed = 0;
+            for (int lane = 0; lane < laneLimit; lane++) {
+                var plan = DeployerProcessPlan.find(machine, level);
                 if (plan == null || !plan.commit(machine, level)) break;
                 completed++;
             }

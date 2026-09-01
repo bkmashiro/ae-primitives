@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SPS",
+    "DFD",
+    "SAS"
+  ],
+  "key": {
+    "S": {
+      "item": "create:shaft"
+    },
+    "P": {
+      "item": "create:precision_mechanism"
+    },
+    "D": {
+      "item": "create:deployer"
+    },
+    "F": {
+      "item": "aeprimitives:advanced_machine_frame"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    }
+  },
+  "result": {
+    "id": "aeprimitives_kinetics:me_deployer"
+  }
+}

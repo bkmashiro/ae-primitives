@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Implement the ME Deployer for Create Deploying recipes, preserving installed tool identity, durability and remainders while reusing spatial lanes without fake-player world interaction.
+Verify a real press, deploy, fill and press sequenced-assembly path through imported operation patterns and machine providers before adding secondary Create operations.
 
 ## 1. Spatial parallel blocks
 

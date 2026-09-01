@@ -8,7 +8,8 @@ public enum KineticMachineKind {
     CRUSHER("me_crusher", AllRecipeTypes.CRUSHING, 16.0f, MachineTier.ADVANCED, 8),
     FAN("me_catalyst_chamber", null, 8.0f, MachineTier.ADVANCED, 8),
     BASIN("me_basin_processor", null, 16.0f, MachineTier.ADVANCED, 8),
-    FILLING("me_filling_station", null, 8.0f, MachineTier.ADVANCED, 8);
+    FILLING("me_filling_station", null, 8.0f, MachineTier.ADVANCED, 8),
+    DEPLOYER("me_deployer", null, 8.0f, MachineTier.ADVANCED, 8);
 
     private final String id;
     private final AllRecipeTypes recipeType;

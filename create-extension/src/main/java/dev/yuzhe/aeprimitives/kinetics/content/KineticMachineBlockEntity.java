@@ -37,6 +37,8 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 public final class KineticMachineBlockEntity extends KineticBlockEntity implements IInWorldGridNodeHost, IActionHost, SpatialParallelHost {
     public static final int BASIN_INPUT_SLOTS = 9;
+    public static final int PROCESS_INPUT_SLOT = 0;
+    public static final int TOOL_SLOT = 1;
     private static final int INVENTORY_SLOTS = 18;
     private static final float WORK_PER_RECIPE = 4096.0f;
     private static final float MIN_SPEED = 16.0f;

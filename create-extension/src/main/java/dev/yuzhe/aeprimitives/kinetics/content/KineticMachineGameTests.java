@@ -10,6 +10,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluids;
@@ -222,6 +223,39 @@ public final class KineticMachineGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void deployerConsumesHeldIngredientsAcrossSpatialLanes(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_DEPLOYER.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(BuiltInRegistries.ITEM
+                .get(ResourceLocation.fromNamespaceAndPath("create", "shaft")), 3));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.OAK_PLANKS, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "Deployer did not execute three independent spatial lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty()
+                        && machine.inventory().getStackInSlot(1).isEmpty(),
+                "Deployer did not consume processed and held ingredients linearly");
+        helper.assertTrue(countOutput(machine, BuiltInRegistries.ITEM
+                        .get(ResourceLocation.fromNamespaceAndPath("create", "cogwheel"))) == 3,
+                "Deployer did not queue one result per lane");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void deployerPreservesKeptToolIdentity(GameTestHelper helper) {
+        var machine = place(helper, KineticsContent.ME_DEPLOYER.get());
+        var axe = new ItemStack(Items.DIAMOND_AXE);
+        axe.setDamageValue(17);
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.EXPOSED_COPPER_GRATE));
+        machine.inventory().setStackInSlot(1, axe.copy());
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "Deployer did not run a tool application recipe");
+        helper.assertTrue(ItemStack.isSameItemSameComponents(machine.inventory().getStackInSlot(1), axe)
+                        && machine.inventory().getStackInSlot(1).getDamageValue() == 17,
+                "Keep-held recipe changed the installed tool identity or durability");
+        helper.assertTrue(countOutput(machine, Items.COPPER_GRATE) == 1,
+                "Deployer did not queue the tool application result");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void activeLanesScaleStressLinearly(GameTestHelper helper) {
         var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
         machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
@@ -249,6 +283,15 @@ public final class KineticMachineGameTests {
             if (!machine.inventory().getStackInSlot(slot).isEmpty()) return true;
         }
         return false;
+    }
+
+    private static int countOutput(KineticMachineBlockEntity machine, Item item) {
+        int count = 0;
+        for (int slot = 2; slot < machine.inventory().getSlots(); slot++) {
+            var stack = machine.inventory().getStackInSlot(slot);
+            if (stack.is(item)) count += stack.getCount();
+        }
+        return count;
     }
 
     private KineticMachineGameTests() {}

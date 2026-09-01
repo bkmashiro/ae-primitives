@@ -20,7 +20,7 @@ MODELS = (
     "fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "compost_chamber",
     "concrete_curing_chamber", "soil_processor", "dripstone_reservoir", "oxidation_chamber",
     "crop_cultivator", "tree_nursery", "growth_rack", "apiary_chamber", "batch_gate", "cooling_plate",
-    "resonance_foundry", "me_press", "me_crusher", "me_catalyst_chamber", "me_basin_processor", "me_filling_station",
+    "resonance_foundry", "me_press", "me_crusher", "me_catalyst_chamber", "me_basin_processor", "me_filling_station", "me_deployer",
     "basic_spatial_parallel", "advanced_spatial_parallel", "ultimate_spatial_parallel",
 )
 CHROME_CANDIDATES = (
