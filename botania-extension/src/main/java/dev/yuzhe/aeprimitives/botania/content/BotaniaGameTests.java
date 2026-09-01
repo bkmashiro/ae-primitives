@@ -140,6 +140,134 @@ public final class BotaniaGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void onlyIdleEmptyRunicInterfaceCanBePackaged(GameTestHelper helper) {
+        BlockPos interfacePos = new BlockPos(3, 1, 3);
+        helper.setBlock(interfacePos, BotaniaContent.RUNIC_ALTAR_INTERFACE.get());
+        var machine = (RunicAltarInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        helper.assertTrue(machine.canPackIntoMachineSpace(), "idle empty Runic interface rejected packaging");
+        machine.inventory().setStackInSlot(0, new ItemStack(item("botania:mana_powder")));
+        helper.assertTrue(!machine.canPackIntoMachineSpace(), "Runic interface with owned input was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void factoryRunsPackagedRunicInterfaceThroughRealAltar(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos altarPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.RUNIC_ALTAR_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(altarPos, BotaniaBlocks.runeAltar);
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var altar = (RunicAltarBlockEntity) helper.getBlockEntity(altarPos);
+        installRunicLane(factory, 0);
+        helper.runAfterDelay(30, () -> {
+            helper.assertTrue(altar.getTargetMana() == 5200 && !altar.isEmpty(),
+                    "factory did not reserve the native rune recipe into the real altar");
+            altar.receiveMana(altar.getTargetMana());
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(countFactoryLane(factory, 0, item("botania:rune_water")) == 2,
+                    "packaged Runic interface did not return the native altar output");
+            helper.assertTrue(altar.isEmpty(), "real altar retained ingredients after native completion");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 400)
+    public static void factoryRunicReservationSurvivesReloadAndBlockedOutput(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos altarPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.RUNIC_ALTAR_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(altarPos, BotaniaBlocks.runeAltar);
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var altar = (RunicAltarBlockEntity) helper.getBlockEntity(altarPos);
+        installRunicLane(factory, 0);
+        helper.runAfterDelay(30, () -> {
+            helper.assertTrue(altar.getTargetMana() == 5200 && !altar.isEmpty(),
+                    "Runic factory lane did not reserve native work before reload");
+            CompoundTag saved = new CompoundTag();
+            factory.saveAdditional(saved, level.registryAccess());
+            factory.loadTag(saved, level.registryAccess());
+            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+                factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                        new ItemStack(Blocks.COBBLESTONE, 64));
+            altar.receiveMana(altar.getTargetMana());
+            helper.runAfterDelay(30, () -> {
+                helper.assertTrue(!altar.isEmpty(), "blocked output completed and lost reserved native work");
+                helper.assertTrue(factory.inventory().extractItem(0, 1, false).isEmpty(),
+                        "factory released the component while a reloaded Runic stage was owned");
+                factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, 0), ItemStack.EMPTY);
+                factory.scheduleExternalWork();
+            });
+        });
+        helper.succeedWhen(() -> helper.assertTrue(
+                countFactoryLane(factory, 0, item("botania:rune_water")) == 2 && altar.isEmpty(),
+                "reloaded Runic stage did not finish exactly once after output unblocked"));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void oneRealRunicAltarServesOnlyOneFactoryLaneAtATime(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos altarPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.RUNIC_ALTAR_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(altarPos, BotaniaBlocks.runeAltar);
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var altar = (RunicAltarBlockEntity) helper.getBlockEntity(altarPos);
+        installRunicLane(factory, 0);
+        installRunicLane(factory, 1);
+        helper.runAfterDelay(30, () -> {
+            int remainingLanes = 0;
+            for (int lane = 0; lane < 2; lane++)
+                if (!factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(lane, 0)).isEmpty())
+                    remainingLanes++;
+            helper.assertTrue(remainingLanes == 1 && !altar.isEmpty(),
+                    "two factory lanes reserved one real Runic Altar concurrently");
+            altar.receiveMana(altar.getTargetMana());
+        });
+        helper.onEachTick(() -> {
+            if (countFactoryLane(factory, 0, item("botania:rune_water"))
+                    + countFactoryLane(factory, 1, item("botania:rune_water")) == 2
+                    && !altar.isEmpty() && altar.getTargetMana() > 0) altar.receiveMana(altar.getTargetMana());
+        });
+        helper.succeedWhen(() -> helper.assertTrue(
+                countFactoryLane(factory, 0, item("botania:rune_water")) == 2
+                        && countFactoryLane(factory, 1, item("botania:rune_water")) == 2
+                        && altar.isEmpty(),
+                "exclusive real altar did not hand off to the waiting Runic lane: lane0="
+                        + countFactoryLane(factory, 0, item("botania:rune_water")) + ", lane1="
+                        + countFactoryLane(factory, 1, item("botania:rune_water")) + ", altarEmpty="
+                        + altar.isEmpty() + ", targetMana=" + altar.getTargetMana() + ", currentMana="
+                        + altar.getCurrentMana() + ", scheduled=" + factory.isScheduled() + ", lane0Input="
+                        + factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0))
+                        + ", lane1Input="
+                        + factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(1, 0))));
+    }
+
+    private static void installRunicLane(HeterogeneousFactoryBlockEntity factory, int lane) {
+        var envelope = MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(BotaniaContent.RUNIC_ALTAR_INTERFACE.get()),
+                BotaniaContent.RUNIC_ALTAR_INTERFACE.get().defaultBlockState(), new CompoundTag());
+        factory.inventory().setStackInSlot(lane,
+                MachineSpaceComponentItem.create(ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        String[] inputs = {"botania:mana_powder", "botania:manasteel_ingot", "minecraft:bone_meal",
+                "minecraft:sugar_cane", "minecraft:fishing_rod", "botania:livingrock"};
+        for (int i = 0; i < inputs.length; i++)
+            factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(lane, i),
+                    new ItemStack(item(inputs[i])));
+    }
+
+    @GameTest(template = "empty")
     public static void manaPoolInterfaceWaitsForExactNativeManaCost(GameTestHelper helper) {
         ServerLevel level = (ServerLevel) helper.getLevel();
         BlockPos poolPos = new BlockPos(3, 1, 3), interfacePos = poolPos.east();

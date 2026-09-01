@@ -36,14 +36,19 @@ import dev.yuzhe.aeprimitives.menu.HeterogeneousFactoryMenu;
 public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntity implements MenuProvider {
     public static final int LANE_COUNT = 4;
     public static final int LANE_BUFFER_SLOTS = 7;
+    public static final int LANE_INPUT_SLOTS = 16;
     public static final int COMPONENT_START = 0;
     public static final int COMPONENT_END = 4;
     public static final int INPUT_START = 4;
     public static final int INPUT_END = INPUT_START + LANE_COUNT * LANE_BUFFER_SLOTS;
     public static final int OUTPUT_START = INPUT_END;
     public static final int OUTPUT_END = OUTPUT_START + LANE_COUNT * LANE_BUFFER_SLOTS;
+    public static final int EXTENDED_INPUT_START = OUTPUT_END;
+    public static final int INVENTORY_END = EXTENDED_INPUT_START
+            + LANE_COUNT * (LANE_INPUT_SLOTS - LANE_BUFFER_SLOTS);
 
     private final int[] laneProgress = new int[LANE_COUNT];
+    private final CompoundTag[] externalLaneStates = new CompoundTag[LANE_COUNT];
     @SuppressWarnings("unchecked")
     private final List<ItemStack>[] pendingLaneOutputs = new List[LANE_COUNT];
     private final VirtualMachineLaneExecutor[] activeExecutors = new VirtualMachineLaneExecutor[LANE_COUNT];
@@ -51,10 +56,11 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             new VirtualMachineLaneExecutor.LaneContext[LANE_COUNT];
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private boolean scheduled;
-    private final ItemStackHandler inventory = new ItemStackHandler(OUTPUT_END) {
+    private long wakeRevision;
+    private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_END) {
         @Override public boolean isItemValid(int slot, ItemStack stack) {
             if (slot < COMPONENT_END) return stack.is(ModContent.MACHINE_SPACE_COMPONENT.get()) && MachineSpaceComponentItem.read(stack) != null;
-            return slot < OUTPUT_START;
+            return slot < OUTPUT_START || slot >= EXTENDED_INPUT_START;
         }
         @Override protected void onContentsChanged(int slot) {
             if (slot < COMPONENT_END) {
@@ -62,6 +68,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
                 laneProgress[slot] = 0;
             }
             scheduled = true;
+            wakeRevision++;
             refreshLanePower();
             setChanged();
         }
@@ -81,6 +88,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     public HeterogeneousFactoryBlockEntity(BlockPos pos, BlockState state) {
         super(ModContent.HETEROGENEOUS_FACTORY_ENTITY.get(), pos, state);
         Arrays.fill(pendingLaneOutputs, List.of());
+        for (int lane = 0; lane < LANE_COUNT; lane++) externalLaneStates[lane] = new CompoundTag();
         getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setExposedOnSides(EnumSet.allOf(Direction.class))
                 .setIdlePowerUsage(0.0);
@@ -91,6 +99,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     /** Wakes the event-driven lane scheduler after an extension resource changes. */
     public void scheduleExternalWork() {
         scheduled = true;
+        wakeRevision++;
         setChanged();
     }
 
@@ -140,6 +149,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     public void serverTick() {
         if (!(level instanceof ServerLevel server) || !scheduled || !getMainNode().isActive()) return;
+        long observedWakeRevision = wakeRevision;
         flushOutputs();
         boolean workRemaining = false;
         for (int lane = 0; lane < COMPONENT_END; lane++) {
@@ -158,7 +168,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             if (external == null) { releaseExternalLane(lane); laneProgress[lane] = 0; continue; }
             workRemaining |= tickExternalLane(lane, external);
         }
-        if (!workRemaining) scheduled = false;
+        if (!workRemaining && wakeRevision == observedWakeRevision) scheduled = false;
         setChanged();
         markForUpdate();
     }
@@ -189,6 +199,12 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         plan.setActive(true);
         activeExecutors[lane] = external.executor;
         activeContexts[lane] = external.context;
+        if (!plan.isBegun()) {
+            ItemStackHandler inputs = snapshotInputs(lane);
+            if (!plan.begin(inputs)) return false;
+            commitInputs(lane, inputs);
+            setChanged();
+        }
         if (!plan.resourcesAvailable()) return false;
         laneProgress[lane] += Math.max(1, plan.workPerTick());
         if (laneProgress[lane] < plan.durationTicks()) return true;
@@ -200,6 +216,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         if (outputs == null) { releaseExternalLane(lane); return false; }
         commitInputs(lane, inputs);
         pendingLaneOutputs[lane] = copyStacks(outputs);
+        externalLaneStates[lane] = new CompoundTag();
         releaseExternalLane(lane);
         drainPending(lane);
         return true;
@@ -249,7 +266,8 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         if (envelope == null) return null;
         VirtualMachineLaneExecutor executor = VirtualMachineLaneExecutors.find(envelope);
         if (executor == null) return null;
-        var context = new VirtualMachineLaneExecutor.LaneContext(server, worldPosition, slot, envelope, inputs);
+        var context = new VirtualMachineLaneExecutor.LaneContext(
+                server, worldPosition, slot, envelope, inputs, externalLaneStates[slot]);
         return new ExternalLane(executor, context, executor.prepare(context));
     }
 
@@ -260,34 +278,44 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         };
     }
 
-    public static int inputSlot(int lane, int offset) { return INPUT_START + lane * LANE_BUFFER_SLOTS + offset; }
+    public static int inputSlot(int lane, int offset) {
+        if (offset < 0 || offset >= LANE_INPUT_SLOTS) throw new IndexOutOfBoundsException(offset);
+        return offset < LANE_BUFFER_SLOTS
+                ? INPUT_START + lane * LANE_BUFFER_SLOTS + offset
+                : EXTENDED_INPUT_START + lane * (LANE_INPUT_SLOTS - LANE_BUFFER_SLOTS)
+                        + offset - LANE_BUFFER_SLOTS;
+    }
     public static int outputSlot(int lane, int offset) { return OUTPUT_START + lane * LANE_BUFFER_SLOTS + offset; }
 
     private static int inputLane(int slot) {
-        return slot >= INPUT_START && slot < INPUT_END ? (slot - INPUT_START) / LANE_BUFFER_SLOTS : -1;
+        if (slot >= INPUT_START && slot < INPUT_END) return (slot - INPUT_START) / LANE_BUFFER_SLOTS;
+        return slot >= EXTENDED_INPUT_START && slot < INVENTORY_END
+                ? (slot - EXTENDED_INPUT_START) / (LANE_INPUT_SLOTS - LANE_BUFFER_SLOTS) : -1;
     }
 
     private boolean laneInputLocked(int lane) {
-        return laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty();
+        return laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty()
+                || !externalLaneStates[lane].isEmpty();
     }
 
     private boolean laneOwnsState(int lane) {
-        if (laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty() || activeExecutors[lane] != null) return true;
-        for (int offset = 0; offset < LANE_BUFFER_SLOTS; offset++) {
-            if (!inventory.getStackInSlot(inputSlot(lane, offset)).isEmpty()
-                    || !inventory.getStackInSlot(outputSlot(lane, offset)).isEmpty()) return true;
-        }
+        if (laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty()
+                || !externalLaneStates[lane].isEmpty() || activeExecutors[lane] != null) return true;
+        for (int offset = 0; offset < LANE_INPUT_SLOTS; offset++)
+            if (!inventory.getStackInSlot(inputSlot(lane, offset)).isEmpty()) return true;
+        for (int offset = 0; offset < LANE_BUFFER_SLOTS; offset++)
+            if (!inventory.getStackInSlot(outputSlot(lane, offset)).isEmpty()) return true;
         return false;
     }
 
     private ItemStackHandler snapshotInputs(int lane) {
-        var snapshot = new ItemStackHandler(LANE_BUFFER_SLOTS);
-        for (int slot = 0; slot < LANE_BUFFER_SLOTS; slot++) snapshot.setStackInSlot(slot, inventory.getStackInSlot(inputSlot(lane, slot)).copy());
+        var snapshot = new ItemStackHandler(LANE_INPUT_SLOTS);
+        for (int slot = 0; slot < LANE_INPUT_SLOTS; slot++) snapshot.setStackInSlot(slot, inventory.getStackInSlot(inputSlot(lane, slot)).copy());
         return snapshot;
     }
 
     private void commitInputs(int lane, ItemStackHandler snapshot) {
-        for (int slot = 0; slot < LANE_BUFFER_SLOTS; slot++) inventory.setStackInSlot(inputSlot(lane, slot), snapshot.getStackInSlot(slot).copy());
+        for (int slot = 0; slot < LANE_INPUT_SLOTS; slot++) inventory.setStackInSlot(inputSlot(lane, slot), snapshot.getStackInSlot(slot).copy());
     }
 
     private void refreshLanePower() {
@@ -370,6 +398,15 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             pending.add(laneTag);
         }
         tag.put("pendingLaneOutputs", pending);
+        var externalStates = new ListTag();
+        for (int lane = 0; lane < LANE_COUNT; lane++) {
+            if (externalLaneStates[lane].isEmpty()) continue;
+            var laneTag = new CompoundTag();
+            laneTag.putInt("lane", lane);
+            laneTag.put("state", externalLaneStates[lane].copy());
+            externalStates.add(laneTag);
+        }
+        tag.put("externalLaneStates", externalStates);
     }
 
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
@@ -381,6 +418,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         System.arraycopy(saved, 0, laneProgress, 0, Math.min(saved.length, laneProgress.length));
         scheduled = tag.getBoolean("scheduled");
         Arrays.fill(pendingLaneOutputs, List.of());
+        for (int lane = 0; lane < LANE_COUNT; lane++) externalLaneStates[lane] = new CompoundTag();
         var pending = tag.getList("pendingLaneOutputs", Tag.TAG_COMPOUND);
         for (int i = 0; i < pending.size(); i++) {
             var laneTag = pending.getCompound(i);
@@ -394,22 +432,36 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             }
             pendingLaneOutputs[lane] = List.copyOf(restored);
         }
-        if (hasPendingOutputs()) scheduled = true;
+        var externalStates = tag.getList("externalLaneStates", Tag.TAG_COMPOUND);
+        for (int i = 0; i < externalStates.size(); i++) {
+            var laneTag = externalStates.getCompound(i);
+            int lane = laneTag.getInt("lane");
+            if (lane >= 0 && lane < LANE_COUNT && laneTag.contains("state"))
+                externalLaneStates[lane] = laneTag.getCompound("state").copy();
+        }
+        if (hasPendingOutputs() || hasExternalState()) scheduled = true;
     }
 
     @Override public void onReady() {
         super.onReady();
         refreshLanePower();
-        if (hasInputs()) scheduled = true;
+        if (hasInputs() || hasExternalState()) scheduled = true;
     }
 
     private boolean hasInputs() {
         for (int slot = INPUT_START; slot < INPUT_END; slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return true;
+        for (int slot = EXTENDED_INPUT_START; slot < INVENTORY_END; slot++)
+            if (!inventory.getStackInSlot(slot).isEmpty()) return true;
         return false;
     }
 
     private boolean hasPendingOutputs() {
         for (List<ItemStack> pending : pendingLaneOutputs) if (!pending.isEmpty()) return true;
+        return false;
+    }
+
+    private boolean hasExternalState() {
+        for (CompoundTag state : externalLaneStates) if (!state.isEmpty()) return true;
         return false;
     }
 

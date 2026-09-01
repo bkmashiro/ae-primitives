@@ -714,7 +714,7 @@ public final class KineticMachineGameTests {
         int actualBonus = 0;
         for (int lane = 0; lane < 2; lane++) {
             var context = new dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor.LaneContext(
-                    helper.getLevel(), MACHINE, lane, envelope, inputs[lane]);
+                    helper.getLevel(), MACHINE, lane, envelope, inputs[lane], new net.minecraft.nbt.CompoundTag());
             var plan = KineticVirtualLaneExecutor.INSTANCE.prepare(context);
             helper.assertTrue(plan != null, "crusher lane did not resolve its recipe");
             for (ItemStack result : plan.complete(inputs[lane])) if (result.is(bonus)) actualBonus += result.getCount();

@@ -2,6 +2,7 @@ package dev.yuzhe.aeprimitives.space;
 
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -18,7 +19,7 @@ public interface VirtualMachineLaneExecutor {
     default void release(LaneContext context) {}
 
     record LaneContext(ServerLevel level, BlockPos factoryPos, int lane,
-                       MachineSpaceEnvelope envelope, ItemStackHandler inputs) {}
+                       MachineSpaceEnvelope envelope, ItemStackHandler inputs, CompoundTag state) {}
 
     interface LanePlan {
         int durationTicks();
@@ -29,6 +30,15 @@ public interface VirtualMachineLaneExecutor {
 
         /** Outputs used only for capacity checks. This method must not consume randomness. */
         List<ItemStack> previewOutputs();
+
+        /** True once extension-owned external work has been started for this lane. */
+        default boolean isBegun() { return true; }
+
+        /**
+         * Starts external work transactionally against an input snapshot. Extensions may mutate
+         * their opaque lane state here; Core persists that state without interpreting it.
+         */
+        default boolean begin(ItemStackHandler inputs) { return true; }
 
         /** Registers or clears the extension resource demand for this lane. */
         void setActive(boolean active);

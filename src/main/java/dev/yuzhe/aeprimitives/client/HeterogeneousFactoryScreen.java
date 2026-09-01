@@ -35,15 +35,15 @@ public final class HeterogeneousFactoryScreen extends AbstractContainerScreen<He
             int x = leftPos + 61 + lane * 32;
             slot(graphics, x, topPos + 17, lane == menu.selectedLane() ? ACCENT : BORDER);
         }
-        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
-            slot(graphics, leftPos + 60 + offset * 18, topPos + 60, BORDER);
-            slot(graphics, leftPos + 60 + offset * 18, topPos + 88, BORDER);
-        }
+        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_INPUT_SLOTS; offset++)
+            slot(graphics, leftPos + 24 + (offset % 8) * 18, topPos + 53 + (offset / 8) * 18, BORDER);
+        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+            slot(graphics, leftPos + 177 + (offset % 2) * 18, topPos + 53 + (offset / 2) * 18, BORDER);
         int lane = menu.selectedLane();
         int duration = menu.laneDuration(lane);
-        int width = duration <= 0 ? 0 : Math.min(126, menu.laneProgress(lane) * 126 / duration);
-        graphics.fill(leftPos + 60, topPos + 105, leftPos + 186, topPos + 109, SLOT);
-        graphics.fill(leftPos + 60, topPos + 105, leftPos + 60 + width, topPos + 109, ACCENT);
+        int width = duration <= 0 ? 0 : Math.min(144, menu.laneProgress(lane) * 144 / duration);
+        graphics.fill(leftPos + 24, topPos + 105, leftPos + 168, topPos + 109, SLOT);
+        graphics.fill(leftPos + 24, topPos + 105, leftPos + 24 + width, topPos + 109, ACCENT);
 
         graphics.fill(leftPos + 39, topPos + 124, leftPos + 209, topPos + 207, PANEL);
         outline(graphics, leftPos + 39, topPos + 124, 170, 83, BORDER);

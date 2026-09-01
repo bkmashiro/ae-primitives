@@ -404,17 +404,17 @@ public final class PrimitiveMachineGameTests {
     public static void heterogeneousFactoryExposesFullExtensionLaneBuffers(GameTestHelper helper) {
         helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
         var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
-        int lastInput = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(3, 6);
+        int lastInput = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(3, 15);
         int lastOutput = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(3, 6);
-        helper.assertTrue(lastInput < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.INPUT_END,
-                "factory did not expose seven inputs per extension lane");
+        helper.assertTrue(lastInput < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.INVENTORY_END,
+                "factory did not expose sixteen inputs per extension lane");
         helper.assertTrue(lastOutput < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.OUTPUT_END,
-                "factory did not expose seven outputs per extension lane");
+                "factory did not preserve seven outputs per extension lane");
         factory.inventory().setStackInSlot(lastInput, new ItemStack(Items.BOWL));
         factory.inventory().setStackInSlot(lastOutput, new ItemStack(Items.DIAMOND));
         helper.assertTrue(factory.inventory().getStackInSlot(lastInput).is(Items.BOWL)
                         && factory.inventory().getStackInSlot(lastOutput).is(Items.DIAMOND),
-                "extension lane buffers aliased or rejected their seventh slot");
+                "extension lane buffers aliased or rejected their final slots");
         helper.succeed();
     }
 

@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.SlotItemHandler;
 
 public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
-    public static final int MACHINE_SLOTS = HeterogeneousFactoryBlockEntity.OUTPUT_END;
+    public static final int MACHINE_SLOTS = HeterogeneousFactoryBlockEntity.INVENTORY_END;
     private static final int DATA_PER_LANE = 3;
     private final HeterogeneousFactoryBlockEntity factory;
     private final ContainerData laneData;
@@ -39,14 +39,14 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++)
             addSlot(new SlotItemHandler(factory.inventory(), lane, 62 + lane * 32, 18));
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_INPUT_SLOTS; offset++)
                 addSlot(new LaneSlot(factory, HeterogeneousFactoryBlockEntity.inputSlot(lane, offset),
-                        61 + offset * 18, 61, lane, this));
+                        25 + (offset % 8) * 18, 54 + (offset / 8) * 18, lane, this));
         }
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
             for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
                 addSlot(new LaneSlot(factory, HeterogeneousFactoryBlockEntity.outputSlot(lane, offset),
-                        61 + offset * 18, 89, lane, this));
+                        178 + (offset % 2) * 18, 54 + (offset / 2) * 18, lane, this));
         }
 
         for (int row = 0; row < 3; row++) {
@@ -94,10 +94,10 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
         } else if (original.is(ModContent.MACHINE_SPACE_COMPONENT.get())) {
             moved = moveItemStackTo(original, 0, HeterogeneousFactoryBlockEntity.LANE_COUNT, false);
         } else {
-            int start = HeterogeneousFactoryBlockEntity.INPUT_START
-                    + selectedLane * HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS;
+            int start = HeterogeneousFactoryBlockEntity.LANE_COUNT
+                    + selectedLane * HeterogeneousFactoryBlockEntity.LANE_INPUT_SLOTS;
             moved = moveItemStackTo(original, start,
-                    start + HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS, false);
+                    start + HeterogeneousFactoryBlockEntity.LANE_INPUT_SLOTS, false);
         }
         if (!moved) return ItemStack.EMPTY;
         if (original.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
