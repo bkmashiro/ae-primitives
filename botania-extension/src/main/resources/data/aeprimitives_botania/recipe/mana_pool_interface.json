@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","pattern":["LML","MFM","LPL"],"key":{"L":{"item":"botania:livingrock"},"M":{"item":"botania:manasteel_ingot"},"F":{"item":"aeprimitives:advanced_machine_frame"},"P":{"item":"botania:mana_pearl"}},"result":{"id":"aeprimitives_botania:mana_pool_interface","count":1}}

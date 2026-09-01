@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add a Mana Pool and catalyst operation interface that routes items through a real Botania pool while leaving pool mana, catalyst selection and native recipe resolution authoritative.
+Define and verify the machine space component envelope and assembly-table packaging rules for configured, idle and empty machines, without yet building the heterogeneous factory scheduler.
 
 ## 1. Spatial parallel blocks
 

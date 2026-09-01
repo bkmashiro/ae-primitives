@@ -70,16 +70,32 @@ public final class RunicAltarInterfaceBlockEntity extends BlockEntity implements
         if (altar == null || !altar.isEmpty() || recipeId != null) return false;
         Match match = findMatch(level);
         if (match == null || !canQueue(match.output)) return false;
-        List<ItemStack> sent = new ArrayList<>();
+        List<ItemStack> ingredients = new ArrayList<>();
         for (int slot : match.ingredientSlots) {
             ItemStack one = inventory.extractItem(slot, 1, false);
-            if (one.isEmpty() || !altar.addItem(null, one, null)) {
-                restore(sent); restore(one); return false;
+            if (one.isEmpty()) {
+                restore(ingredients);
+                return false;
             }
-            sent.add(one.copyWithCount(1));
+            ingredients.add(one.copyWithCount(1));
         }
         reservedReagent = inventory.extractItem(match.reagentSlot, 1, false);
-        if (reservedReagent.isEmpty()) { restore(sent); return false; }
+        if (reservedReagent.isEmpty()) {
+            restore(ingredients);
+            return false;
+        }
+        for (int index = 0; index < ingredients.size(); index++) {
+            ItemStack one = ingredients.get(index).copy();
+            if (!altar.addItem(null, one, null)) {
+                restore(one);
+                for (int remaining = index + 1; remaining < ingredients.size(); remaining++) {
+                    restore(ingredients.get(remaining));
+                }
+                restore(reservedReagent);
+                reservedReagent = ItemStack.EMPTY;
+                return false;
+            }
+        }
         recipeId = match.recipe.id();
         expectedOutput = match.output.copy();
         setChanged();

@@ -8,6 +8,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
@@ -20,6 +21,7 @@ import vazkii.botania.common.block.PetalApothecaryBlock;
 import vazkii.botania.common.block.block_entity.PetalApothecaryBlockEntity;
 import vazkii.botania.common.block.block_entity.RunicAltarBlockEntity;
 import vazkii.botania.common.block.block_entity.flower.misc.PureDaisyBlockEntity;
+import vazkii.botania.common.block.block_entity.mana.ManaPoolBlockEntity;
 
 @GameTestHolder(AePrimitivesBotania.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -132,6 +134,63 @@ public final class BotaniaGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void manaPoolInterfaceWaitsForExactNativeManaCost(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos poolPos = new BlockPos(3, 1, 3), interfacePos = poolPos.east();
+        helper.setBlock(poolPos, BotaniaBlocks.manaPool);
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.WEST));
+        var machine = (ManaPoolInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        var pool = (ManaPoolBlockEntity) helper.getBlockEntity(poolPos);
+        machine.inventory().setStackInSlot(0, new ItemStack(item("minecraft:iron_ingot")));
+        helper.assertTrue(machine.planForTest(level), "native manasteel recipe should be selected by the real pool");
+        pool.receiveMana(2999);
+        helper.assertTrue(!machine.executeForTest(level), "the interface must not complete with less than the native mana cost");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).getCount() == 1, "waiting must not reserve or consume the input");
+        pool.receiveMana(1);
+        helper.assertTrue(machine.executeForTest(level), "the real pool should complete at the exact native mana cost");
+        helper.assertTrue(pool.getCurrentMana() == 0 && count(machine, "botania:manasteel_ingot") == 1, "native mana and output must be preserved");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void manaPoolInterfaceUsesTheRealCatalystBelowPool(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos poolPos = new BlockPos(3, 2, 3), interfacePos = poolPos.east();
+        helper.setBlock(poolPos, BotaniaBlocks.manaPool);
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.WEST));
+        var machine = (ManaPoolInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        var pool = (ManaPoolBlockEntity) helper.getBlockEntity(poolPos);
+        machine.inventory().setStackInSlot(0, new ItemStack(item("minecraft:coal")));
+        helper.assertTrue(!machine.planForTest(level), "a conjuration recipe must not exist without its real catalyst");
+        helper.setBlock(poolPos.below(), BotaniaBlocks.conjurationCatalyst);
+        machine.markDirty();
+        helper.assertTrue(machine.planForTest(level), "the real catalyst should enable the native recipe");
+        pool.receiveMana(2100);
+        helper.assertTrue(machine.executeForTest(level), "the catalyst recipe should execute through the real pool");
+        helper.assertTrue(pool.getCurrentMana() == 0 && count(machine, "minecraft:coal") == 2, "conjuration must retain its native cost and output count");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void manaPoolInterfaceNeverStealsPreexistingWorldItems(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos poolPos = new BlockPos(3, 1, 3), interfacePos = poolPos.east();
+        helper.setBlock(poolPos, BotaniaBlocks.manaPool);
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.WEST));
+        var machine = (ManaPoolInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        var pool = (ManaPoolBlockEntity) helper.getBlockEntity(poolPos);
+        ItemEntity external = new ItemEntity(level, poolPos.getX() + 0.5, poolPos.getY() + 1.5, poolPos.getZ() + 0.5, new ItemStack(item("botania:manasteel_ingot")));
+        level.addFreshEntity(external);
+        machine.inventory().setStackInSlot(0, new ItemStack(item("minecraft:iron_ingot")));
+        helper.assertTrue(machine.planForTest(level), "native recipe should plan with an unrelated world item nearby");
+        pool.receiveMana(3000);
+        helper.assertTrue(machine.executeForTest(level), "owned native output should be recovered");
+        helper.assertTrue(external.isAlive() && external.getItem().getCount() == 1, "preexisting world items must not be captured");
+        helper.assertTrue(count(machine, "botania:manasteel_ingot") == 1, "only the synchronously created native output belongs to the interface");
+        helper.succeed();
+    }
+
     private static int count(PureDaisyInterfaceBlockEntity machine, String id) {
         Item item = item(id);
         int count = 0;
@@ -159,6 +218,12 @@ public final class BotaniaGameTests {
     private static int count(RunicAltarInterfaceBlockEntity machine, String id) {
         Item item = item(id); int count = 0;
         for (int slot = 16; slot < 25; slot++) { ItemStack stack = machine.inventory().getStackInSlot(slot); if (stack.is(item)) count += stack.getCount(); }
+        return count;
+    }
+
+    private static int count(ManaPoolInterfaceBlockEntity machine, String id) {
+        Item item = item(id); int count = 0;
+        for (int slot = 1; slot < 10; slot++) { ItemStack stack = machine.inventory().getStackInSlot(slot); if (stack.is(item)) count += stack.getCount(); }
         return count;
     }
 }
