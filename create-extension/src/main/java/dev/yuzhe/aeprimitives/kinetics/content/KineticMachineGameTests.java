@@ -1,7 +1,10 @@
 package dev.yuzhe.aeprimitives.kinetics.content;
 
+import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.kinetics.AePrimitivesKinetics;
+import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
@@ -67,6 +70,85 @@ public final class KineticMachineGameTests {
         helper.assertTrue(!machine.completeCycle(helper.getLevel()), "ME press accepted work with no output space");
         helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.IRON_INGOT), "ME press consumed blocked input");
         helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void advancedSidecarIsTierMatchedAndOneSided(GameTestHelper helper) {
+        var owner = place(helper, KineticsContent.ME_PRESS.get());
+        var otherPos = MACHINE.offset(2, 0, 0);
+        helper.setBlock(otherPos, KineticsContent.ME_PRESS.get());
+        var other = helper.<KineticMachineBlockEntity>getBlockEntity(otherPos);
+        var sidecarPos = MACHINE.offset(1, 0, 0);
+        helper.setBlock(sidecarPos, ModContent.ADVANCED_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(SpatialParallelBlock.FACING, Direction.WEST));
+        helper.assertTrue(owner.parallelLanes() == 3, "Advanced sidecar did not add two owner lanes");
+        helper.assertTrue(other.parallelLanes() == 1, "One sidecar bound to both adjacent machines");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void mismatchedAndRemovedSidecarsDoNotContribute(GameTestHelper helper) {
+        var machine = place(helper, KineticsContent.ME_PRESS.get());
+        var sidecarPos = MACHINE.offset(1, 0, 0);
+        helper.setBlock(sidecarPos, ModContent.BASIC_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(SpatialParallelBlock.FACING, Direction.WEST));
+        helper.assertTrue(machine.parallelLanes() == 1, "Basic sidecar accelerated an advanced machine");
+        helper.setBlock(sidecarPos, ModContent.ADVANCED_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(SpatialParallelBlock.FACING, Direction.WEST));
+        helper.assertTrue(machine.parallelLanes() == 3, "Replacement did not invalidate owner topology");
+        helper.destroyBlock(sidecarPos);
+        helper.assertTrue(machine.parallelLanes() == 1, "Removed sidecar remained cached");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void spatialLanesRunPressIndependently(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "ME press did not complete three independent lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "ME press did not consume one input per lane");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void spatialLanesRunCrusherIndependently(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_CRUSHER.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.DIORITE, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "ME crusher did not complete three independent lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "ME crusher did not consume one input per lane");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void spatialLanesRunCatalystChamberIndependently(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_CATALYST_CHAMBER.get());
+        machine.installCatalyst(new ItemStack(Items.WATER_BUCKET));
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.GRAVEL, 3));
+        helper.assertTrue(machine.completeCycles(helper.getLevel(), machine.parallelLanes()) == 3,
+                "Catalyst chamber did not complete three independent lanes");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "Catalyst chamber did not consume one input per lane");
+        helper.assertTrue(machine.catalystId().isPresent(), "Parallel lanes consumed the shared catalyst");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void activeLanesScaleStressLinearly(GameTestHelper helper) {
+        var machine = parallelMachine(helper, KineticsContent.ME_PRESS.get());
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
+        machine.tick();
+        helper.assertTrue(machine.activeLanes() == 3, "Machine did not expose three active lanes");
+        helper.assertTrue(machine.calculateStressApplied() == KineticMachineKind.PRESS.stressImpact() * 3,
+                "Create stress did not scale linearly with active lanes");
+        helper.succeed();
+    }
+
+    private static KineticMachineBlockEntity parallelMachine(GameTestHelper helper, KineticMachineBlock block) {
+        var machine = place(helper, block);
+        helper.setBlock(MACHINE.offset(1, 0, 0), ModContent.ADVANCED_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(SpatialParallelBlock.FACING, Direction.WEST));
+        return machine;
     }
 
     private static KineticMachineBlockEntity place(GameTestHelper helper, KineticMachineBlock block) {

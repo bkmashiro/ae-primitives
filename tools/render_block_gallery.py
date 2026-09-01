@@ -21,6 +21,7 @@ MODEL_IDS = (
     "fortune_chamber", "transformation_chamber", "resource_generator", "growth_chamber", "compost_chamber",
     "concrete_curing_chamber", "soil_processor", "dripstone_reservoir", "oxidation_chamber",
     "crop_cultivator", "tree_nursery", "growth_rack", "apiary_chamber", "batch_gate", "cooling_plate",
+    "basic_spatial_parallel", "advanced_spatial_parallel", "ultimate_spatial_parallel",
 )
 CLIENT_JAR = Path.home() / ".gradle/caches/neoformruntime/artifacts/minecraft_1.21.1_client.jar"
 

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SQS",
+    "QFQ",
+    "SQS"
+  ],
+  "key": {
+    "S": {
+      "item": "ae2:spatial_cell_component_128"
+    },
+    "Q": {
+      "item": "ae2:quartz_glass"
+    },
+    "F": {
+      "item": "aeprimitives:ultimate_machine_frame"
+    }
+  },
+  "result": {
+    "id": "aeprimitives:ultimate_spatial_parallel",
+    "count": 1
+  }
+}

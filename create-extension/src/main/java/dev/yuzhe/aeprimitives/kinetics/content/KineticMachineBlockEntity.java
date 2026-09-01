@@ -12,6 +12,9 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import dev.yuzhe.aeprimitives.content.MachineTier;
+import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
+import dev.yuzhe.aeprimitives.spatial.SpatialParallelHost;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystDefinition;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystRegistry;
 import dev.yuzhe.aeprimitives.kinetics.catalyst.CatalystVisual;
@@ -30,7 +33,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public final class KineticMachineBlockEntity extends KineticBlockEntity implements IInWorldGridNodeHost, IActionHost {
+public final class KineticMachineBlockEntity extends KineticBlockEntity implements IInWorldGridNodeHost, IActionHost, SpatialParallelHost {
     private static final int OUTPUT_START = 1;
     private static final int OUTPUT_END = 10;
     private static final float WORK_PER_RECIPE = 4096.0f;
@@ -54,6 +57,9 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     private ResourceLocation catalystId;
     private ItemStack catalystStack = ItemStack.EMPTY;
     private CatalystVisual catalystVisual = CatalystVisual.item();
+    private boolean parallelTopologyDirty = true;
+    private int parallelLanes = 1;
+    private int activeLanes;
 
     public KineticMachineBlockEntity(BlockPos pos, BlockState state) {
         this(KineticsContent.MACHINE_ENTITY.get(), pos, state);
@@ -72,6 +78,38 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     public Optional<ResourceLocation> catalystId() { return Optional.ofNullable(catalystId); }
     public ItemStack catalystStack() { return catalystStack.copy(); }
     public CatalystVisual catalystVisual() { return catalystVisual; }
+    public int parallelLanes() {
+        refreshParallelTopology();
+        return parallelLanes;
+    }
+    public int activeLanes() { return activeLanes; }
+
+    @Override public MachineTier spatialParallelTier() { return kind().tier(); }
+    @Override public int maxSpatialParallelLanes() { return kind().maxParallelLanes(); }
+    @Override public void invalidateSpatialParallelism() {
+        parallelTopologyDirty = true;
+        setChanged();
+    }
+
+    private void refreshParallelTopology() {
+        if (!parallelTopologyDirty || level == null || level.isClientSide()) return;
+        int lanes = 1;
+        for (var direction : Direction.values()) {
+            var state = level.getBlockState(worldPosition.relative(direction));
+            if (state.getBlock() instanceof SpatialParallelBlock sidecar
+                    && state.getValue(SpatialParallelBlock.FACING) == direction.getOpposite()
+                    && sidecar.tier() == spatialParallelTier()) {
+                lanes += sidecar.addedLanes();
+            }
+        }
+        int updated = Math.min(maxSpatialParallelLanes(), lanes);
+        parallelTopologyDirty = false;
+        if (updated != parallelLanes) {
+            parallelLanes = updated;
+            setChanged();
+            sendData();
+        }
+    }
 
     public Optional<ItemStack> installCatalyst(ItemStack offered) {
         if (kind() != KineticMachineKind.FAN || catalystId != null) return Optional.empty();
@@ -111,6 +149,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
 
     @Override public void initialize() {
         super.initialize();
+        parallelTopologyDirty = true;
         if (level != null && !level.isClientSide && !gridNode.isReady()) {
             gridNode.setVisualRepresentation(getBlockState().getBlock());
             gridNode.create(level, worldPosition);
@@ -121,27 +160,46 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.tick();
         if (!(level instanceof ServerLevel server)) return;
         flushOutputs();
-        if (!canRun()) return;
         var input = inventory.getStackInSlot(0);
-        if (input.isEmpty()) { work = 0; return; }
-        if (!hasRecipe(server, input)) { work = 0; return; }
+        boolean hasRecipe = !input.isEmpty() && hasRecipe(server, input);
+        int requestedLanes = hasRecipe ? Math.min(parallelLanes(), input.getCount()) : 0;
+        updateActiveLanes(requestedLanes);
+        if (!canRun()) return;
+        if (!hasRecipe) { work = 0; return; }
         work += Math.abs(getSpeed());
         if (work < WORK_PER_RECIPE) return;
-        if (completeCycle(server)) {
+        if (completeCycles(server, requestedLanes) > 0) {
             work = 0;
             sendData();
         }
     }
 
     boolean completeCycle(ServerLevel server) {
-        var input = inventory.getStackInSlot(0);
-        if (input.isEmpty()) return false;
-        var outputs = rollOutputs(server, input);
-        if (outputs == null || !canQueueAll(outputs)) return false;
-        inventory.extractItem(0, 1, false);
-        queueAll(outputs);
+        return completeCycles(server, 1) == 1;
+    }
+
+    int completeCycles(ServerLevel server, int laneLimit) {
+        int completed = 0;
+        for (int lane = 0; lane < laneLimit; lane++) {
+            var input = inventory.getStackInSlot(0);
+            if (input.isEmpty()) break;
+            // Processing is invoked per lane so probabilistic recipes roll independently.
+            var outputs = rollOutputs(server, input);
+            if (outputs == null || !canQueueAll(outputs)) break;
+            inventory.extractItem(0, 1, false);
+            queueAll(outputs);
+            completed++;
+        }
+        if (completed > 0) setChanged();
+        return completed;
+    }
+
+    private void updateActiveLanes(int lanes) {
+        if (lanes == activeLanes) return;
+        activeLanes = lanes;
+        if (hasNetwork()) getOrCreateNetwork().updateStressFor(this, calculateStressApplied());
         setChanged();
-        return true;
+        sendData();
     }
 
     private boolean hasRecipe(ServerLevel server, ItemStack input) {
@@ -202,7 +260,7 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         }
     }
 
-    @Override public float calculateStressApplied() { return kind().stressImpact(); }
+    @Override public float calculateStressApplied() { return kind().stressImpact() * Math.max(1, activeLanes); }
     @Override public IGridNode getGridNode(Direction direction) { return gridNode.isReady() ? gridNode.getNode() : null; }
     @Override public IGridNode getActionableNode() { return gridNode.getNode(); }
 
@@ -210,6 +268,8 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.write(tag, registries, clientPacket);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putFloat("work", work);
+        tag.putInt("parallelLanes", parallelLanes);
+        tag.putInt("activeLanes", activeLanes);
         if (catalystId != null) {
             tag.putString("catalystId", catalystId.toString());
             tag.put("catalystStack", catalystStack.saveOptional(registries));
@@ -226,6 +286,9 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
         super.read(tag, registries, clientPacket);
         if (tag.contains("inventory")) inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         work = tag.getFloat("work");
+        parallelLanes = Math.max(1, tag.getInt("parallelLanes"));
+        activeLanes = Math.max(0, tag.getInt("activeLanes"));
+        if (!clientPacket) parallelTopologyDirty = true;
         catalystId = tag.contains("catalystId") ? ResourceLocation.tryParse(tag.getString("catalystId")) : null;
         catalystStack = tag.contains("catalystStack")
                 ? ItemStack.parseOptional(registries, tag.getCompound("catalystStack")) : ItemStack.EMPTY;

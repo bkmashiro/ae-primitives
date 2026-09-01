@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel"
+    },
+    "facing=east": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel",
+      "y": 270
+    },
+    "facing=up": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel",
+      "x": 270
+    },
+    "facing=down": {
+      "model": "aeprimitives:block/ultimate_spatial_parallel",
+      "x": 90
+    }
+  }
+}

@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Implement spatial parallel blocks and exercise them on the three existing Kinetics machines before adding another machine family.
+Implement the ME Basin Processor as the first additional Create atomic-operation machine, reusing spatial lanes and preserving Create heat/stress semantics.
 
 ## 1. Spatial parallel blocks
 

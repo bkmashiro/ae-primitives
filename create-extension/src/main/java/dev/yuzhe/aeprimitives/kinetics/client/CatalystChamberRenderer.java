@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
@@ -25,12 +26,36 @@ public final class CatalystChamberRenderer extends KineticBlockEntityRenderer<Ki
     protected void renderSafe(KineticMachineBlockEntity machine, float partialTicks, PoseStack pose,
                               MultiBufferSource buffers, int light, int overlay) {
         super.renderSafe(machine, partialTicks, pose, buffers, light, overlay);
+        renderLaneStatus(machine, pose, buffers, light);
         if (machine.kind() != KineticMachineKind.FAN || machine.catalystId().isEmpty()) return;
         var visual = machine.catalystVisual();
         switch (visual.kind()) {
             case FLUID -> renderFluid(machine, visual, pose, buffers, light, overlay);
             case BLOCK -> renderBlock(machine, visual, pose, buffers, light, overlay);
             case ITEM -> renderItem(machine, pose, buffers, light, overlay);
+        }
+    }
+
+    private static void renderLaneStatus(KineticMachineBlockEntity machine, PoseStack pose,
+                                         MultiBufferSource buffers, int light) {
+        var texture = ResourceLocation.fromNamespaceAndPath("aeprimitives", "block/transformation_energy");
+        var sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(texture);
+        var consumer = buffers.getBuffer(RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS));
+        var matrix = pose.last().pose();
+        int total = Math.min(8, machine.parallelLanes());
+        int active = Math.min(total, machine.activeLanes());
+        float width = .075f;
+        float gap = .025f;
+        float start = .5f - (total * width + (total - 1) * gap) / 2;
+        for (int lane = 0; lane < total; lane++) {
+            float x0 = start + lane * (width + gap);
+            float x1 = x0 + width;
+            int red = lane < active ? 112 : 38;
+            int green = lane < active ? 255 : 104;
+            int blue = lane < active ? 224 : 116;
+            quad(consumer, matrix, x0,.105f,1.001f, x1,.105f,1.001f, x1,.18f,1.001f, x0,.18f,1.001f,
+                    sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1(), red,green,blue,255,
+                    Math.max(light, LightTexture.FULL_BRIGHT / 2), 0,0,1);
         }
     }
 

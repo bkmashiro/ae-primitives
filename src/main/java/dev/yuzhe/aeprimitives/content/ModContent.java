@@ -9,6 +9,7 @@ import dev.yuzhe.aeprimitives.menu.PrimitiveMachineMenu;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessAnalyzerItem;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
+import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -55,6 +56,9 @@ public final class ModContent {
     public static final DeferredBlock<ResonancePartBlock> RESONANCE_CASING = part("resonance_casing");
     public static final DeferredBlock<ResonancePartBlock> RESONANCE_COIL = part("resonance_coil");
     public static final DeferredBlock<ResonancePartBlock> RESONANCE_CORE = part("resonance_core");
+    public static final DeferredBlock<SpatialParallelBlock> BASIC_SPATIAL_PARALLEL = spatialParallel("basic_spatial_parallel", MachineTier.BASIC, 1);
+    public static final DeferredBlock<SpatialParallelBlock> ADVANCED_SPATIAL_PARALLEL = spatialParallel("advanced_spatial_parallel", MachineTier.ADVANCED, 2);
+    public static final DeferredBlock<SpatialParallelBlock> ULTIMATE_SPATIAL_PARALLEL = spatialParallel("ultimate_spatial_parallel", MachineTier.ULTIMATE, 4);
 
     public static final DeferredItem<BlockItem> FORTUNE_CHAMBER_ITEM = item(MachineKind.FORTUNE, FORTUNE_CHAMBER);
     public static final DeferredItem<BlockItem> TRANSFORMATION_CHAMBER_ITEM = item(MachineKind.TRANSFORMATION, TRANSFORMATION_CHAMBER);
@@ -75,6 +79,9 @@ public final class ModContent {
     public static final DeferredItem<BlockItem> RESONANCE_CASING_ITEM = simpleItem("resonance_casing", RESONANCE_CASING);
     public static final DeferredItem<BlockItem> RESONANCE_COIL_ITEM = simpleItem("resonance_coil", RESONANCE_COIL);
     public static final DeferredItem<BlockItem> RESONANCE_CORE_ITEM = simpleItem("resonance_core", RESONANCE_CORE);
+    public static final DeferredItem<BlockItem> BASIC_SPATIAL_PARALLEL_ITEM = simpleItem("basic_spatial_parallel", BASIC_SPATIAL_PARALLEL);
+    public static final DeferredItem<BlockItem> ADVANCED_SPATIAL_PARALLEL_ITEM = simpleItem("advanced_spatial_parallel", ADVANCED_SPATIAL_PARALLEL);
+    public static final DeferredItem<BlockItem> ULTIMATE_SPATIAL_PARALLEL_ITEM = simpleItem("ultimate_spatial_parallel", ULTIMATE_SPATIAL_PARALLEL);
     public static final DeferredItem<Item> BASIC_MACHINE_FRAME = machineFrame("basic_machine_frame");
     public static final DeferredItem<Item> ADVANCED_MACHINE_FRAME = machineFrame("advanced_machine_frame");
     public static final DeferredItem<Item> ULTIMATE_MACHINE_FRAME = machineFrame("ultimate_machine_frame");
@@ -143,6 +150,9 @@ public final class ModContent {
                         output.accept(RESONANCE_CASING_ITEM.get());
                         output.accept(RESONANCE_COIL_ITEM.get());
                         output.accept(RESONANCE_CORE_ITEM.get());
+                        output.accept(BASIC_SPATIAL_PARALLEL_ITEM.get());
+                        output.accept(ADVANCED_SPATIAL_PARALLEL_ITEM.get());
+                        output.accept(ULTIMATE_SPATIAL_PARALLEL_ITEM.get());
                         output.accept(BASIC_MACHINE_FRAME.get());
                         output.accept(ADVANCED_MACHINE_FRAME.get());
                         output.accept(ULTIMATE_MACHINE_FRAME.get());
@@ -161,6 +171,10 @@ public final class ModContent {
     }
     private static DeferredBlock<ResonancePartBlock> part(String id) {
         return BLOCKS.register(id, () -> new ResonancePartBlock(
+                BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops().noOcclusion()));
+    }
+    private static DeferredBlock<SpatialParallelBlock> spatialParallel(String id, MachineTier tier, int addedLanes) {
+        return BLOCKS.register(id, () -> new SpatialParallelBlock(tier, addedLanes,
                 BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops().noOcclusion()));
     }
     private static DeferredItem<BlockItem> simpleItem(String id, Supplier<? extends Block> block) {
