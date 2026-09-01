@@ -409,10 +409,34 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         tag.put("externalLaneStates", externalStates);
     }
 
+    private void restoreInventory(CompoundTag savedInventory, HolderLookup.Provider registries) {
+        for (int slot = 0; slot < inventory.getSlots(); slot++) inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        int savedSize = savedInventory.getInt("Size");
+        if (savedSize <= 0) return;
+        var restored = new ItemStackHandler(savedSize);
+        restored.deserializeNBT(registries, savedInventory);
+        if (savedSize == 28) {
+            // Original layout: four components, then three inputs and three outputs per lane.
+            for (int lane = 0; lane < LANE_COUNT; lane++) {
+                inventory.setStackInSlot(lane, restored.getStackInSlot(lane).copy());
+                for (int offset = 0; offset < 3; offset++) {
+                    inventory.setStackInSlot(inputSlot(lane, offset),
+                            restored.getStackInSlot(4 + lane * 3 + offset).copy());
+                    inventory.setStackInSlot(outputSlot(lane, offset),
+                            restored.getStackInSlot(16 + lane * 3 + offset).copy());
+                }
+            }
+            return;
+        }
+        // The 60-slot layout and the current layout deliberately share their first 60 slot IDs.
+        for (int slot = 0; slot < Math.min(savedSize, inventory.getSlots()); slot++)
+            inventory.setStackInSlot(slot, restored.getStackInSlot(slot).copy());
+    }
+
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         for (int lane = 0; lane < LANE_COUNT; lane++) releaseExternalLane(lane);
         super.loadTag(tag, registries);
-        inventory.deserializeNBT(registries, tag.getCompound("inventory"));
+        restoreInventory(tag.getCompound("inventory"), registries);
         int[] saved = tag.getIntArray("laneProgress");
         Arrays.fill(laneProgress, 0);
         System.arraycopy(saved, 0, laneProgress, 0, Math.min(saved.length, laneProgress.length));

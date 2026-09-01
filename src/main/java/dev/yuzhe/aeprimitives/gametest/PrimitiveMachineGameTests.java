@@ -489,6 +489,28 @@ public final class PrimitiveMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void heterogeneousFactoryMigratesOriginalTwentyEightSlotInventory(GameTestHelper helper) {
+        var original = new net.neoforged.neoforge.items.ItemStackHandler(28);
+        original.setStackInSlot(4, new ItemStack(Items.IRON_INGOT));
+        original.setStackInSlot(16, new ItemStack(Items.GOLD_INGOT));
+        var tag = new net.minecraft.nbt.CompoundTag();
+        tag.put("inventory", original.serializeNBT(helper.getLevel().registryAccess()));
+        var restored = new dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity(
+                new BlockPos(8, 1, 1), ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get().defaultBlockState());
+        restored.loadTag(tag, helper.getLevel().registryAccess());
+        helper.assertTrue(restored.inventory().getSlots()
+                        == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.INVENTORY_END,
+                "legacy inventory tag shrank the live factory handler");
+        helper.assertTrue(restored.inventory().getStackInSlot(
+                        dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).is(Items.IRON_INGOT),
+                "legacy lane input was not migrated");
+        helper.assertTrue(restored.inventory().getStackInSlot(
+                        dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0)).is(Items.GOLD_INGOT),
+                "legacy lane output was not migrated");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void heterogeneousFactoryReportsBlockedLane(GameTestHelper helper) {
         helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
