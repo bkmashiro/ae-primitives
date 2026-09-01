@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Finish the Powah ME Energizing Chamber's player-facing active-state rendering. The standalone chamber must display its active item and an energy beam whose intensity reflects paid versus required FE without moving recipe or FE semantics client-side; the heterogeneous factory keeps using status data rather than materializing virtual chambers. Validate the renderer in an isolated superflat client scene and keep all Powah classes in the optional extension.
+The scoped roadmap is complete. Spatial parallelism, the Create atomic-operation and real sequence path, Farmer's Delight, Botania, Powah, machine space components, and the heterogeneous factory are implemented and verified. Further work requires a new product decision rather than extending this execution pointer.
 
 ## 1. Spatial parallel blocks
 

@@ -3,9 +3,7 @@
   "render_type": "translucent",
   "textures": {
     "particle": "aeprimitives:block/casing",
-    "c": "aeprimitives:block/casing",
-    "g": "aeprimitives:block/machine_glass",
-    "e": "ae2:block/energy_cell"
+    "c": "aeprimitives:block/casing"
   },
   "elements": [
     {
@@ -165,70 +163,6 @@
         },
         "down": {
           "texture": "#c"
-        }
-      }
-    },
-    {
-      "from": [
-        3,
-        3,
-        3
-      ],
-      "to": [
-        13,
-        13,
-        13
-      ],
-      "faces": {
-        "north": {
-          "texture": "#g"
-        },
-        "south": {
-          "texture": "#g"
-        },
-        "east": {
-          "texture": "#g"
-        },
-        "west": {
-          "texture": "#g"
-        },
-        "up": {
-          "texture": "#g"
-        },
-        "down": {
-          "texture": "#g"
-        }
-      }
-    },
-    {
-      "from": [
-        5,
-        5,
-        5
-      ],
-      "to": [
-        11,
-        11,
-        11
-      ],
-      "faces": {
-        "north": {
-          "texture": "#e"
-        },
-        "south": {
-          "texture": "#e"
-        },
-        "east": {
-          "texture": "#e"
-        },
-        "west": {
-          "texture": "#e"
-        },
-        "up": {
-          "texture": "#e"
-        },
-        "down": {
-          "texture": "#e"
         }
       }
     },

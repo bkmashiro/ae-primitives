@@ -26,6 +26,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeInput;
@@ -62,13 +65,20 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     private boolean gridTopologyDirty = true;
     private int gridBootstrapTicks = 20;
     private int cachedLanes = 1;
+    private ItemStack clientVisualItem = ItemStack.EMPTY;
+    private float clientVisualProgress;
+    private ItemStack lastSyncedVisualItem = ItemStack.EMPTY;
+    private int lastSyncedVisualBucket = -1;
 
     public MeEnergizingChamberBlockEntity(BlockPos pos, BlockState state) { super(PowahContent.ENERGIZING_CHAMBER_ENTITY.get(), pos, state); }
     public static void serverTick(net.minecraft.world.level.Level level, BlockPos pos, BlockState state, MeEnergizingChamberBlockEntity be) {
         if (!(level instanceof ServerLevel server)) return;
         be.refreshGridConnections();
         be.flushOutputsToMe();
-        if (!be.mainNode.isActive()) return;
+        if (!be.mainNode.isActive()) {
+            be.syncVisualIfChanged();
+            return;
+        }
         be.refreshTopology();
         be.startPlans(server);
         for (var plan : be.plans) {
@@ -77,6 +87,7 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
             plan.energyPaid += be.energy.extractEnergy(wanted, false);
         }
         be.flushCompleted();
+        be.syncVisualIfChanged();
         be.setChanged();
     }
     public ItemStackHandler inventory() { return inventory; }
@@ -110,6 +121,8 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     public int activePlansForTest() { return plans.size(); }
     public double totalRequiredFeForTest() { return plans.stream().mapToDouble(p -> p.energyRequired).sum(); }
     public double totalPaidFeForTest() { return plans.stream().mapToDouble(p -> p.energyPaid).sum(); }
+    public ItemStack visualItem() { return clientVisualItem; }
+    public float visualProgress() { return clientVisualProgress; }
     public void startPlansForTest(ServerLevel level) { refreshTopology(); startPlans(level); }
     public void runExternalEnergyTickForTest() {
         for (var plan : plans) {
@@ -169,8 +182,14 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
             var value = recipe.value();
             var output = value.getResultItem(level.registryAccess()).copy();
             if (!canQueue(output)) return;
-            for (int slot = 0; slot < INPUTS; slot++) if (!inventory.getStackInSlot(slot).isEmpty()) inventory.extractItem(slot, 1, false);
-            plans.add(new Plan(output, value.getScaledEnergy(), 0));
+            ItemStack displayInput = ItemStack.EMPTY;
+            for (int slot = 0; slot < INPUTS; slot++) {
+                ItemStack stack = inventory.getStackInSlot(slot);
+                if (stack.isEmpty()) continue;
+                if (displayInput.isEmpty()) displayInput = stack.copyWithCount(1);
+                inventory.extractItem(slot, 1, false);
+            }
+            plans.add(new Plan(output, displayInput, value.getScaledEnergy(), 0));
         }
     }
     private int emitterCount() { return emitterRatePerModule() == 0 ? 0 : inventory.getStackInSlot(17).getCount(); }
@@ -223,6 +242,20 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
         gridBootstrapTicks = 20;
     }
     @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
+
+    @Override public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return visualTag(registries);
+    }
+
+    @Override public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+        super.handleUpdateTag(tag, registries);
+        clientVisualItem = ItemStack.parseOptional(registries, tag.getCompound("visualItem"));
+        clientVisualProgress = tag.getFloat("visualProgress");
+    }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries); mainNode.saveToNBT(tag); tag.put("inventory", inventory.serializeNBT(registries)); tag.put("energy", energy.serializeNBT(registries));
         var list = new ListTag(); for (var plan : plans) list.add(plan.save(registries)); tag.put("plans", list);
@@ -241,11 +274,52 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
         public ItemStack getItem(int index) { return index == 0 ? ItemStack.EMPTY : inventory.getStackInSlot(index - 1).copy(); }
         public int size() { return INPUTS + 1; }
     }
+    private void syncVisualIfChanged() {
+        if (!(level instanceof ServerLevel server)) return;
+        ItemStack item = plans.isEmpty() ? ItemStack.EMPTY : plans.getFirst().displayInput.copy();
+        float progress = plans.isEmpty() || plans.getFirst().energyRequired <= 0 ? 0
+                : (float) Math.min(1, plans.getFirst().energyPaid / plans.getFirst().energyRequired);
+        int bucket = plans.isEmpty() ? 0 : Math.max(1, Math.min(16, (int) Math.ceil(progress * 16)));
+        if (ItemStack.isSameItemSameComponents(item, lastSyncedVisualItem)
+                && item.getCount() == lastSyncedVisualItem.getCount() && bucket == lastSyncedVisualBucket) return;
+        clientVisualItem = item;
+        clientVisualProgress = progress;
+        lastSyncedVisualItem = item.copy();
+        lastSyncedVisualBucket = bucket;
+        server.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    private CompoundTag visualTag(HolderLookup.Provider registries) {
+        var tag = new CompoundTag();
+        ItemStack item = plans.isEmpty() ? ItemStack.EMPTY : plans.getFirst().displayInput;
+        float progress = plans.isEmpty() || plans.getFirst().energyRequired <= 0 ? 0
+                : (float) Math.min(1, plans.getFirst().energyPaid / plans.getFirst().energyRequired);
+        if (!item.isEmpty()) tag.put("visualItem", item.saveOptional(registries));
+        tag.putFloat("visualProgress", progress);
+        return tag;
+    }
+
     private static final class Plan {
-        final ItemStack output; final double energyRequired; double energyPaid;
-        Plan(ItemStack output, double required, double paid) { this.output = output; this.energyRequired = required; this.energyPaid = paid; }
+        final ItemStack output; final ItemStack displayInput; final double energyRequired; double energyPaid;
+        Plan(ItemStack output, ItemStack displayInput, double required, double paid) {
+            this.output = output;
+            this.displayInput = displayInput;
+            this.energyRequired = required;
+            this.energyPaid = paid;
+        }
         boolean complete() { return energyPaid + 1.0e-6 >= energyRequired; }
-        CompoundTag save(HolderLookup.Provider registries) { var tag = new CompoundTag(); tag.put("output", output.saveOptional(registries)); tag.putDouble("required", energyRequired); tag.putDouble("paid", energyPaid); return tag; }
-        static Plan load(CompoundTag tag, HolderLookup.Provider registries) { return new Plan(ItemStack.parseOptional(registries, tag.getCompound("output")), tag.getDouble("required"), tag.getDouble("paid")); }
+        CompoundTag save(HolderLookup.Provider registries) {
+            var tag = new CompoundTag();
+            tag.put("output", output.saveOptional(registries));
+            if (!displayInput.isEmpty()) tag.put("displayInput", displayInput.saveOptional(registries));
+            tag.putDouble("required", energyRequired);
+            tag.putDouble("paid", energyPaid);
+            return tag;
+        }
+        static Plan load(CompoundTag tag, HolderLookup.Provider registries) {
+            return new Plan(ItemStack.parseOptional(registries, tag.getCompound("output")),
+                    ItemStack.parseOptional(registries, tag.getCompound("displayInput")),
+                    tag.getDouble("required"), tag.getDouble("paid"));
+        }
     }
 }

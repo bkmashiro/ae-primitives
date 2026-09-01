@@ -108,6 +108,34 @@ public final class PowahGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void activeVisualStateUsesConcreteInputAndQuantizedEnergyProgress(GameTestHelper helper) {
+        var pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, PowahContent.ENERGIZING_CHAMBER.get());
+        var machine = (MeEnergizingChamberBlockEntity) helper.getBlockEntity(pos);
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.IRON_INGOT));
+        machine.inventory().setStackInSlot(1, new ItemStack(Items.GOLD_INGOT));
+        machine.inventory().setStackInSlot(17, new ItemStack(PowahContent.NIOTIC_EMITTER.get()));
+        machine.startPlansForTest((ServerLevel) helper.getLevel());
+        machine.energy().receiveEnergy(5000, false);
+        machine.runExternalEnergyTickForTest();
+
+        CompoundTag visual = machine.getUpdateTag(helper.getLevel().registryAccess());
+        var clientCopy = new MeEnergizingChamberBlockEntity(pos, machine.getBlockState());
+        clientCopy.handleUpdateTag(visual, helper.getLevel().registryAccess());
+        helper.assertTrue(clientCopy.visualItem().is(Items.IRON_INGOT),
+                "active renderer state did not preserve the concrete primary input");
+        helper.assertTrue(Math.abs(clientCopy.visualProgress() - 0.5f) < 0.001f,
+                "active renderer state did not expose paid versus required FE");
+
+        var idle = new MeEnergizingChamberBlockEntity(pos, machine.getBlockState());
+        clientCopy.handleUpdateTag(idle.getUpdateTag(helper.getLevel().registryAccess()),
+                helper.getLevel().registryAccess());
+        helper.assertTrue(clientCopy.visualItem().isEmpty() && clientCopy.visualProgress() == 0,
+                "inactive renderer update did not clear stale active presentation state");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 120)
     public static void completedRecipeReturnsThroughNormalMeStorage(GameTestHelper helper) {
         var pos = new BlockPos(3, 1, 3);

@@ -11,12 +11,23 @@ dependencies {
  implementation 'maven.modrinth:powah:6.2.10-neoforge'
  runtimeOnly 'maven.modrinth:cloth-config:15.0.140+neoforge'
  runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) {
+  runtimeOnly files('../../minecraft-visual-harness/build/libs/minecraft-visual-harness-0.1.0-SNAPSHOT.jar')
+  runtimeOnly 'maven.modrinth:kotlin-lang-forge:1.1.0-k2.0.21-1.21+neoforge'
+ }
 }
 neoForge {
  version='21.1.243'
  parchment { minecraftVersion='1.21.1'; mappingsVersion='2024.11.17' }
  runs {
-  client { client(); gameDirectory=file('run/client') }
+  client {
+   client(); gameDirectory=file('run/client')
+   if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) systemProperty 'mcHarness.enabled','true'
+   if (providers.gradleProperty('quickPlaySingleplayer').isPresent()) {
+    programArgument '--quickPlaySingleplayer'
+    programArgument providers.gradleProperty('quickPlaySingleplayer').get()
+   }
+  }
   server { server(); gameDirectory=file('run/server'); programArgument '--nogui' }
   gameTestServer { type='gameTestServer'; gameDirectory=file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives_powah' }
  }
