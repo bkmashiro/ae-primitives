@@ -1,7 +1,7 @@
 {
   "parent":"minecraft:block/block",
   "render_type":"cutout",
-  "textures":{"particle":"aeprimitives:block/casing","casing":"aeprimitives:block/casing","glass":"ae2:block/quartz_vibrant_glass","accent":"aeprimitives:block/fluix_accent"},
+  "textures":{"particle":"aeprimitives:block/casing","casing":"aeprimitives:block/casing","glass":"ae2:block/glass/quartz_glass_a","accent":"ae2:block/fluix_block"},
   "elements":[
     {"from":[0,0,0],"to":[16,16,16],"faces":{"north":{"texture":"#casing"},"south":{"texture":"#casing"},"east":{"texture":"#casing"},"west":{"texture":"#casing"},"up":{"texture":"#casing"},"down":{"texture":"#casing"}}},
     {"from":[3,3,-0.01],"to":[13,13,0.5],"faces":{"north":{"texture":"#glass"},"south":{"texture":"#glass"},"east":{"texture":"#accent"},"west":{"texture":"#accent"},"up":{"texture":"#accent"},"down":{"texture":"#accent"}}},

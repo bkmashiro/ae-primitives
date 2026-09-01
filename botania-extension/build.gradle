@@ -10,12 +10,21 @@ dependencies {
  implementation project(':')
  implementation "maven.modrinth:ae2:${ae2_version}"
  implementation 'vazkii.botania:botania-neoforge-1.21.1:452-SNAPSHOT'
+ runtimeOnly 'mezz.jei:jei-1.21.1-neoforge:19.39.0.369'
+ runtimeOnly 'maven.modrinth:guideme:21.1.10'
+ if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) {
+  runtimeOnly files('../../minecraft-visual-harness/build/libs/minecraft-visual-harness-0.1.0-SNAPSHOT.jar')
+  runtimeOnly 'maven.modrinth:kotlin-lang-forge:1.1.0-k2.0.21-1.21+neoforge'
+ }
 }
 neoForge {
  version='21.1.243'
  parchment { minecraftVersion='1.21.1'; mappingsVersion='2024.11.17' }
  runs {
-  client { client(); gameDirectory=file('run/client') }
+  client {
+   client(); gameDirectory=file('run/client')
+   if (providers.gradleProperty('visualHarness').map { it.toBoolean() }.orElse(false).get()) systemProperty 'mcHarness.enabled','true'
+  }
   server { server(); gameDirectory=file('run/server'); programArgument '--nogui' }
   gameTestServer { type='gameTestServer'; gameDirectory=file('build/gametest'); systemProperty 'neoforge.enabledGameTestNamespaces','aeprimitives_botania' }
  }

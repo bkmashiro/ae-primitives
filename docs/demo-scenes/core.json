@@ -1,0 +1,8 @@
+[
+  {"block":"aeprimitives:transformation_chamber","x":0,"y":0,"z":0},
+  {"block":"aeprimitives:fortune_chamber","x":1,"y":0,"z":0},
+  {"block":"aeprimitives:resource_generator","x":2,"y":0,"z":0},
+  {"block":"aeprimitives:machine_assembly_table","x":0,"y":0,"z":1},
+  {"block":"aeprimitives:heterogeneous_spatial_factory","x":1,"y":0,"z":1},
+  {"block":"aeprimitives:ultimate_spatial_parallel","x":2,"y":0,"z":1}
+]

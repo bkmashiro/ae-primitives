@@ -1,0 +1,6 @@
+[
+  {"block":"aeprimitives_botania:pure_daisy_interface","x":0,"y":0,"z":0},
+  {"block":"aeprimitives_botania:petal_apothecary_interface","x":1,"y":0,"z":0},
+  {"block":"aeprimitives_botania:runic_altar_interface","x":2,"y":0,"z":0},
+  {"block":"aeprimitives_botania:mana_pool_interface","x":3,"y":0,"z":0}
+]

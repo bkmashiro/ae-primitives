@@ -4,8 +4,8 @@
   "textures": {
     "particle": "aeprimitives:block/casing",
     "casing": "aeprimitives:block/casing",
-    "glass": "ae2:block/quartz_vibrant_glass",
-    "accent": "aeprimitives:block/fluix_accent"
+    "glass": "ae2:block/glass/quartz_glass_a",
+    "accent": "ae2:block/fluix_block"
   },
   "elements": [
     {

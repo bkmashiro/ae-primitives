@@ -2,6 +2,8 @@
 
 Compact AE2-native machines and reusable processing patterns for common automation jobs.
 
+![AE Primitives machines](docs/images/core-demo.png)
+
 ## Machines
 
 Every machine connects directly to a powered ME network, uses one channel and keeps blocked output in its local buffer.
@@ -60,6 +62,15 @@ The graph can be panned and zoomed. Select a node to see the matching providers 
 
 When Ponder is installed, the analyzer also has an interactive tutorial showing how Operation Patterns and Sequence Patterns fit together.
 
+## Optional extensions
+
+Each integration is a separate JAR. Install only the integrations used by the pack.
+
+- [**Kinetics**](create-extension/README.md) adds Create processing machines, operation patterns and real Sequenced Assembly dispatch.
+- [**Farmer's Delight**](farmers-delight-extension/README.md) adds ME cutting and cooking with an explicit factory heat port.
+- [**Botania**](botania-extension/README.md) adds Pure Daisy, Petal Apothecary, Runic Altar and Mana Pool interfaces.
+- [**Powah**](powah-extension/README.md) adds an ME Energizing Chamber and an explicit factory FE port.
+
 ### AE Primitives: Kinetics
 
 Create support ships as a separate mod from the same repository. **AE Primitives: Kinetics** requires AE Primitives and Create; the core mod does not load or depend on Create.
@@ -102,7 +113,9 @@ Both client and server need AE Primitives.
 - LowDragLib2 2.2.37 or newer
 - Java 21
 
-AE Primitives: Kinetics is an optional second JAR. It requires Create 6.0.10. JEI 19.39 and Ponder are optional client integrations.
+AE Primitives: Kinetics is an optional extension JAR. It requires Create 6.0.10. JEI 19.39 and Ponder are optional client integrations.
+
+Farmer's Delight, Botania and Powah support are also optional JARs. Their exact dependencies and usage are documented in their module READMEs above.
 
 ## Development
 
@@ -111,7 +124,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 ./gradlew verifyAll
 ```
 
-This is a two-module Gradle build. `verifyAll` builds both the core mod and `create-extension`; each module produces its own JAR.
+This is a five-module Gradle build. Core, Kinetics, Farmer's Delight, Botania and Powah each produce an independent JAR.
 
 Generate PNG previews without opening a browser:
 
@@ -120,6 +133,8 @@ Generate PNG previews without opening a browser:
 ```
 
 The declarative model and texture pipeline is documented in [Machine asset pipeline](docs/machine-assets.md). The next machine and integration slices are tracked in the [roadmap](ROADMAP.md).
+
+The README images are real Minecraft renders produced by Minecraft Visual Harness. Their reproducible block groups live in [`docs/demo-scenes`](docs/demo-scenes).
 
 ## License
 

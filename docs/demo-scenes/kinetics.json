@@ -1,0 +1,8 @@
+[
+  {"block":"aeprimitives_kinetics:me_press","x":0,"y":0,"z":0},
+  {"block":"aeprimitives_kinetics:me_crusher","x":1,"y":0,"z":0},
+  {"block":"aeprimitives_kinetics:me_catalyst_chamber","x":2,"y":0,"z":0},
+  {"block":"aeprimitives_kinetics:me_basin_processor","x":0,"y":0,"z":1},
+  {"block":"aeprimitives_kinetics:me_filling_station","x":1,"y":0,"z":1},
+  {"block":"aeprimitives_kinetics:me_deployer","x":2,"y":0,"z":1}
+]
