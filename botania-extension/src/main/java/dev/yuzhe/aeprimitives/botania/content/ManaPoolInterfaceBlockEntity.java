@@ -8,6 +8,9 @@ import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.util.AECableType;
+import dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity;
+import dev.yuzhe.aeprimitives.space.MachineSpacePackable;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,7 +34,8 @@ import org.jetbrains.annotations.Nullable;
 import vazkii.botania.api.recipe.ManaInfusionRecipe;
 import vazkii.botania.common.block.block_entity.mana.ManaPoolBlockEntity;
 
-public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements IInWorldGridNodeHost, IActionHost {
+public final class ManaPoolInterfaceBlockEntity extends BlockEntity
+        implements IInWorldGridNodeHost, IActionHost, MachineSpacePackable {
     private static final IGridNodeListener<ManaPoolInterfaceBlockEntity> NODE_LISTENER = new IGridNodeListener<>() {
         @Override public void onSaveChanges(ManaPoolInterfaceBlockEntity owner, IGridNode node) { owner.setChanged(); }
     };
@@ -46,16 +50,106 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
     @Nullable private ResourceLocation recipeId;
     private boolean gridTopologyDirty = true;
     private int gridBootstrapTicks = 20;
+    private final boolean[] factoryLanes = new boolean[HeterogeneousFactoryBlockEntity.LANE_COUNT];
+    @Nullable private BlockPos factoryOwner;
+    private int observedMana = Integer.MIN_VALUE;
 
     public ManaPoolInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(BotaniaContent.MANA_POOL_INTERFACE_ENTITY.get(), pos, state);
     }
 
     public ItemStackHandler inventory() { return inventory; }
-    public void markDirty() { dirty = true; gridTopologyDirty = true; }
+    public void markDirty() {
+        dirty = true;
+        gridTopologyDirty = true;
+        if (factoryOwner != null && level != null
+                && level.getBlockEntity(factoryOwner) instanceof HeterogeneousFactoryBlockEntity factory)
+            factory.scheduleExternalWork();
+    }
     public boolean hasPlanForTest() { return recipeId != null; }
     public boolean planForTest(ServerLevel level) { return tryPlan(level); }
     public boolean executeForTest(ServerLevel level) { return tryExecute(level); }
+
+    @Override public boolean canPackIntoMachineSpace() {
+        if (recipeId != null || factoryOwner != null) return false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++)
+            if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        return true;
+    }
+
+    @Override public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
+        return new CompoundTag();
+    }
+
+    @Override public boolean restoreMachineSpaceConfiguration(CompoundTag configuration,
+                                                              HolderLookup.Provider registries) {
+        return configuration.isEmpty() && canPackIntoMachineSpace();
+    }
+
+    boolean requestFactoryLane(BlockPos factoryPos, int lane, boolean active) {
+        if (lane < 0 || lane >= factoryLanes.length || !isAdjacentFactory(factoryPos)) return false;
+        if (active && (factoryOwner != null && !factoryOwner.equals(factoryPos) || !portInventoryEmpty())) return false;
+        if (active) factoryOwner = factoryPos.immutable();
+        factoryLanes[lane] = active;
+        if (!active && activeFactoryLaneCount() == 0) factoryOwner = null;
+        ManaPoolBlockEntity pool = pool();
+        observedMana = pool == null ? Integer.MIN_VALUE : pool.getCurrentMana();
+        setChanged();
+        return true;
+    }
+
+    boolean canRunFactoryLane(BlockPos factoryPos, int lane, RecipeHolder<ManaInfusionRecipe> recipe,
+                              ItemStack input) {
+        if (lane < 0 || lane >= factoryLanes.length || !factoryLanes[lane]
+                || factoryOwner == null || !factoryOwner.equals(factoryPos)) return false;
+        ManaPoolBlockEntity pool = pool();
+        if (pool == null || recipe == null || input.isEmpty()) return false;
+        RecipeHolder<ManaInfusionRecipe> current = pool.getMatchingRecipe(
+                input.copyWithCount(1), level.getBlockState(pool.getBlockPos().below()));
+        return current != null && current.id().equals(recipe.id())
+                && pool.getCurrentMana() >= current.value().getManaToConsume();
+    }
+
+    @Nullable RecipeHolder<ManaInfusionRecipe> matchingFactoryRecipe(ItemStack input) {
+        ManaPoolBlockEntity pool = pool();
+        if (pool == null || input.isEmpty()) return null;
+        return pool.getMatchingRecipe(input.copyWithCount(1), level.getBlockState(pool.getBlockPos().below()));
+    }
+
+    @Nullable ItemStack executeFactoryRecipe(RecipeHolder<ManaInfusionRecipe> recipe, ItemStack input) {
+        if (!(level instanceof ServerLevel server) || recipe == null || input.isEmpty()) return null;
+        ManaPoolBlockEntity pool = pool();
+        if (pool == null) return null;
+        ItemStack one = input.copyWithCount(1);
+        RecipeHolder<ManaInfusionRecipe> current = pool.getMatchingRecipe(one,
+                server.getBlockState(pool.getBlockPos().below()));
+        if (current == null || !current.id().equals(recipe.id())
+                || pool.getCurrentMana() < current.value().getManaToConsume()) return null;
+        ItemStack expected = current.value().getRecipeOutput(server.registryAccess(), one);
+        if (expected.isEmpty()) return null;
+        BlockPos poolPos = pool.getBlockPos();
+        AABB capture = new AABB(poolPos).inflate(0.25, 1.25, 0.25);
+        Set<UUID> before = new HashSet<>();
+        for (ItemEntity entity : server.getEntitiesOfClass(ItemEntity.class, capture)) before.add(entity.getUUID());
+        ItemEntity nativeInput = new ItemEntity(server, poolPos.getX() + 0.5, poolPos.getY() + 0.5,
+                poolPos.getZ() + 0.5, one);
+        server.addFreshEntity(nativeInput);
+        if (!pool.collideEntityItem(nativeInput)) {
+            if (nativeInput.isAlive()) nativeInput.discard();
+            return null;
+        }
+        for (ItemEntity entity : server.getEntitiesOfClass(ItemEntity.class, capture)) {
+            if (before.contains(entity.getUUID()) || !entity.isAlive()) continue;
+            ItemStack output = entity.getItem();
+            if (!ItemStack.isSameItemSameComponents(output, expected)
+                    || output.getCount() != expected.getCount()) continue;
+            ItemStack owned = output.copy();
+            entity.discard();
+            observedMana = pool.getCurrentMana();
+            return owned;
+        }
+        return null;
+    }
 
     private void refreshGridConnections() {
         var state = BotaniaGridSupport.refreshConnections(level, worldPosition, mainNode, gridTopologyDirty, gridBootstrapTicks);
@@ -65,6 +159,7 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, ManaPoolInterfaceBlockEntity self) {
         if (!(level instanceof ServerLevel server)) return;
+        self.observeFactoryResource();
         self.refreshGridConnections();
         BotaniaGridSupport.flushOutputs(self.mainNode, self.inventory, 1, 10);
         if (!self.mainNode.isActive()) return;
@@ -187,13 +282,46 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
         setChanged();
     }
 
+    private boolean portInventoryEmpty() {
+        if (recipeId != null) return false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++)
+            if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        return true;
+    }
+
+    private int activeFactoryLaneCount() {
+        int count = 0;
+        for (boolean active : factoryLanes) if (active) count++;
+        return count;
+    }
+
+    private boolean isAdjacentFactory(BlockPos factoryPos) {
+        return level != null && worldPosition.distManhattan(factoryPos) == 1
+                && level.getBlockEntity(factoryPos) instanceof HeterogeneousFactoryBlockEntity;
+    }
+
+    private void observeFactoryResource() {
+        if (factoryOwner == null || level == null || level.isClientSide) return;
+        ManaPoolBlockEntity pool = pool();
+        int mana = pool == null ? Integer.MIN_VALUE : pool.getCurrentMana();
+        if (mana == observedMana) return;
+        observedMana = mana;
+        if (level.getBlockEntity(factoryOwner) instanceof HeterogeneousFactoryBlockEntity factory)
+            factory.scheduleExternalWork();
+    }
+
     @Override public void onLoad() {
         super.onLoad();
         gridTopologyDirty = true;
         gridBootstrapTicks = 20;
         if (!level.isClientSide) mainNode.create(level, worldPosition);
     }
-    @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
+    @Override public void setRemoved() {
+        Arrays.fill(factoryLanes, false);
+        factoryOwner = null;
+        super.setRemoved();
+        mainNode.destroy();
+    }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
@@ -205,6 +333,9 @@ public final class ManaPoolInterfaceBlockEntity extends BlockEntity implements I
         inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         recipeId = tag.contains("recipe") ? ResourceLocation.parse(tag.getString("recipe")) : null;
         mainNode.loadFromNBT(tag);
+        Arrays.fill(factoryLanes, false);
+        factoryOwner = null;
+        observedMana = Integer.MIN_VALUE;
         dirty = true;
     }
     @Override public IGridNode getGridNode(Direction direction) { return mainNode.isReady() ? mainNode.getNode() : null; }

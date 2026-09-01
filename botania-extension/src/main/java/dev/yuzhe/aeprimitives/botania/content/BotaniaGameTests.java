@@ -1,6 +1,10 @@
 package dev.yuzhe.aeprimitives.botania.content;
 
 import dev.yuzhe.aeprimitives.botania.AePrimitivesBotania;
+import dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity;
+import dev.yuzhe.aeprimitives.content.ModContent;
+import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
+import dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -174,6 +178,79 @@ public final class BotaniaGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void onlyIdleEmptyManaPoolInterfaceCanBePackaged(GameTestHelper helper) {
+        BlockPos interfacePos = new BlockPos(3, 1, 3);
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get());
+        var machine = (ManaPoolInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        helper.assertTrue(machine.canPackIntoMachineSpace(), "idle empty Mana Pool interface rejected packaging");
+        machine.inventory().setStackInSlot(0, new ItemStack(net.minecraft.world.item.Items.IRON_INGOT));
+        helper.assertTrue(!machine.canPackIntoMachineSpace(), "Mana Pool interface with owned input was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void factoryRunsPackagedManaPoolInterfaceThroughRealPool(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos poolPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(poolPos, BotaniaBlocks.manaPool);
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var pool = (ManaPoolBlockEntity) helper.getBlockEntity(poolPos);
+        var envelope = MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(BotaniaContent.MANA_POOL_INTERFACE.get()),
+                BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState(), new CompoundTag());
+        factory.inventory().setStackInSlot(0,
+                MachineSpaceComponentItem.create(ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(net.minecraft.world.item.Items.IRON_INGOT));
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).getCount() == 1,
+                    "unfunded real Mana Pool consumed the factory lane input");
+            pool.receiveMana(3000);
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(countFactoryLane(factory, 0, item("botania:manasteel_ingot")) == 1,
+                    "packaged Mana Pool interface did not return the real pool output");
+            helper.assertTrue(pool.getCurrentMana() == 0, "packaged Mana Pool interface did not pay exact native mana");
+        });
+    }
+
+    @GameTest(template = "empty")
+    public static void blockedFactoryManaPoolOutputConsumesNothing(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        BlockPos interfacePos = factoryPos.east();
+        BlockPos poolPos = interfacePos.east();
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(interfacePos, BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST));
+        helper.setBlock(poolPos, BotaniaBlocks.manaPool);
+        var factory = (HeterogeneousFactoryBlockEntity) helper.getBlockEntity(factoryPos);
+        var pool = (ManaPoolBlockEntity) helper.getBlockEntity(poolPos);
+        var envelope = MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(BotaniaContent.MANA_POOL_INTERFACE.get()),
+                BotaniaContent.MANA_POOL_INTERFACE.get().defaultBlockState(), new CompoundTag());
+        factory.inventory().setStackInSlot(0,
+                MachineSpaceComponentItem.create(ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(net.minecraft.world.item.Items.IRON_INGOT));
+        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+            factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                    new ItemStack(Blocks.COBBLESTONE, 64));
+        pool.receiveMana(3000);
+        helper.runAfterDelay(30, () -> {
+            helper.assertTrue(factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).getCount() == 1,
+                    "blocked factory Mana Pool lane consumed its input");
+            helper.assertTrue(pool.getCurrentMana() == 3000, "blocked factory Mana Pool lane consumed mana");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty")
     public static void blockedManaPoolOutputConsumesNothing(GameTestHelper helper) {
         ServerLevel level = (ServerLevel) helper.getLevel();
         BlockPos poolPos = new BlockPos(3, 1, 3), interfacePos = poolPos.east();
@@ -331,6 +408,15 @@ public final class BotaniaGameTests {
     private static int count(ManaPoolInterfaceBlockEntity machine, String id) {
         Item item = item(id); int count = 0;
         for (int slot = 1; slot < 10; slot++) { ItemStack stack = machine.inventory().getStackInSlot(slot); if (stack.is(item)) count += stack.getCount(); }
+        return count;
+    }
+
+    private static int countFactoryLane(HeterogeneousFactoryBlockEntity factory, int lane, Item item) {
+        int count = 0;
+        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
+            ItemStack stack = factory.inventory().getStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(lane, offset));
+            if (stack.is(item)) count += stack.getCount();
+        }
         return count;
     }
 }
