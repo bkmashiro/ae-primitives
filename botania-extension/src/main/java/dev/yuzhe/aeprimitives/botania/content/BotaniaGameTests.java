@@ -18,6 +18,7 @@ import vazkii.botania.api.block.PetalApothecary;
 import vazkii.botania.common.block.BotaniaBlocks;
 import vazkii.botania.common.block.PetalApothecaryBlock;
 import vazkii.botania.common.block.block_entity.PetalApothecaryBlockEntity;
+import vazkii.botania.common.block.block_entity.RunicAltarBlockEntity;
 import vazkii.botania.common.block.block_entity.flower.misc.PureDaisyBlockEntity;
 
 @GameTestHolder(AePrimitivesBotania.MOD_ID)
@@ -110,6 +111,27 @@ public final class BotaniaGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void runicInterfaceWaitsForNativeManaAndCompletion(GameTestHelper helper) {
+        ServerLevel level = (ServerLevel) helper.getLevel();
+        BlockPos altarPos = new BlockPos(3, 1, 3), interfacePos = altarPos.east();
+        helper.setBlock(altarPos, BotaniaBlocks.runeAltar);
+        helper.setBlock(interfacePos, BotaniaContent.RUNIC_ALTAR_INTERFACE.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.WEST));
+        var machine = (RunicAltarInterfaceBlockEntity) helper.getBlockEntity(interfacePos);
+        String[] inputs = {"botania:mana_powder", "botania:manasteel_ingot", "minecraft:bone_meal", "minecraft:sugar_cane", "minecraft:fishing_rod", "botania:livingrock"};
+        for (int i = 0; i < inputs.length; i++) machine.inventory().setStackInSlot(i, new ItemStack(item(inputs[i])));
+        helper.assertTrue(machine.startForTest(level), "valid rune ingredients should dispatch into the real altar");
+        var altar = (RunicAltarBlockEntity) helper.getBlockEntity(altarPos);
+        RunicAltarBlockEntity.serverTick(level, altarPos, altar.getBlockState(), altar);
+        helper.assertTrue(altar.getTargetMana() == 5200, "real rune recipe must retain its native mana cost");
+        altar.receiveMana(5199);
+        helper.assertTrue(!machine.finishForTest(level), "interface must not complete an underfunded altar");
+        altar.receiveMana(1);
+        helper.assertTrue(machine.finishForTest(level), "fully funded native altar should complete");
+        helper.assertTrue(count(machine, "botania:rune_water") == 2 && altar.isEmpty(), "native output should be recovered after altar completion");
+        helper.succeed();
+    }
+
     private static int count(PureDaisyInterfaceBlockEntity machine, String id) {
         Item item = item(id);
         int count = 0;
@@ -132,5 +154,11 @@ public final class BotaniaGameTests {
 
     private static Item item(String id) {
         return BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
+    }
+
+    private static int count(RunicAltarInterfaceBlockEntity machine, String id) {
+        Item item = item(id); int count = 0;
+        for (int slot = 16; slot < 25; slot++) { ItemStack stack = machine.inventory().getStackInSlot(slot); if (stack.is(item)) count += stack.getCount(); }
+        return count;
     }
 }

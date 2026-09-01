@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Add a stateful Runic Altar interface that dispatches ingredients into a real Botania altar, leaves mana accumulation and native recipe progress authoritative, then supplies the completion reagent and recovers the crafted rune.
+Add a Mana Pool and catalyst operation interface that routes items through a real Botania pool while leaving pool mana, catalyst selection and native recipe resolution authoritative.
 
 ## 1. Spatial parallel blocks
 

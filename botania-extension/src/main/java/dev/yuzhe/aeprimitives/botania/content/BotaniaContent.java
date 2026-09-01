@@ -22,6 +22,9 @@ public final class BotaniaContent {
     public static final Supplier<Block> PETAL_APOTHECARY_INTERFACE = BLOCKS.register("petal_apothecary_interface", PetalApothecaryInterfaceBlock::new);
     public static final Supplier<Item> PETAL_APOTHECARY_INTERFACE_ITEM = ITEMS.register("petal_apothecary_interface", () -> new BlockItem(PETAL_APOTHECARY_INTERFACE.get(), new Item.Properties()));
     public static final Supplier<BlockEntityType<PetalApothecaryInterfaceBlockEntity>> PETAL_APOTHECARY_INTERFACE_ENTITY = ENTITIES.register("petal_apothecary_interface", () -> BlockEntityType.Builder.of(PetalApothecaryInterfaceBlockEntity::new, PETAL_APOTHECARY_INTERFACE.get()).build(null));
+    public static final Supplier<Block> RUNIC_ALTAR_INTERFACE = BLOCKS.register("runic_altar_interface", RunicAltarInterfaceBlock::new);
+    public static final Supplier<Item> RUNIC_ALTAR_INTERFACE_ITEM = ITEMS.register("runic_altar_interface", () -> new BlockItem(RUNIC_ALTAR_INTERFACE.get(), new Item.Properties()));
+    public static final Supplier<BlockEntityType<RunicAltarInterfaceBlockEntity>> RUNIC_ALTAR_INTERFACE_ENTITY = ENTITIES.register("runic_altar_interface", () -> BlockEntityType.Builder.of(RunicAltarInterfaceBlockEntity::new, RUNIC_ALTAR_INTERFACE.get()).build(null));
 
     public static void register(IEventBus bus) {
         BLOCKS.register(bus);
@@ -32,6 +35,7 @@ public final class BotaniaContent {
     private static void capabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, PURE_DAISY_INTERFACE_ENTITY.get(), (be, side) -> be.inventory());
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, PETAL_APOTHECARY_INTERFACE_ENTITY.get(), (be, side) -> be.inventory());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, RUNIC_ALTAR_INTERFACE_ENTITY.get(), (be, side) -> be.inventory());
     }
     private BotaniaContent() {}
 }

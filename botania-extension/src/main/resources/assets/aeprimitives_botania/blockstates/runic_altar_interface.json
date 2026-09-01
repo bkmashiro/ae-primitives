@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"aeprimitives_botania:block/runic_altar_interface"},"facing=east":{"model":"aeprimitives_botania:block/runic_altar_interface","y":90},"facing=south":{"model":"aeprimitives_botania:block/runic_altar_interface","y":180},"facing=west":{"model":"aeprimitives_botania:block/runic_altar_interface","y":270}}}
