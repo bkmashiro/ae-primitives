@@ -158,6 +158,56 @@ class CsgCompilerTest(unittest.TestCase):
         self.assertEqual([6, 3, 10, 7], clipped_overlay["faces"]["up"]["uv"])
         self.assertEqual([6, 4, 10, 12], clipped_overlay["faces"]["south"]["uv"])
 
+    def test_directional_materials_apply_only_to_outer_boundaries(self):
+        materials = {
+            "shell": {
+                "texture": "side",
+                "face_materials": {
+                    "north": "front",
+                    "south": "back",
+                    "east": "side",
+                    "west": "side",
+                    "up": "top",
+                    "down": "bottom",
+                    "inner": "inner",
+                },
+            },
+            **{name: {"texture": name} for name in ("front", "back", "side", "top", "bottom", "inner")},
+        }
+        spec = {
+            "id": "directional",
+            "materials": materials,
+            "root": {
+                "type": "boolean",
+                "op": "subtract",
+                "left": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "shell"},
+                "right": {"type": "box", "bounds": [4, 4, 0, 12, 12, 8]},
+            },
+        }
+
+        result = compile_machine(spec)
+        faces = [
+            (element["from"], element["to"], direction, face["texture"])
+            for element in result.model["elements"]
+            for direction, face in element["faces"].items()
+        ]
+
+        self.assertIn(([0, 0, 0], [16, 4, 16], "north", "#front"), faces)
+        self.assertTrue(any(direction == "south" and to[2] == 16 and texture == "#back" for _, to, direction, texture in faces))
+        self.assertTrue(any(direction == "east" and to[0] == 16 and texture == "#side" for _, to, direction, texture in faces))
+        self.assertTrue(any(direction == "west" and start[0] == 0 and texture == "#side" for start, _, direction, texture in faces))
+        self.assertTrue(any(direction == "north" and start[2] == 8 and texture == "#inner" for start, _, direction, texture in faces))
+        self.assertTrue(any(direction == "west" and start[0] == 12 and texture == "#inner" for start, _, direction, texture in faces))
+
+    def test_unknown_directional_material_is_reported(self):
+        spec = {
+            "id": "bad_directional",
+            "materials": {"shell": {"texture": "shell", "face_materials": {"north": "missing"}}},
+            "root": {"type": "box", "bounds": [0, 0, 0, 16, 16, 16], "material": "shell"},
+        }
+        codes = {item.code for item in compile_machine(spec).diagnostics}
+        self.assertIn("material.face_unknown", codes)
+
 
 class TextureCompilerTest(unittest.TestCase):
     def test_texture_layers_are_deterministic_and_writable(self):
@@ -180,6 +230,33 @@ class TextureCompilerTest(unittest.TestCase):
             contents = output.read_bytes()
             self.assertTrue(contents.startswith(b"\x89PNG\r\n\x1a\n"))
             self.assertEqual((16, 16), tuple(int.from_bytes(contents[i:i + 4], "big") for i in (16, 20)))
+
+    def test_clustered_noise_is_deterministic_and_spatially_coherent(self):
+        base = {"type": "fill", "color": "#aebbc6"}
+        clustered_spec = {
+            "size": 16,
+            "layers": [base, {"type": "clustered_noise", "amount": 12, "scale": 4, "steps": 5, "seed": 23}],
+        }
+        random_spec = {
+            "size": 16,
+            "layers": [base, {"type": "noise", "amount": 12, "seed": 23}],
+        }
+
+        clustered = render_texture(clustered_spec)
+        self.assertEqual(clustered, render_texture(clustered_spec))
+        self.assertGreater(len({pixel for row in clustered for pixel in row}), 1)
+
+        def adjacent_delta(pixels):
+            values = []
+            for y, row in enumerate(pixels):
+                for x, pixel in enumerate(row):
+                    if x:
+                        values.append(abs(pixel[0] - row[x - 1][0]))
+                    if y:
+                        values.append(abs(pixel[0] - pixels[y - 1][x][0]))
+            return sum(values) / len(values)
+
+        self.assertLess(adjacent_delta(clustered), adjacent_delta(render_texture(random_spec)))
 
 
 class AnimationCompilerTest(unittest.TestCase):

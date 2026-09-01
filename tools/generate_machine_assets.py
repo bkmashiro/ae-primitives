@@ -12,6 +12,7 @@ from machine_assets import CompileResult, MultiblockCompileResult, compile_machi
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets-src/machines"
 MULTIBLOCK_SOURCE = ROOT / "assets-src/multiblocks"
+TEXTURE_SOURCE = ROOT / "assets-src/textures"
 MODEL_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/models/block"
 ANIMATION_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/animations"
 TEXTURE_OUTPUT = ROOT / "src/main/resources/assets/aeprimitives/textures/block"
@@ -40,6 +41,18 @@ def compile_file(path: Path) -> CompileResult:
     return result
 
 
+def compile_texture_file(path: Path) -> int:
+    spec = json.loads(path.read_text())
+    textures = spec.get("textures")
+    if not isinstance(textures, dict):
+        raise ValueError(f"{path}: textures must be an object")
+    for name, texture_spec in textures.items():
+        if not isinstance(name, str) or not isinstance(texture_spec, dict):
+            raise ValueError(f"{path}: invalid texture entry {name!r}")
+        write_png(TEXTURE_OUTPUT / f"{name}.png", render_texture(texture_spec))
+    return len(textures)
+
+
 def compile_multiblock_file(path: Path) -> MultiblockCompileResult:
     spec = json.loads(path.read_text())
     result = compile_multiblock(spec)
@@ -61,6 +74,9 @@ def main() -> None:
     arguments = parser.parse_args()
     reports = []
     failed = False
+    shared_texture_count = 0
+    for path in sorted(TEXTURE_SOURCE.glob("*.json")):
+        shared_texture_count += compile_texture_file(path)
     for path in sorted(SOURCE.glob("*.json")):
         result = compile_file(path)
         diagnostics = [
@@ -104,7 +120,7 @@ def main() -> None:
                 failed = True
     REPORT_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     REPORT_OUTPUT.write_text(json.dumps({"machines": reports}, indent=2) + "\n")
-    print(REPORT_OUTPUT)
+    print(f"{REPORT_OUTPUT} ({shared_texture_count} shared texture(s))")
     if failed:
         raise SystemExit(1)
 

@@ -14,7 +14,7 @@
           {"type": "vertical_gradient", "top": "#526675", "bottom": "#202b35"},
           {"type": "rect", "bounds": [2, 2, 14, 4], "color": "#7d94a4"},
           {"type": "rect", "bounds": [5, 5, 11, 14], "color": "#344652"},
-          {"type": "noise", "amount": 4, "seed": 71}
+          {"type": "clustered_noise", "amount": 6, "scale": 3, "steps": 4, "seed": 71}
         ]
       }
     },
@@ -23,8 +23,8 @@
       "texture_spec": {
         "size": 16,
         "layers": [
-          {"type": "fill", "color": "#f1a84b"},
-          {"type": "border", "width": 3, "color": "#fff0a5"}
+          {"type": "vertical_gradient", "top": "#fff0a5", "bottom": "#d77b25"},
+          {"type": "border", "width": 3, "color": "#ffe3a0"}
         ]
       }
     }

@@ -19,8 +19,9 @@
         "size": 16,
         "layers": [
           {
-            "type": "fill",
-            "color": "#244f38"
+            "type": "vertical_gradient",
+            "top": "#315b43",
+            "bottom": "#1b3c2c"
           },
           {
             "type": "rect",
@@ -33,8 +34,10 @@
             "color": "#5e9b55"
           },
           {
-            "type": "noise",
-            "amount": 5,
+            "type": "clustered_noise",
+            "amount": 7,
+            "scale": 3,
+            "steps": 4,
             "seed": 434
           }
         ]

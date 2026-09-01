@@ -9,15 +9,15 @@
     "glass": {"texture": "glass"},
     "bed": {
       "texture": "growth_bed",
-      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8c68b", "bottom": "#78683f"}, {"type": "noise", "amount": 8, "seed": 57}]}
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8c68b", "bottom": "#78683f"}, {"type": "clustered_noise", "amount": 10, "scale": 3, "steps": 5, "seed": 57}]}
     },
     "crystal": {
       "texture": "growth_crystal",
-      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8ffff", "bottom": "#3195a6"}, {"type": "border", "width": 2, "color": "#83f4ff"}, {"type": "noise", "amount": 4, "seed": 61}]}
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#d8ffff", "bottom": "#3195a6"}, {"type": "border", "width": 2, "color": "#83f4ff"}, {"type": "clustered_noise", "amount": 6, "scale": 3, "steps": 4, "seed": 61}]}
     },
     "energy": {
       "texture": "growth_energy",
-      "texture_spec": {"size": 16, "layers": [{"type": "fill", "color": "#2fbab5"}, {"type": "border", "width": 3, "color": "#adfff1"}]}
+      "texture_spec": {"size": 16, "layers": [{"type": "vertical_gradient", "top": "#adfff1", "bottom": "#168d91"}, {"type": "border", "width": 3, "color": "#8aeee5"}]}
     }
   },
   "root": {

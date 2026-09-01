@@ -281,8 +281,39 @@ def _greedy_boxes(solid: dict[Voxel, str]) -> list[tuple[list[int], str]]:
     return boxes
 
 
+def _face_material(
+    material: str,
+    face: str,
+    bounds: Sequence[float],
+    materials: dict[str, Any] | None,
+) -> str:
+    if not materials:
+        return material
+    definition = materials.get(material)
+    if not isinstance(definition, dict):
+        return material
+    mapping = definition.get("face_materials")
+    if not isinstance(mapping, dict):
+        return material
+    x1, y1, z1, x2, y2, z2 = bounds
+    outer = {
+        "down": y1 == 0,
+        "up": y2 == 16,
+        "north": z1 == 0,
+        "south": z2 == 16,
+        "west": x1 == 0,
+        "east": x2 == 16,
+    }[face]
+    role = face if outer else "inner"
+    return str(mapping.get(role, mapping.get("inner", material)))
+
+
 def _faces(
-    material: str, bounds: Sequence[float], *, global_uv: bool = True
+    material: str,
+    bounds: Sequence[float],
+    *,
+    global_uv: bool = True,
+    materials: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     x1, y1, z1, x2, y2, z2 = bounds
     uvs = {
@@ -296,9 +327,34 @@ def _faces(
     if not global_uv:
         uvs = {face: [0, 0, 16, 16] for face in uvs}
     return {
-        face: {"texture": f"#{material}", "uv": uv}
+        face: {"texture": f"#{_face_material(material, face, bounds, materials)}", "uv": uv}
         for face, uv in uvs.items()
     }
+
+
+def _lint_materials(
+    materials: dict[str, Any], used_materials: set[str], diagnostics: list[Diagnostic]
+) -> None:
+    for material in sorted(used_materials):
+        if material not in materials:
+            diagnostics.append(_diagnostic("error", "material.unknown", "materials", f"unknown material {material}"))
+            continue
+        definition = materials[material]
+        face_materials = definition.get("face_materials") if isinstance(definition, dict) else None
+        if face_materials is not None and not isinstance(face_materials, dict):
+            diagnostics.append(_diagnostic(
+                "error", "material.face_catalog", f"materials/{material}/face_materials",
+                "face_materials must be an object",
+            ))
+            continue
+        if not isinstance(face_materials, dict):
+            continue
+        for role, target in face_materials.items():
+            path = f"materials/{material}/face_materials/{role}"
+            if role not in {"north", "south", "east", "west", "up", "down", "inner"}:
+                diagnostics.append(_diagnostic("error", "material.face_role", path, f"unknown face role {role}"))
+            if not isinstance(target, str) or target not in materials:
+                diagnostics.append(_diagnostic("error", "material.face_unknown", path, f"unknown face material {target}"))
 
 
 def _overlay_element(node: dict[str, Any]) -> dict[str, Any]:
@@ -413,9 +469,7 @@ def compile_machine(spec: dict[str, Any]) -> CompileResult:
         materials = {}
     solid, overlays = _evaluate(spec.get("root", {}), "root", diagnostics)
     used_materials = set(solid.values()) | {str(node.get("material")) for node in overlays}
-    for material in sorted(used_materials):
-        if material not in materials:
-            diagnostics.append(_diagnostic("error", "material.unknown", "materials", f"unknown material {material}"))
+    _lint_materials(materials, used_materials, diagnostics)
     component_count = _components(solid)
     root = spec.get("root", {})
     if component_count > 1 and not root.get("allow_islands", False):
@@ -433,7 +487,7 @@ def compile_machine(spec: dict[str, Any]) -> CompileResult:
     textures["particle"] = textures.get(particle, particle)
 
     elements = [
-        {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds)}
+        {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds, materials=materials)}
         for bounds, material in _greedy_boxes(solid)
     ]
     elements.extend(_overlay_element(node) for node in overlays)
@@ -522,16 +576,14 @@ def compile_multiblock(spec: dict[str, Any]) -> MultiblockCompileResult:
             used_materials.add(str(overlay.get("material")))
         elements.extend(
             _translate_element(
-                {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds)},
+                {"from": bounds[:3], "to": bounds[3:], "faces": _faces(material, bounds, materials=materials)},
                 offset,
             )
             for bounds, material in _greedy_boxes(solid)
         )
         elements.extend(_translate_element(_overlay_element(overlay), offset) for overlay in overlays)
 
-    for material in sorted(used_materials):
-        if material not in materials:
-            diagnostics.append(_diagnostic("error", "material.unknown", "materials", f"unknown material {material}"))
+    _lint_materials(materials, used_materials, diagnostics)
     component_count = _components(global_solid)
     if component_count > 1 and not spec.get("allow_islands", False):
         diagnostics.append(_diagnostic("warning", "topology.disconnected", "parts", f"assembly contains {component_count} disconnected solid regions"))
@@ -603,6 +655,35 @@ def render_texture(spec: dict[str, Any]) -> list[list[Color]]:
                 color = tuple(round(top[index] * (1 - ratio) + bottom[index] * ratio) for index in range(4))
                 for x in range(size):
                     pixels[y][x] = color  # type: ignore[assignment]
+        elif layer_type == "clustered_noise":
+            generator = random.Random(int(layer.get("seed", 0)))
+            amount = max(0, int(layer.get("amount", 4)))
+            scale = max(1, int(layer.get("scale", 4)))
+            steps = max(0, int(layer.get("steps", 0)))
+            grid_size = (size - 1) // scale + 2
+            grid = [
+                [generator.randint(-amount, amount) for _ in range(grid_size)]
+                for _ in range(grid_size)
+            ]
+            for y in range(size):
+                gy, fy = divmod(y, scale)
+                ty = fy / scale
+                for x in range(size):
+                    gx, fx = divmod(x, scale)
+                    tx = fx / scale
+                    top = grid[gy][gx] * (1 - tx) + grid[gy][gx + 1] * tx
+                    bottom = grid[gy + 1][gx] * (1 - tx) + grid[gy + 1][gx + 1] * tx
+                    delta = top * (1 - ty) + bottom * ty
+                    if steps > 1 and amount:
+                        interval = 2 * amount / (steps - 1)
+                        delta = round((delta + amount) / interval) * interval - amount
+                    red, green, blue, alpha = pixels[y][x]
+                    pixels[y][x] = (
+                        max(0, min(255, round(red + delta))),
+                        max(0, min(255, round(green + delta))),
+                        max(0, min(255, round(blue + delta))),
+                        alpha,
+                    )
         elif layer_type == "noise":
             generator = random.Random(int(layer.get("seed", 0)))
             amount = int(layer.get("amount", 4))
