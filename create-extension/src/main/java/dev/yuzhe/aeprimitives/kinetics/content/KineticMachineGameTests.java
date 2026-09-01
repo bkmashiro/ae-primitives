@@ -566,6 +566,39 @@ public final class KineticMachineGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void factoryReloadAndComponentRemovalReleaseKineticDemand(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(portPos, KineticsContent.FACTORY_PORT.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var port = helper.<KineticFactoryPortBlockEntity>getBlockEntity(portPos);
+        port.setSpeed(16);
+        factory.inventory().setStackInSlot(0, pressComponent(helper));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.IRON_INGOT));
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(port.activeLaneCount() == 1, "kinetic lane never registered its demand");
+            var saved = new net.minecraft.nbt.CompoundTag();
+            factory.saveAdditional(saved, helper.getLevel().registryAccess());
+            factory.loadTag(saved, helper.getLevel().registryAccess());
+            helper.assertTrue(port.activeLaneCount() == 0 && port.calculateStressApplied() == 0,
+                    "factory reload retained ghost kinetic demand");
+
+            factory.scheduleExternalWork();
+            factory.serverTick();
+            helper.assertTrue(port.activeLaneCount() == 1,
+                    "reloaded factory did not revalidate and register its kinetic resource binding");
+            factory.inventory().setStackInSlot(0, ItemStack.EMPTY);
+            helper.assertTrue(port.activeLaneCount() == 0 && port.calculateStressApplied() == 0,
+                    "component removal retained ghost kinetic demand");
+        });
+    }
+
     @GameTest(template = "empty")
     public static void factoryCrusherLanesRollProbabilityIndependently(GameTestHelper helper) {
         var component = machineComponent(helper, KineticsContent.ME_CRUSHER.get(), null);

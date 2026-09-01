@@ -474,6 +474,118 @@ public final class PrimitiveMachineGameTests {
                 "factory menu did not report a blocked lane"));
     }
 
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void externalFactoryLaneDoesNotConsumePreflightBlockedInput(GameTestHelper helper) {
+        registerTransactionalTestExecutor();
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        TRANSACTIONAL_COMPLETIONS.remove(factory.getBlockPos());
+        factory.inventory().setStackInSlot(0, transactionalComponent());
+        int input = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0);
+        factory.inventory().setStackInSlot(input, new ItemStack(Items.DIRT));
+        for (int offset = 0; offset < 3; offset++) {
+            factory.inventory().setStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                    new ItemStack(Items.COBBLESTONE, 64));
+        }
+        helper.succeedWhen(() -> {
+            factory.scheduleExternalWork();
+            factory.serverTick();
+            helper.assertTrue(factory.inventory().getStackInSlot(input).is(Items.DIRT),
+                    "preflight-blocked external lane consumed input");
+            helper.assertTrue(TRANSACTIONAL_COMPLETIONS.getOrDefault(factory.getBlockPos(), 0) == 0,
+                    "preflight-blocked external lane completed or rolled output");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void externalFactoryLanePersistsCompletedOutputWithoutReroll(GameTestHelper helper) {
+        registerTransactionalTestExecutor();
+        helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        TRANSACTIONAL_COMPLETIONS.remove(factory.getBlockPos());
+        factory.inventory().setStackInSlot(0, transactionalComponent());
+        int input = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0);
+        factory.inventory().setStackInSlot(input, new ItemStack(Items.DIRT));
+
+        helper.succeedWhen(() -> {
+            factory.scheduleExternalWork();
+            factory.serverTick();
+            helper.assertTrue(factory.laneProgress(0) > 0 && factory.laneProgress(0) < 100,
+                    "external lane did not begin processing");
+            for (int offset = 0; offset < 3; offset++) {
+                factory.inventory().setStackInSlot(
+                        dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
+                        new ItemStack(Items.COBBLESTONE, 64));
+            }
+            factory.scheduleExternalWork();
+            for (int tick = 0; tick < 100; tick++) factory.serverTick();
+            helper.assertTrue(factory.inventory().getStackInSlot(input).isEmpty(),
+                    "completed external lane did not commit its input");
+            helper.assertTrue(TRANSACTIONAL_COMPLETIONS.getOrDefault(factory.getBlockPos(), 0) == 1,
+                    "external lane did not complete exactly once before output blocking");
+
+            var tag = new net.minecraft.nbt.CompoundTag();
+            factory.saveAdditional(tag, helper.getLevel().registryAccess());
+            helper.assertTrue(tag.contains("pendingLaneOutputs"), "completed output was not persisted");
+            factory.loadTag(tag, helper.getLevel().registryAccess());
+            for (int offset = 0; offset < 3; offset++) {
+                factory.inventory().setStackInSlot(
+                        dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset), ItemStack.EMPTY);
+            }
+            factory.scheduleExternalWork();
+            factory.serverTick();
+            helper.assertTrue(factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0)).is(Items.DIAMOND),
+                    "persisted completed output was not delivered after capacity returned");
+            helper.assertTrue(TRANSACTIONAL_COMPLETIONS.getOrDefault(factory.getBlockPos(), 0) == 1,
+                    "completed probabilistic operation was rerolled after reload");
+        });
+    }
+
+    private static final java.util.Map<BlockPos, Integer> TRANSACTIONAL_COMPLETIONS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor TRANSACTIONAL_TEST_EXECUTOR =
+            new dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor() {
+                @Override public boolean supports(dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope envelope) {
+                    return envelope.configuration().getBoolean("transactionalTest");
+                }
+                @Override public LanePlan prepare(LaneContext context) {
+                    if (context.inputs().getStackInSlot(0).isEmpty()) return null;
+                    return new LanePlan() {
+                        @Override public int durationTicks() { return 100; }
+                        @Override public int workPerTick() { return 1; }
+                        @Override public double idleAePower() { return 0; }
+                        @Override public java.util.List<ItemStack> previewOutputs() {
+                            return java.util.List.of(new ItemStack(Items.DIAMOND));
+                        }
+                        @Override public void setActive(boolean active) {}
+                        @Override public boolean resourcesAvailable() { return true; }
+                        @Override public java.util.List<ItemStack> complete(net.neoforged.neoforge.items.ItemStackHandler inputs) {
+                            TRANSACTIONAL_COMPLETIONS.merge(context.factoryPos(), 1, Integer::sum);
+                            inputs.extractItem(0, 1, false);
+                            return java.util.List.of(new ItemStack(Items.DIAMOND));
+                        }
+                    };
+                }
+            };
+
+    private static void registerTransactionalTestExecutor() {
+        dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutors.register(TRANSACTIONAL_TEST_EXECUTOR);
+    }
+
+    private static ItemStack transactionalComponent() {
+        var configuration = new net.minecraft.nbt.CompoundTag();
+        configuration.putBoolean("transactionalTest", true);
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(net.minecraft.world.level.block.Blocks.STONE),
+                net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), configuration);
+        return dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope);
+    }
+
     private static ItemStack machineComponent(GameTestHelper helper, net.minecraft.world.level.block.Block block) {
         var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block),

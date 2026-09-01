@@ -11,6 +11,7 @@ import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
 import dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope;
 import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor;
 import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutors;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -18,6 +19,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.MenuProvider;
@@ -40,6 +43,11 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     public static final int OUTPUT_END = 28;
 
     private final int[] laneProgress = new int[LANE_COUNT];
+    @SuppressWarnings("unchecked")
+    private final List<ItemStack>[] pendingLaneOutputs = new List[LANE_COUNT];
+    private final VirtualMachineLaneExecutor[] activeExecutors = new VirtualMachineLaneExecutor[LANE_COUNT];
+    private final VirtualMachineLaneExecutor.LaneContext[] activeContexts =
+            new VirtualMachineLaneExecutor.LaneContext[LANE_COUNT];
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private boolean scheduled;
     private final ItemStackHandler inventory = new ItemStackHandler(28) {
@@ -48,7 +56,10 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             return slot < OUTPUT_START;
         }
         @Override protected void onContentsChanged(int slot) {
-            if (slot < COMPONENT_END) laneProgress[slot] = 0;
+            if (slot < COMPONENT_END) {
+                releaseExternalLane(slot);
+                laneProgress[slot] = 0;
+            }
             scheduled = true;
             refreshLanePower();
             setChanged();
@@ -57,6 +68,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     public HeterogeneousFactoryBlockEntity(BlockPos pos, BlockState state) {
         super(ModContent.HETEROGENEOUS_FACTORY_ENTITY.get(), pos, state);
+        Arrays.fill(pendingLaneOutputs, List.of());
         getMainNode().setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setExposedOnSides(EnumSet.allOf(Direction.class))
                 .setIdlePowerUsage(0.0);
@@ -97,6 +109,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     private LaneStatus laneStatus(int lane) {
+        if (!pendingLaneOutputs[lane].isEmpty()) return LaneStatus.BLOCKED_OUTPUT;
         if (inventory.getStackInSlot(lane).isEmpty()) return LaneStatus.EMPTY;
         if (!(level instanceof ServerLevel server)) return LaneStatus.OFFLINE;
         if (!getMainNode().isActive()) return LaneStatus.OFFLINE;
@@ -118,13 +131,19 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         flushOutputs();
         boolean workRemaining = false;
         for (int lane = 0; lane < COMPONENT_END; lane++) {
+            if (!pendingLaneOutputs[lane].isEmpty()) {
+                releaseExternalLane(lane);
+                if (drainPending(lane)) workRemaining = true;
+                continue;
+            }
             CoreLane core = coreLane(server, lane);
             if (core != null) {
+                releaseExternalLane(lane);
                 workRemaining |= tickCoreLane(lane, core);
                 continue;
             }
             ExternalLane external = externalLane(server, lane);
-            if (external == null) { laneProgress[lane] = 0; continue; }
+            if (external == null) { releaseExternalLane(lane); laneProgress[lane] = 0; continue; }
             workRemaining |= tickExternalLane(lane, external);
         }
         if (!workRemaining) scheduled = false;
@@ -150,24 +169,50 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     private boolean tickExternalLane(int lane, ExternalLane external) {
         var plan = external.plan;
-        if (plan == null || !canQueueAll(lane, plan.previewOutputs())) {
-            external.executor.release(external.context);
+        if (plan == null || (laneProgress[lane] == 0 && !canQueueAll(lane, plan.previewOutputs()))) {
+            releaseExternalLane(lane);
             laneProgress[lane] = 0;
             return false;
         }
         plan.setActive(true);
+        activeExecutors[lane] = external.executor;
+        activeContexts[lane] = external.context;
         if (!plan.resourcesAvailable()) return false;
         laneProgress[lane] += Math.max(1, plan.workPerTick());
         if (laneProgress[lane] < plan.durationTicks()) return true;
         laneProgress[lane] = 0;
         ItemStackHandler inputs = snapshotInputs(lane);
         ExternalLane current = externalLane((ServerLevel) level, lane, inputs);
-        if (current == null || current.plan == null) return true;
+        if (current == null || current.plan == null) { releaseExternalLane(lane); return false; }
         List<ItemStack> outputs = current.plan.complete(inputs);
-        if (outputs == null || !canQueueAll(lane, outputs)) return true;
+        if (outputs == null) { releaseExternalLane(lane); return false; }
         commitInputs(lane, inputs);
-        queueAll(lane, outputs);
+        pendingLaneOutputs[lane] = copyStacks(outputs);
+        releaseExternalLane(lane);
+        drainPending(lane);
         return true;
+    }
+
+    private boolean drainPending(int lane) {
+        List<ItemStack> pending = pendingLaneOutputs[lane];
+        if (pending.isEmpty() || !canQueueAll(lane, pending)) return false;
+        queueAll(lane, pending);
+        pendingLaneOutputs[lane] = List.of();
+        return true;
+    }
+
+    private void releaseExternalLane(int lane) {
+        VirtualMachineLaneExecutor executor = activeExecutors[lane];
+        VirtualMachineLaneExecutor.LaneContext context = activeContexts[lane];
+        activeExecutors[lane] = null;
+        activeContexts[lane] = null;
+        if (executor != null && context != null) executor.release(context);
+    }
+
+    private static List<ItemStack> copyStacks(List<ItemStack> stacks) {
+        var copy = new ArrayList<ItemStack>(stacks.size());
+        for (ItemStack stack : stacks) if (!stack.isEmpty()) copy.add(stack.copy());
+        return List.copyOf(copy);
     }
 
     private CoreLane coreLane(ServerLevel server, int slot) {
@@ -285,14 +330,42 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.putIntArray("laneProgress", laneProgress);
         tag.putBoolean("scheduled", scheduled);
+        var pending = new ListTag();
+        for (int lane = 0; lane < LANE_COUNT; lane++) {
+            if (pendingLaneOutputs[lane].isEmpty()) continue;
+            var laneTag = new CompoundTag();
+            laneTag.putInt("lane", lane);
+            var stacks = new ListTag();
+            for (ItemStack stack : pendingLaneOutputs[lane]) stacks.add(stack.save(registries));
+            laneTag.put("stacks", stacks);
+            pending.add(laneTag);
+        }
+        tag.put("pendingLaneOutputs", pending);
     }
 
     @Override public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
+        for (int lane = 0; lane < LANE_COUNT; lane++) releaseExternalLane(lane);
         super.loadTag(tag, registries);
         inventory.deserializeNBT(registries, tag.getCompound("inventory"));
         int[] saved = tag.getIntArray("laneProgress");
+        Arrays.fill(laneProgress, 0);
         System.arraycopy(saved, 0, laneProgress, 0, Math.min(saved.length, laneProgress.length));
         scheduled = tag.getBoolean("scheduled");
+        Arrays.fill(pendingLaneOutputs, List.of());
+        var pending = tag.getList("pendingLaneOutputs", Tag.TAG_COMPOUND);
+        for (int i = 0; i < pending.size(); i++) {
+            var laneTag = pending.getCompound(i);
+            int lane = laneTag.getInt("lane");
+            if (lane < 0 || lane >= LANE_COUNT) continue;
+            var restored = new ArrayList<ItemStack>();
+            var stacks = laneTag.getList("stacks", Tag.TAG_COMPOUND);
+            for (int stack = 0; stack < stacks.size(); stack++) {
+                ItemStack item = ItemStack.parseOptional(registries, stacks.getCompound(stack));
+                if (!item.isEmpty()) restored.add(item);
+            }
+            pendingLaneOutputs[lane] = List.copyOf(restored);
+        }
+        if (hasPendingOutputs()) scheduled = true;
     }
 
     @Override public void onReady() {
@@ -304,6 +377,21 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     private boolean hasInputs() {
         for (int slot = INPUT_START; slot < INPUT_END; slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return true;
         return false;
+    }
+
+    private boolean hasPendingOutputs() {
+        for (List<ItemStack> pending : pendingLaneOutputs) if (!pending.isEmpty()) return true;
+        return false;
+    }
+
+    @Override public void setRemoved() {
+        for (int lane = 0; lane < LANE_COUNT; lane++) releaseExternalLane(lane);
+        super.setRemoved();
+    }
+
+    @Override public void onChunkUnloaded() {
+        for (int lane = 0; lane < LANE_COUNT; lane++) releaseExternalLane(lane);
+        super.onChunkUnloaded();
     }
 
     private record CoreLane(MachineKind kind, int speed) {}

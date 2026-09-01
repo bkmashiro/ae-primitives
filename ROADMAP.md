@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Harden optional virtual lanes across save/reload and blocked-output transitions. Revalidate external resource bindings after load, retain lane progress and inventory without ghost stress demand, and prove that unavailable output capacity never consumes an input or rerolls a completed probabilistic operation.
+Replace the manual imported-sequence test driver with a real AE crafting-service path. A live sequence macro and operation capabilities must publish concrete dependency patterns, AE must plan and dispatch the chain through the matching Create machines, and intermediate items must return through normal ME storage rather than test-side extraction and direct `pushPattern` calls.
 
 ## 1. Spatial parallel blocks
 
