@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -17,6 +18,7 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
     private static final int DATA_PER_LANE = 3;
     private final HeterogeneousFactoryBlockEntity factory;
     private final ContainerData laneData;
+    private int selectedLane;
 
     public HeterogeneousFactoryMenu(int id, Inventory playerInventory, FriendlyByteBuf data) {
         this(id, playerInventory,
@@ -34,43 +36,44 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
         this.factory = factory;
         this.laneData = laneData;
 
+        for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++)
+            addSlot(new SlotItemHandler(factory.inventory(), lane, 62 + lane * 32, 18));
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            int x = 15 + lane * 60;
-            addSlot(new SlotItemHandler(factory.inventory(), lane, x + 18, 18));
+            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+                addSlot(new LaneSlot(factory, HeterogeneousFactoryBlockEntity.inputSlot(lane, offset),
+                        61 + offset * 18, 61, lane, this));
         }
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            int x = 15 + lane * 60;
-            for (int offset = 0; offset < 3; offset++) {
-                addSlot(new SlotItemHandler(factory.inventory(), HeterogeneousFactoryBlockEntity.inputSlot(lane, offset), x + offset * 18, 54));
-            }
-        }
-        for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            int x = 15 + lane * 60;
-            for (int offset = 0; offset < 3; offset++) {
-                addSlot(new SlotItemHandler(factory.inventory(), HeterogeneousFactoryBlockEntity.outputSlot(lane, offset), x + offset * 18, 82));
-            }
+            for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++)
+                addSlot(new LaneSlot(factory, HeterogeneousFactoryBlockEntity.outputSlot(lane, offset),
+                        61 + offset * 18, 89, lane, this));
         }
 
         for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
+            for (int col = 0; col < 9; col++)
                 addSlot(new Slot(playerInventory, col + row * 9 + 9, 43 + col * 18, 128 + row * 18));
-            }
         }
         for (int col = 0; col < 9; col++) addSlot(new Slot(playerInventory, col, 43 + col * 18, 186));
         addDataSlots(laneData);
+        addDataSlot(new DataSlot() {
+            @Override public int get() { return selectedLane; }
+            @Override public void set(int value) {
+                if (value >= 0 && value < HeterogeneousFactoryBlockEntity.LANE_COUNT) selectedLane = value;
+            }
+        });
     }
 
-    public HeterogeneousFactoryBlockEntity factory() {
-        return factory;
+    public HeterogeneousFactoryBlockEntity factory() { return factory; }
+    public int selectedLane() { return selectedLane; }
+
+    @Override public boolean clickMenuButton(Player player, int id) {
+        if (id < 0 || id >= HeterogeneousFactoryBlockEntity.LANE_COUNT) return false;
+        selectedLane = id;
+        return true;
     }
 
-    public int laneProgress(int lane) {
-        return laneData.get(lane * DATA_PER_LANE);
-    }
-
-    public int laneDuration(int lane) {
-        return laneData.get(lane * DATA_PER_LANE + 1);
-    }
+    public int laneProgress(int lane) { return laneData.get(lane * DATA_PER_LANE); }
+    public int laneDuration(int lane) { return laneData.get(lane * DATA_PER_LANE + 1); }
 
     public HeterogeneousFactoryBlockEntity.LaneStatus laneStatus(int lane) {
         int value = laneData.get(lane * DATA_PER_LANE + 2);
@@ -91,8 +94,10 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
         } else if (original.is(ModContent.MACHINE_SPACE_COMPONENT.get())) {
             moved = moveItemStackTo(original, 0, HeterogeneousFactoryBlockEntity.LANE_COUNT, false);
         } else {
-            moved = moveItemStackTo(original, HeterogeneousFactoryBlockEntity.LANE_COUNT,
-                    HeterogeneousFactoryBlockEntity.INPUT_END, false);
+            int start = HeterogeneousFactoryBlockEntity.INPUT_START
+                    + selectedLane * HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS;
+            moved = moveItemStackTo(original, start,
+                    start + HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS, false);
         }
         if (!moved) return ItemStack.EMPTY;
         if (original.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
@@ -104,5 +109,21 @@ public final class HeterogeneousFactoryMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         return factory != null && player.distanceToSqr(factory.getBlockPos().getCenter()) < 64;
+    }
+
+    private static final class LaneSlot extends SlotItemHandler {
+        private final int lane;
+        private final HeterogeneousFactoryMenu menu;
+
+        private LaneSlot(HeterogeneousFactoryBlockEntity factory, int inventorySlot, int x, int y,
+                         int lane, HeterogeneousFactoryMenu menu) {
+            super(factory.inventory(), inventorySlot, x, y);
+            this.lane = lane;
+            this.menu = menu;
+        }
+
+        @Override public boolean isActive() { return lane == menu.selectedLane; }
+        @Override public boolean mayPickup(Player player) { return isActive() && super.mayPickup(player); }
+        @Override public boolean mayPlace(ItemStack stack) { return isActive() && super.mayPlace(stack); }
     }
 }

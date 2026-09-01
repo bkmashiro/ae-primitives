@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" C ", "FEF", " P "],
+  "key": {
+    "C": { "item": "powah:capacitor_niotic" },
+    "F": { "item": "ae2:fluix_crystal" },
+    "E": { "item": "ae2:energy_cell" },
+    "P": { "item": "ae2:engineering_processor" }
+  },
+  "result": { "id": "aeprimitives_powah:energizing_factory_energy_port", "count": 1 }
+}

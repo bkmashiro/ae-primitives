@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Extend the heterogeneous factory's extension-owned executor boundary to the completed Farmer's Delight and Powah machines. Package only idle, empty ME Cooking Pots and ME Energizing Chambers; preserve their configuration, require explicit heat and FE ports at runtime, keep each lane's recipe inputs, paid energy, container remainders and pending outputs independent and persistent, and reject unpacking or component removal while work or owned output remains. Do not import either optional mod into Core.
+Extend the heterogeneous factory's extension-owned executor boundary to the completed Botania interfaces. Keep the real Botania structure and mana authoritative, package only idle and empty interfaces whose configuration can be restored exactly, require explicit mana or environment access at runtime, and preserve each lane's stage, inputs and owned outputs across blocked output and reload. Start with the Mana Pool and Runic Altar paths, then add the Petal Apothecary only if the same contract remains truthful. Do not import Botania into Core or virtualize the Pure Daisy's world transformation.
 
 ## 1. Spatial parallel blocks
 
@@ -138,7 +138,7 @@ Do not add Mekanism integration. Its existing Pattern Provider processing workfl
 
 ## 5. Machine space components and heterogeneous factory
 
-This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities. Its four-lane menu installs components directly, exposes isolated input/output buffers and reports lane identity, progress and blocked state. A core-side executor registry lets optional extensions own virtual execution without leaking their classes into the Core JAR. Kinetics now packages idle presses and crushers plus configured catalyst chambers, and runs pressing, crushing and fan-catalyst recipes through a dedicated kinetic factory port. Catalyst identity and activation item survive packaging, each completed lane performs its own recipe roll, and mixed machine kinds contribute their actual stress cost to the same single-owner port.
+This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct lanes and schedules their operations without materializing world block entities. Its tabbed four-lane menu installs components directly, exposes seven isolated input and output slots per lane, and reports lane identity, progress and blocked state. A core-side executor registry lets optional extensions own virtual execution without leaking their classes into the Core JAR. Kinetics packages idle presses and crushers plus configured catalyst chambers and runs them through a dedicated kinetic factory port. Farmer's Delight packages idle ME Cooking Pots and executes real recipes through an explicit heat port while preserving containers and ingredient remainders. Powah packages idle ME Energizing Chambers with their emitter configuration and charges each lane through an explicit FE port with persisted paid energy. Components remain locked while a lane owns inputs, progress or pending output.
 
 ### Packaging model
 

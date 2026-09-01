@@ -5,6 +5,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -20,9 +21,13 @@ public final class PowahContent {
  public static final Supplier<Item> NIOTIC_EMITTER=ITEMS.register("niotic_emitter_module",()->new Item(new Item.Properties()));
  public static final Supplier<Item> NITRO_EMITTER=ITEMS.register("nitro_emitter_module",()->new Item(new Item.Properties()));
  public static final Supplier<BlockEntityType<MeEnergizingChamberBlockEntity>> ENERGIZING_CHAMBER_ENTITY=BES.register("me_energizing_chamber",()->BlockEntityType.Builder.of(MeEnergizingChamberBlockEntity::new,ENERGIZING_CHAMBER.get()).build(null));
+ public static final Supplier<Block> ENERGIZING_FACTORY_ENERGY_PORT=BLOCKS.register("energizing_factory_energy_port",()->new EnergizingFactoryEnergyPortBlock(BlockBehaviour.Properties.of().strength(4.0f).requiresCorrectToolForDrops()));
+ public static final Supplier<Item> ENERGIZING_FACTORY_ENERGY_PORT_ITEM=ITEMS.register("energizing_factory_energy_port",()->new BlockItem(ENERGIZING_FACTORY_ENERGY_PORT.get(),new Item.Properties()));
+ public static final Supplier<BlockEntityType<EnergizingFactoryEnergyPortBlockEntity>> ENERGIZING_FACTORY_ENERGY_PORT_ENTITY=BES.register("energizing_factory_energy_port",()->BlockEntityType.Builder.of(EnergizingFactoryEnergyPortBlockEntity::new,ENERGIZING_FACTORY_ENERGY_PORT.get()).build(null));
  public static void register(IEventBus bus){BLOCKS.register(bus);ITEMS.register(bus);BES.register(bus);bus.addListener(PowahContent::capabilities);}
  private static void capabilities(RegisterCapabilitiesEvent e){
   e.registerBlockEntity(Capabilities.ItemHandler.BLOCK,ENERGIZING_CHAMBER_ENTITY.get(),(be,side)->be.inventory());
   e.registerBlockEntity(Capabilities.EnergyStorage.BLOCK,ENERGIZING_CHAMBER_ENTITY.get(),(be,side)->be.energy());
+  e.registerBlockEntity(Capabilities.EnergyStorage.BLOCK,ENERGIZING_FACTORY_ENERGY_PORT_ENTITY.get(),(be,side)->be.energy());
  }
 }

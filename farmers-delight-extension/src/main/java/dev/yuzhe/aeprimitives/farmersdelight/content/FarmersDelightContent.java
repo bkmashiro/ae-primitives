@@ -33,12 +33,22 @@ public final class FarmersDelightContent {
             () -> new BlockItem(ME_COOKING_POT.get(), new Item.Properties()));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MeCookingPotBlockEntity>> COOKING_POT_ENTITY =
             BLOCK_ENTITIES.register("me_cooking_pot", () -> BlockEntityType.Builder.of(MeCookingPotBlockEntity::new, ME_COOKING_POT.get()).build(null));
+    public static final DeferredBlock<CookingFactoryHeatPortBlock> COOKING_FACTORY_HEAT_PORT = BLOCKS.register(
+            "cooking_factory_heat_port", () -> new CookingFactoryHeatPortBlock(
+                    BlockBehaviour.Properties.of().strength(3.5f).requiresCorrectToolForDrops()));
+    public static final DeferredItem<BlockItem> COOKING_FACTORY_HEAT_PORT_ITEM = ITEMS.register(
+            "cooking_factory_heat_port", () -> new BlockItem(COOKING_FACTORY_HEAT_PORT.get(), new Item.Properties()));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CookingFactoryHeatPortBlockEntity>>
+            COOKING_FACTORY_HEAT_PORT_ENTITY = BLOCK_ENTITIES.register("cooking_factory_heat_port",
+            () -> BlockEntityType.Builder.of(CookingFactoryHeatPortBlockEntity::new,
+                    COOKING_FACTORY_HEAT_PORT.get()).build(null));
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.aeprimitives_farmersdelight"))
             .icon(() -> ME_CUTTING_BOARD_ITEM.get().getDefaultInstance())
             .displayItems((parameters, output) -> {
                 output.accept(ME_CUTTING_BOARD_ITEM.get());
                 output.accept(ME_COOKING_POT_ITEM.get());
+                output.accept(COOKING_FACTORY_HEAT_PORT_ITEM.get());
             }).build());
     public static void register(IEventBus bus) {
         BLOCKS.register(bus); ITEMS.register(bus); BLOCK_ENTITIES.register(bus); TABS.register(bus);

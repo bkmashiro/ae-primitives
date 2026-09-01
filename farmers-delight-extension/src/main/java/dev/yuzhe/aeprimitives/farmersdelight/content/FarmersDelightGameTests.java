@@ -167,6 +167,86 @@ public final class FarmersDelightGameTests {
         });
     }
 
+    @GameTest(template = "empty")
+    public static void onlyIdleEmptyCookingPotCanBePackaged(GameTestHelper helper) {
+        helper.setBlock(MACHINE, FarmersDelightContent.ME_COOKING_POT.get());
+        var machine = helper.<MeCookingPotBlockEntity>getBlockEntity(MACHINE);
+        helper.assertTrue(machine.canPackIntoMachineSpace(), "idle empty cooking pot rejected packaging");
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.BEEF));
+        helper.assertTrue(!machine.canPackIntoMachineSpace(), "cooking pot with owned input was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void factoryRunsPackagedCookingPotThroughExplicitHeatPort(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(portPos, FarmersDelightContent.COOKING_FACTORY_HEAT_PORT.get());
+        helper.setBlock(portPos.below(), ModBlocks.STOVE.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, true));
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var heatPort = helper.<CookingFactoryHeatPortBlockEntity>getBlockEntity(portPos);
+        BlockPos absoluteFactoryPos = helper.absolutePos(factoryPos);
+        helper.assertTrue(heatPort.requestLane(absoluteFactoryPos, 0, true),
+                "explicit cooking heat port refused its adjacent factory");
+        helper.assertTrue(heatPort.isHeated(helper.getLevel(), helper.absolutePos(portPos)),
+                "explicit cooking heat port did not recognize the lit Farmer's Delight stove");
+        helper.assertTrue(heatPort.canRunLane(absoluteFactoryPos), "bound heat port was not runnable");
+        heatPort.requestLane(absoluteFactoryPos, 0, false);
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(FarmersDelightContent.ME_COOKING_POT.get()),
+                FarmersDelightContent.ME_COOKING_POT.get().defaultBlockState(), new net.minecraft.nbt.CompoundTag());
+        factory.inventory().setStackInSlot(0, dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0), new ItemStack(Items.BEEF));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 1), new ItemStack(Items.CARROT));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 2), new ItemStack(Items.POTATO));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 6), new ItemStack(Items.BOWL));
+        helper.succeedWhen(() -> helper.assertTrue(factory.inventory().getStackInSlot(
+                        dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0))
+                        .is(item("farmersdelight", "beef_stew")),
+                "packaged cooking pot did not complete through the explicit heated port: scheduled="
+                        + factory.isScheduled() + ", progress=" + factory.laneProgress(0)
+                        + ", duration=" + factory.menuData().get(1) + ", status=" + factory.menuData().get(2)
+                        + ", beef=" + factory.inventory().getStackInSlot(
+                                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).getCount()));
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void factoryCookingPotPreservesIngredientRemainders(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(portPos, FarmersDelightContent.COOKING_FACTORY_HEAT_PORT.get());
+        helper.setBlock(portPos.below(), ModBlocks.STOVE.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, true));
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(FarmersDelightContent.ME_COOKING_POT.get()),
+                FarmersDelightContent.ME_COOKING_POT.get().defaultBlockState(), new net.minecraft.nbt.CompoundTag());
+        factory.inventory().setStackInSlot(0, dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.MILK_BUCKET));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 1),
+                new ItemStack(Items.SUGAR));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 2),
+                new ItemStack(Items.COCOA_BEANS));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 3),
+                new ItemStack(Items.COCOA_BEANS));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 6),
+                new ItemStack(Items.GLASS_BOTTLE));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(countFactoryLane(factory, 0, item("farmersdelight", "hot_cocoa")) == 1,
+                    "packaged cooking pot did not produce hot cocoa");
+            helper.assertTrue(countFactoryLane(factory, 0, Items.BUCKET) == 1,
+                    "packaged cooking pot lost the milk bucket remainder");
+        });
+    }
+
     private static void fillBeefStew(MeCookingPotBlockEntity machine, int count) {
         machine.inventory().setStackInSlot(0, new ItemStack(Items.BEEF, count));
         machine.inventory().setStackInSlot(1, new ItemStack(Items.CARROT, count));
@@ -190,6 +270,17 @@ public final class FarmersDelightGameTests {
         int total = 0;
         for (int slot = 0; slot < machine.inventory().getSlots(); slot++) {
             if (machine.inventory().getStackInSlot(slot).is(item)) total += machine.inventory().getStackInSlot(slot).getCount();
+        }
+        return total;
+    }
+
+    private static int countFactoryLane(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity factory,
+                                        int lane, net.minecraft.world.item.Item item) {
+        int total = 0;
+        for (int slot = 0; slot < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; slot++) {
+            ItemStack stack = factory.inventory().getStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(lane, slot));
+            if (stack.is(item)) total += stack.getCount();
         }
         return total;
     }

@@ -14,6 +14,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.util.AECableType;
 import appeng.api.storage.StorageHelper;
 import dev.yuzhe.aeprimitives.content.MachineTier;
+import dev.yuzhe.aeprimitives.space.MachineSpacePackable;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelHost;
 import java.util.ArrayList;
@@ -36,7 +37,8 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import owmii.powah.block.energizing.EnergizingRecipe;
 import owmii.powah.recipe.Recipes;
 
-public final class MeEnergizingChamberBlockEntity extends BlockEntity implements IInWorldGridNodeHost, IActionHost, SpatialParallelHost {
+public final class MeEnergizingChamberBlockEntity extends BlockEntity implements IInWorldGridNodeHost, IActionHost,
+        SpatialParallelHost, MachineSpacePackable {
     private static final int INPUTS = 6;
     private static final int OUTPUT_START = 6;
 
@@ -79,6 +81,27 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     }
     public ItemStackHandler inventory() { return inventory; }
     public IEnergyStorage energy() { return energy; }
+    @Override public boolean canPackIntoMachineSpace() {
+        if (!plans.isEmpty() || energy.getEnergyStored() != 0) return false;
+        for (int slot = 0; slot < 17; slot++)
+            if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        return true;
+    }
+    @Override public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
+        var configuration = new CompoundTag();
+        ItemStack emitter = inventory.getStackInSlot(17);
+        if (!emitter.isEmpty()) configuration.put("emitter", emitter.saveOptional(registries));
+        return configuration;
+    }
+    @Override public boolean restoreMachineSpaceConfiguration(CompoundTag configuration,
+                                                               HolderLookup.Provider registries) {
+        if (!canPackIntoMachineSpace() || !inventory.getStackInSlot(17).isEmpty()) return false;
+        ItemStack emitter = configuration.contains("emitter")
+                ? ItemStack.parseOptional(registries, configuration.getCompound("emitter")) : ItemStack.EMPTY;
+        if (!emitter.isEmpty() && emitterRate(emitter) <= 0) return false;
+        inventory.setStackInSlot(17, emitter.copy());
+        return true;
+    }
     public MachineTier spatialParallelTier() { return MachineTier.ADVANCED; }
     public int maxSpatialParallelLanes() { return 8; }
     public void invalidateSpatialParallelism() { topologyDirty = true; setChanged(); }
@@ -153,7 +176,7 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     private int emitterCount() { return emitterRatePerModule() == 0 ? 0 : inventory.getStackInSlot(17).getCount(); }
     private int emitterRatePerModule() { return emitterRate(inventory.getStackInSlot(17)); }
     private int totalEmitterRate() { return emitterRatePerModule() * emitterCount(); }
-    private static int emitterRate(ItemStack stack) {
+    static int emitterRate(ItemStack stack) {
         if (stack.is(PowahContent.BASIC_EMITTER.get())) return 400;
         if (stack.is(PowahContent.NIOTIC_EMITTER.get())) return 10_000;
         if (stack.is(PowahContent.NITRO_EMITTER.get())) return 200_000;

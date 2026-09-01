@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "aeprimitives:block/casing",
+    "side": "farmersdelight:block/stove_side",
+    "top": "farmersdelight:block/stove_top"
+  }
+}

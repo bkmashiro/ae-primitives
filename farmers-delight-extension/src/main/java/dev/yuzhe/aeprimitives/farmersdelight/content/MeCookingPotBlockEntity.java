@@ -12,6 +12,7 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageHelper;
 import dev.yuzhe.aeprimitives.content.MachineTier;
+import dev.yuzhe.aeprimitives.space.MachineSpacePackable;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelHost;
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ import vectorwing.farmersdelight.common.crafting.CookingPotRecipe;
 import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
 
 public final class MeCookingPotBlockEntity extends BlockEntity implements IInWorldGridNodeHost, IActionHost,
-        SpatialParallelHost, HeatableBlockEntity {
+        SpatialParallelHost, HeatableBlockEntity, MachineSpacePackable {
     static final int INPUT_START = 0;
     static final int INPUT_END = 6;
     static final int CONTAINER_SLOT = 6;
@@ -65,6 +66,19 @@ public final class MeCookingPotBlockEntity extends BlockEntity implements IInWor
     }
 
     public ItemStackHandler inventory() { return inventory; }
+    @Override public boolean canPackIntoMachineSpace() {
+        if (workTicks != 0) return false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++)
+            if (!inventory.getStackInSlot(slot).isEmpty()) return false;
+        return true;
+    }
+    @Override public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
+        return new CompoundTag();
+    }
+    @Override public boolean restoreMachineSpaceConfiguration(CompoundTag configuration,
+                                                               HolderLookup.Provider registries) {
+        return configuration.isEmpty() && canPackIntoMachineSpace();
+    }
     public int parallelLanes() { refreshParallelTopology(); return parallelLanes; }
     @Override public MachineTier spatialParallelTier() { return MachineTier.BASIC; }
     @Override public int maxSpatialParallelLanes() { return 4; }

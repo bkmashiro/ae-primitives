@@ -2,5 +2,6 @@
   "block.aeprimitives_powah.me_energizing_chamber": "ME Energizing Chamber",
   "item.aeprimitives_powah.basic_emitter_module": "Basic Emitter Module",
   "item.aeprimitives_powah.niotic_emitter_module": "Niotic Emitter Module",
-  "item.aeprimitives_powah.nitro_emitter_module": "Nitro Emitter Module"
+  "item.aeprimitives_powah.nitro_emitter_module": "Nitro Emitter Module",
+  "block.aeprimitives_powah.energizing_factory_energy_port": "Energizing Factory Energy Port"
 }

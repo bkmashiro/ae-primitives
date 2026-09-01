@@ -29,20 +29,22 @@ public final class HeterogeneousFactoryScreen extends AbstractContainerScreen<He
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, BACKGROUND);
         outline(graphics, leftPos, topPos, imageWidth, imageHeight, BORDER);
+        graphics.fill(leftPos + 8, topPos + 14, leftPos + 240, topPos + 111, PANEL);
+        outline(graphics, leftPos + 8, topPos + 14, 232, 97, BORDER);
         for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            int x = leftPos + 11 + lane * 60;
-            graphics.fill(x, topPos + 14, x + 56, topPos + 111, PANEL);
-            outline(graphics, x, topPos + 14, 56, 97, BORDER);
-            slot(graphics, x + 21, topPos + 17, ACCENT);
-            for (int offset = 0; offset < 3; offset++) {
-                slot(graphics, x + 3 + offset * 18, topPos + 53, BORDER);
-                slot(graphics, x + 3 + offset * 18, topPos + 81, BORDER);
-            }
-            int duration = menu.laneDuration(lane);
-            int width = duration <= 0 ? 0 : Math.min(50, menu.laneProgress(lane) * 50 / duration);
-            graphics.fill(x + 3, topPos + 103, x + 53, topPos + 107, SLOT);
-            graphics.fill(x + 3, topPos + 103, x + 3 + width, topPos + 107, ACCENT);
+            int x = leftPos + 61 + lane * 32;
+            slot(graphics, x, topPos + 17, lane == menu.selectedLane() ? ACCENT : BORDER);
         }
+        for (int offset = 0; offset < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
+            slot(graphics, leftPos + 60 + offset * 18, topPos + 60, BORDER);
+            slot(graphics, leftPos + 60 + offset * 18, topPos + 88, BORDER);
+        }
+        int lane = menu.selectedLane();
+        int duration = menu.laneDuration(lane);
+        int width = duration <= 0 ? 0 : Math.min(126, menu.laneProgress(lane) * 126 / duration);
+        graphics.fill(leftPos + 60, topPos + 105, leftPos + 186, topPos + 109, SLOT);
+        graphics.fill(leftPos + 60, topPos + 105, leftPos + 60 + width, topPos + 109, ACCENT);
+
         graphics.fill(leftPos + 39, topPos + 124, leftPos + 209, topPos + 207, PANEL);
         outline(graphics, leftPos + 39, topPos + 124, 170, 83, BORDER);
         for (int row = 0; row < 3; row++) for (int col = 0; col < 9; col++)
@@ -54,25 +56,36 @@ public final class HeterogeneousFactoryScreen extends AbstractContainerScreen<He
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, title, titleLabelX, titleLabelY, 0xffe7edf7, false);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0xffb9c2d2, false);
-        for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
-            int x = 11 + lane * 60;
-            var component = menu.getSlot(lane).getItem();
-            var envelope = MachineSpaceComponentItem.read(component);
-            Component name = envelope == null
-                    ? Component.translatable("gui.aeprimitives.factory.lane", lane + 1)
-                    : Component.translatable("block." + envelope.blockId().getNamespace() + "." + envelope.blockId().getPath());
-            String shortName = font.plainSubstrByWidth(name.getString(), 52);
-            graphics.drawCenteredString(font, shortName, x + 28, 39, 0xffe2e7ef);
-            Component status = Component.translatable("gui.aeprimitives.factory.status." + menu.laneStatus(lane).id());
-            graphics.drawCenteredString(font, font.plainSubstrByWidth(status.getString(), 52), x + 28, 72,
-                    menu.laneStatus(lane) == HeterogeneousFactoryBlockEntity.LaneStatus.BLOCKED_OUTPUT ? 0xffff7d7d : 0xffaeb8c8);
-        }
+        int lane = menu.selectedLane();
+        var component = menu.getSlot(lane).getItem();
+        var envelope = MachineSpaceComponentItem.read(component);
+        Component name = envelope == null
+                ? Component.translatable("gui.aeprimitives.factory.lane", lane + 1)
+                : Component.translatable("block." + envelope.blockId().getNamespace() + "." + envelope.blockId().getPath());
+        graphics.drawCenteredString(font, font.plainSubstrByWidth(name.getString(), 220), 124, 42, 0xffe2e7ef);
+        Component status = Component.translatable("gui.aeprimitives.factory.status." + menu.laneStatus(lane).id());
+        graphics.drawCenteredString(font, status, 124, 78,
+                menu.laneStatus(lane) == HeterogeneousFactoryBlockEntity.LaneStatus.BLOCKED_OUTPUT ? 0xffff7d7d : 0xffaeb8c8);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    }
+
+    @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
+                int x = leftPos + 61 + lane * 32;
+                if (mouseX >= x && mouseX < x + 18 && mouseY >= topPos + 17 && mouseY < topPos + 35) {
+                    if (minecraft != null && minecraft.gameMode != null)
+                        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, lane);
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private static void slot(GuiGraphics graphics, int x, int y, int border) {

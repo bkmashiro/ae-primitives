@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" C ", "FSF", " E "],
+  "key": {
+    "C": { "item": "ae2:calculation_processor" },
+    "F": { "item": "ae2:fluix_crystal" },
+    "S": { "item": "farmersdelight:stove" },
+    "E": { "item": "ae2:engineering_processor" }
+  },
+  "result": { "id": "aeprimitives_farmersdelight:cooking_factory_heat_port", "count": 1 }
+}

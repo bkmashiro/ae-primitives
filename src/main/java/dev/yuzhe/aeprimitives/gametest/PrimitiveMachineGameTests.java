@@ -400,6 +400,39 @@ public final class PrimitiveMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void heterogeneousFactoryExposesFullExtensionLaneBuffers(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        int lastInput = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(3, 6);
+        int lastOutput = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(3, 6);
+        helper.assertTrue(lastInput < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.INPUT_END,
+                "factory did not expose seven inputs per extension lane");
+        helper.assertTrue(lastOutput < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.OUTPUT_END,
+                "factory did not expose seven outputs per extension lane");
+        factory.inventory().setStackInSlot(lastInput, new ItemStack(Items.BOWL));
+        factory.inventory().setStackInSlot(lastOutput, new ItemStack(Items.DIAMOND));
+        helper.assertTrue(factory.inventory().getStackInSlot(lastInput).is(Items.BOWL)
+                        && factory.inventory().getStackInSlot(lastOutput).is(Items.DIAMOND),
+                "extension lane buffers aliased or rejected their seventh slot");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void heterogeneousFactoryKeepsComponentWhileLaneOwnsItems(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        int output = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0);
+        factory.inventory().setStackInSlot(output, new ItemStack(Items.DIAMOND));
+        helper.assertTrue(factory.inventory().extractItem(0, 1, false).isEmpty(),
+                "factory removed a component while its lane still owned output");
+        factory.inventory().setStackInSlot(output, ItemStack.EMPTY);
+        helper.assertTrue(factory.inventory().extractItem(0, 1, false).is(ModContent.MACHINE_SPACE_COMPONENT.get()),
+                "factory kept an idle component after its lane became empty");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void heterogeneousFactoryRunsIndependentLinearLanes(GameTestHelper helper) {
         helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());
@@ -464,7 +497,7 @@ public final class PrimitiveMachineGameTests {
         factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
         factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
                 new ItemStack(Items.RED_CONCRETE_POWDER));
-        for (int offset = 0; offset < 3; offset++) {
+        for (int offset = 0; offset < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
             factory.inventory().setStackInSlot(
                     dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
                     new ItemStack(Items.COBBLESTONE, 64));
@@ -484,7 +517,7 @@ public final class PrimitiveMachineGameTests {
         factory.inventory().setStackInSlot(0, transactionalComponent());
         int input = dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0);
         factory.inventory().setStackInSlot(input, new ItemStack(Items.DIRT));
-        for (int offset = 0; offset < 3; offset++) {
+        for (int offset = 0; offset < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
             factory.inventory().setStackInSlot(
                     dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
                     new ItemStack(Items.COBBLESTONE, 64));
@@ -515,7 +548,7 @@ public final class PrimitiveMachineGameTests {
             factory.serverTick();
             helper.assertTrue(factory.laneProgress(0) > 0 && factory.laneProgress(0) < 100,
                     "external lane did not begin processing");
-            for (int offset = 0; offset < 3; offset++) {
+            for (int offset = 0; offset < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
                 factory.inventory().setStackInSlot(
                         dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
                         new ItemStack(Items.COBBLESTONE, 64));
@@ -531,7 +564,7 @@ public final class PrimitiveMachineGameTests {
             factory.saveAdditional(tag, helper.getLevel().registryAccess());
             helper.assertTrue(tag.contains("pendingLaneOutputs"), "completed output was not persisted");
             factory.loadTag(tag, helper.getLevel().registryAccess());
-            for (int offset = 0; offset < 3; offset++) {
+            for (int offset = 0; offset < dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; offset++) {
                 factory.inventory().setStackInSlot(
                         dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset), ItemStack.EMPTY);
             }

@@ -35,12 +35,13 @@ import dev.yuzhe.aeprimitives.menu.HeterogeneousFactoryMenu;
 
 public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntity implements MenuProvider {
     public static final int LANE_COUNT = 4;
+    public static final int LANE_BUFFER_SLOTS = 7;
     public static final int COMPONENT_START = 0;
     public static final int COMPONENT_END = 4;
     public static final int INPUT_START = 4;
-    public static final int INPUT_END = 16;
-    public static final int OUTPUT_START = 16;
-    public static final int OUTPUT_END = 28;
+    public static final int INPUT_END = INPUT_START + LANE_COUNT * LANE_BUFFER_SLOTS;
+    public static final int OUTPUT_START = INPUT_END;
+    public static final int OUTPUT_END = OUTPUT_START + LANE_COUNT * LANE_BUFFER_SLOTS;
 
     private final int[] laneProgress = new int[LANE_COUNT];
     @SuppressWarnings("unchecked")
@@ -50,7 +51,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             new VirtualMachineLaneExecutor.LaneContext[LANE_COUNT];
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private boolean scheduled;
-    private final ItemStackHandler inventory = new ItemStackHandler(28) {
+    private final ItemStackHandler inventory = new ItemStackHandler(OUTPUT_END) {
         @Override public boolean isItemValid(int slot, ItemStack stack) {
             if (slot < COMPONENT_END) return stack.is(ModContent.MACHINE_SPACE_COMPONENT.get()) && MachineSpaceComponentItem.read(stack) != null;
             return slot < OUTPUT_START;
@@ -63,6 +64,17 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             scheduled = true;
             refreshLanePower();
             setChanged();
+        }
+        @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            int lane = inputLane(slot);
+            if (lane >= 0 && laneInputLocked(lane)) return stack;
+            return super.insertItem(slot, stack, simulate);
+        }
+        @Override public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot >= COMPONENT_START && slot < COMPONENT_END && laneOwnsState(slot)) return ItemStack.EMPTY;
+            int lane = inputLane(slot);
+            if (lane >= 0 && laneInputLocked(lane)) return ItemStack.EMPTY;
+            return super.extractItem(slot, amount, simulate);
         }
     };
 
@@ -248,17 +260,34 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         };
     }
 
-    public static int inputSlot(int lane, int offset) { return INPUT_START + lane * 3 + offset; }
-    public static int outputSlot(int lane, int offset) { return OUTPUT_START + lane * 3 + offset; }
+    public static int inputSlot(int lane, int offset) { return INPUT_START + lane * LANE_BUFFER_SLOTS + offset; }
+    public static int outputSlot(int lane, int offset) { return OUTPUT_START + lane * LANE_BUFFER_SLOTS + offset; }
+
+    private static int inputLane(int slot) {
+        return slot >= INPUT_START && slot < INPUT_END ? (slot - INPUT_START) / LANE_BUFFER_SLOTS : -1;
+    }
+
+    private boolean laneInputLocked(int lane) {
+        return laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty();
+    }
+
+    private boolean laneOwnsState(int lane) {
+        if (laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty() || activeExecutors[lane] != null) return true;
+        for (int offset = 0; offset < LANE_BUFFER_SLOTS; offset++) {
+            if (!inventory.getStackInSlot(inputSlot(lane, offset)).isEmpty()
+                    || !inventory.getStackInSlot(outputSlot(lane, offset)).isEmpty()) return true;
+        }
+        return false;
+    }
 
     private ItemStackHandler snapshotInputs(int lane) {
-        var snapshot = new ItemStackHandler(12);
-        for (int slot = 0; slot < 3; slot++) snapshot.setStackInSlot(slot, inventory.getStackInSlot(inputSlot(lane, slot)).copy());
+        var snapshot = new ItemStackHandler(LANE_BUFFER_SLOTS);
+        for (int slot = 0; slot < LANE_BUFFER_SLOTS; slot++) snapshot.setStackInSlot(slot, inventory.getStackInSlot(inputSlot(lane, slot)).copy());
         return snapshot;
     }
 
     private void commitInputs(int lane, ItemStackHandler snapshot) {
-        for (int slot = 0; slot < 3; slot++) inventory.setStackInSlot(inputSlot(lane, slot), snapshot.getStackInSlot(slot).copy());
+        for (int slot = 0; slot < LANE_BUFFER_SLOTS; slot++) inventory.setStackInSlot(inputSlot(lane, slot), snapshot.getStackInSlot(slot).copy());
     }
 
     private void refreshLanePower() {
@@ -277,8 +306,8 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     private boolean canQueueAll(int lane, List<ItemStack> outputs) {
-        var simulated = new ItemStackHandler(3);
-        for (int slot = 0; slot < 3; slot++) simulated.setStackInSlot(slot, inventory.getStackInSlot(outputSlot(lane, slot)).copy());
+        var simulated = new ItemStackHandler(LANE_BUFFER_SLOTS);
+        for (int slot = 0; slot < LANE_BUFFER_SLOTS; slot++) simulated.setStackInSlot(slot, inventory.getStackInSlot(outputSlot(lane, slot)).copy());
         for (var output : outputs) {
             var remaining = output.copy();
             for (int slot = 0; slot < simulated.getSlots() && !remaining.isEmpty(); slot++) remaining = simulated.insertItem(slot, remaining, false);
@@ -290,7 +319,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     private void queueAll(int lane, List<ItemStack> outputs) {
         for (var output : outputs) {
             var remaining = output.copy();
-            for (int offset = 0; offset < 3 && !remaining.isEmpty(); offset++) {
+            for (int offset = 0; offset < LANE_BUFFER_SLOTS && !remaining.isEmpty(); offset++) {
                 int slot = outputSlot(lane, offset);
                 var stored = inventory.getStackInSlot(slot);
                 if (stored.isEmpty()) {

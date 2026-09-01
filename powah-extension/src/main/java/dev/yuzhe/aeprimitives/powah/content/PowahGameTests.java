@@ -134,6 +134,53 @@ public final class PowahGameTests {
         });
     }
 
+    @GameTest(template = "empty")
+    public static void packagedChamberPreservesEmitterAndRejectsOwnedState(GameTestHelper helper) {
+        var pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, PowahContent.ENERGIZING_CHAMBER.get());
+        var machine = (MeEnergizingChamberBlockEntity) helper.getBlockEntity(pos);
+        machine.inventory().setStackInSlot(17, new ItemStack(PowahContent.NIOTIC_EMITTER.get(), 2));
+        helper.assertTrue(machine.canPackIntoMachineSpace(), "configured idle chamber rejected packaging");
+        var configuration = machine.writeMachineSpaceConfiguration(helper.getLevel().registryAccess());
+        var restored = new MeEnergizingChamberBlockEntity(pos, machine.getBlockState());
+        helper.assertTrue(restored.restoreMachineSpaceConfiguration(configuration, helper.getLevel().registryAccess())
+                        && restored.inventory().getStackInSlot(17).getCount() == 2,
+                "packaged chamber lost its emitter configuration");
+        machine.energy().receiveEnergy(1, false);
+        helper.assertTrue(!machine.canPackIntoMachineSpace(), "chamber with owned FE was packaged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void factoryRunsPackagedChamberThroughExplicitFePort(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(3, 1, 3);
+        helper.setBlock(factoryPos.above(), appeng.core.definitions.AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(portPos, PowahContent.ENERGIZING_FACTORY_ENERGY_PORT.get());
+        var port = (EnergizingFactoryEnergyPortBlockEntity) helper.getBlockEntity(portPos);
+        port.energy().receiveEnergy(10000, false);
+        var configuration = new CompoundTag();
+        configuration.put("emitter", new ItemStack(PowahContent.NIOTIC_EMITTER.get()).saveOptional(
+                helper.getLevel().registryAccess()));
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
+                BuiltInRegistries.BLOCK.getKey(PowahContent.ENERGIZING_CHAMBER.get()),
+                PowahContent.ENERGIZING_CHAMBER.get().defaultBlockState(), configuration);
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        factory.inventory().setStackInSlot(0, dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
+                ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0), new ItemStack(Items.IRON_INGOT));
+        factory.inventory().setStackInSlot(dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 1), new ItemStack(Items.GOLD_INGOT));
+        helper.succeedWhen(() -> {
+            ItemStack output = factory.inventory().getStackInSlot(
+                    dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0));
+            helper.assertTrue(output.is(item("powah:steel_energized")) && output.getCount() == 2,
+                    "packaged energizing chamber did not complete through the explicit FE port");
+            helper.assertTrue(port.energy().getEnergyStored() == 0,
+                    "packaged energizing chamber did not pay the exact recipe FE");
+        });
+    }
+
     private static int count(MeEnergizingChamberBlockEntity machine, String id) {
         Item item = item(id);
         int total = 0;
