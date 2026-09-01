@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Finish the Powah extension as a real ME Energizing Orb production path. The chamber must resolve Powah energizing recipes without over-consuming unmatched slots, reserve one independent input set and FE budget per spatial lane, persist paid energy and pending outputs without duplication across reload, pause transactionally when outputs or emitters are unavailable, reconnect to the AE grid event-driven, and return completed products through normal ME storage. Validate real recipes, linear FE scaling, blocked outputs, reload, and Core/JAR isolation.
+Extend the heterogeneous factory's extension-owned executor boundary to the completed Farmer's Delight and Powah machines. Package only idle, empty ME Cooking Pots and ME Energizing Chambers; preserve their configuration, require explicit heat and FE ports at runtime, keep each lane's recipe inputs, paid energy, container remainders and pending outputs independent and persistent, and reject unpacking or component removal while work or owned output remains. Do not import either optional mod into Core.
 
 ## 1. Spatial parallel blocks
 

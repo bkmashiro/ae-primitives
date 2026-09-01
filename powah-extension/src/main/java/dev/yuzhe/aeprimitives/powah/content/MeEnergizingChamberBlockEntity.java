@@ -2,13 +2,17 @@ package dev.yuzhe.aeprimitives.powah.content;
 
 
 import appeng.api.networking.GridFlags;
+import appeng.api.config.Actionable;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.util.AECableType;
+import appeng.api.storage.StorageHelper;
 import dev.yuzhe.aeprimitives.content.MachineTier;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock;
 import dev.yuzhe.aeprimitives.spatial.SpatialParallelHost;
@@ -40,7 +44,8 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
         @Override public void onSaveChanges(MeEnergizingChamberBlockEntity owner, IGridNode node) { owner.setChanged(); }
     };
     private final IManagedGridNode mainNode = GridHelper.createManagedNode(this, NODE_LISTENER)
-            .setFlags(GridFlags.REQUIRE_CHANNEL).setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(4.0);
+            .setInWorldNode(true).setFlags(GridFlags.REQUIRE_CHANNEL)
+            .setExposedOnSides(EnumSet.allOf(Direction.class)).setIdlePowerUsage(4.0);
     private final ItemStackHandler inventory = new ItemStackHandler(18) {
         @Override public boolean isItemValid(int slot, ItemStack stack) { return slot < INPUTS || slot == 17 && emitterRate(stack) > 0; }
         @Override protected void onContentsChanged(int slot) { setChanged(); }
@@ -52,11 +57,16 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     };
     private final List<Plan> plans = new ArrayList<>();
     private boolean topologyDirty = true;
+    private boolean gridTopologyDirty = true;
+    private int gridBootstrapTicks = 20;
     private int cachedLanes = 1;
 
     public MeEnergizingChamberBlockEntity(BlockPos pos, BlockState state) { super(PowahContent.ENERGIZING_CHAMBER_ENTITY.get(), pos, state); }
     public static void serverTick(net.minecraft.world.level.Level level, BlockPos pos, BlockState state, MeEnergizingChamberBlockEntity be) {
-        if (!(level instanceof ServerLevel server) || !be.mainNode.isActive()) return;
+        if (!(level instanceof ServerLevel server)) return;
+        be.refreshGridConnections();
+        be.flushOutputsToMe();
+        if (!be.mainNode.isActive()) return;
         be.refreshTopology();
         be.startPlans(server);
         for (var plan : be.plans) {
@@ -72,9 +82,11 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
     public MachineTier spatialParallelTier() { return MachineTier.ADVANCED; }
     public int maxSpatialParallelLanes() { return 8; }
     public void invalidateSpatialParallelism() { topologyDirty = true; setChanged(); }
+    public void markGridTopologyDirty() { gridTopologyDirty = true; }
     public int laneCountForTest() { refreshTopology(); return cachedLanes; }
     public int activePlansForTest() { return plans.size(); }
     public double totalRequiredFeForTest() { return plans.stream().mapToDouble(p -> p.energyRequired).sum(); }
+    public double totalPaidFeForTest() { return plans.stream().mapToDouble(p -> p.energyPaid).sum(); }
     public void startPlansForTest(ServerLevel level) { refreshTopology(); startPlans(level); }
     public void runExternalEnergyTickForTest() {
         for (var plan : plans) {
@@ -96,6 +108,36 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
         }
         cachedLanes = Math.min(maxSpatialParallelLanes(), lanes);
         topologyDirty = false;
+    }
+    private void refreshGridConnections() {
+        if (level == null || level.isClientSide || !mainNode.isReady()
+                || (!gridTopologyDirty && gridBootstrapTicks <= 0)) return;
+        if (gridBootstrapTicks > 0) gridBootstrapTicks--;
+        var node = mainNode.getNode();
+        boolean pendingNeighbor = false;
+        for (var direction : Direction.values()) {
+            if (node.getInWorldConnections().containsKey(direction)) continue;
+            var host = GridHelper.getNodeHost(level, worldPosition.relative(direction));
+            if (host == null) continue;
+            var neighbor = GridHelper.getExposedNode(level, worldPosition.relative(direction), direction.getOpposite());
+            if (neighbor == null) pendingNeighbor = true;
+            else if (neighbor != node && node.getConnections().stream()
+                    .noneMatch(connection -> connection.getOtherSide(node) == neighbor)) GridHelper.createConnection(node, neighbor);
+        }
+        gridTopologyDirty = pendingNeighbor;
+    }
+    private void flushOutputsToMe() {
+        if (!mainNode.isActive()) return;
+        var grid = mainNode.getGrid();
+        for (int slot = OUTPUT_START; slot < 17; slot++) {
+            var stack = inventory.getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            var key = AEItemKey.of(stack);
+            if (key == null) continue;
+            long inserted = StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(),
+                    key, stack.getCount(), IActionSource.empty(), Actionable.MODULATE);
+            if (inserted > 0) inventory.extractItem(slot, (int) inserted, false);
+        }
     }
     private void startPlans(ServerLevel level) {
         while (plans.size() < Math.min(cachedLanes, emitterCount())) {
@@ -150,7 +192,13 @@ public final class MeEnergizingChamberBlockEntity extends BlockEntity implements
             }
         }
     }
-    @Override public void onLoad() { super.onLoad(); if (!level.isClientSide) mainNode.create(level, worldPosition); topologyDirty = true; }
+    @Override public void onLoad() {
+        super.onLoad();
+        if (!level.isClientSide) mainNode.create(level, worldPosition);
+        topologyDirty = true;
+        gridTopologyDirty = true;
+        gridBootstrapTicks = 20;
+    }
     @Override public void setRemoved() { super.setRemoved(); mainNode.destroy(); }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries); mainNode.saveToNBT(tag); tag.put("inventory", inventory.serializeNBT(registries)); tag.put("energy", energy.serializeNBT(registries));
