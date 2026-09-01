@@ -44,8 +44,8 @@ public final class KineticMachineGameTests {
     @GameTest(template = "empty")
     public static void crusherRunsCreateCrushingRecipe(GameTestHelper helper) {
         var machine = place(helper, KineticsContent.ME_CRUSHER.get());
-        machine.inventory().setStackInSlot(0, new ItemStack(Items.DIORITE));
-        helper.assertTrue(machine.completeCycle(helper.getLevel()), "ME crusher did not accept Create's diorite crushing recipe");
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.RAW_IRON));
+        helper.assertTrue(machine.completeCycle(helper.getLevel()), "ME crusher did not accept Create's raw iron crushing recipe");
         helper.assertTrue(machine.inventory().getStackInSlot(0).isEmpty(), "ME crusher did not consume its input");
         helper.succeed();
     }
@@ -403,6 +403,27 @@ public final class KineticMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void crusherAndConfiguredCatalystChamberCanBePackaged(GameTestHelper helper) {
+        var crusher = placeAt(helper, new BlockPos(1, 1, 1), KineticsContent.ME_CRUSHER.get());
+        helper.assertTrue(crusher.canPackIntoMachineSpace(), "idle ME crusher rejected machine-space packaging");
+
+        var chamber = placeAt(helper, new BlockPos(3, 1, 1), KineticsContent.ME_CATALYST_CHAMBER.get());
+        chamber.installCatalyst(new ItemStack(Items.WATER_BUCKET));
+        helper.assertTrue(chamber.canPackIntoMachineSpace(), "configured catalyst chamber rejected packaging");
+        var configuration = chamber.writeMachineSpaceConfiguration(helper.getLevel().registryAccess());
+        helper.assertTrue(configuration.contains("catalystId") && configuration.contains("catalystStack"),
+                "packaged catalyst chamber lost catalyst identity");
+
+        var restored = placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_CATALYST_CHAMBER.get());
+        helper.assertTrue(restored.restoreMachineSpaceConfiguration(configuration, helper.getLevel().registryAccess()),
+                "catalyst configuration could not be restored");
+        helper.assertTrue(restored.catalystId().equals(chamber.catalystId())
+                        && ItemStack.isSameItemSameComponents(restored.catalystStack(), chamber.catalystStack()),
+                "restored catalyst chamber changed its catalyst configuration");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void factoryRunsPackagedPressThroughKineticPort(GameTestHelper helper) {
         BlockPos factoryPos = new BlockPos(1, 1, 1);
@@ -478,12 +499,120 @@ public final class KineticMachineGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 1000)
+    public static void factoryRunsPackagedCrusherAndCatalystChamber(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(portPos, KineticsContent.FACTORY_PORT.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var port = helper.<KineticFactoryPortBlockEntity>getBlockEntity(portPos);
+        port.setSpeed(64);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, KineticsContent.ME_CRUSHER.get(), null));
+
+        var chamber = placeAt(helper, new BlockPos(5, 1, 1), KineticsContent.ME_CATALYST_CHAMBER.get());
+        chamber.installCatalyst(new ItemStack(Items.WATER_BUCKET));
+        factory.inventory().setStackInSlot(1, machineComponent(helper, KineticsContent.ME_CATALYST_CHAMBER.get(), chamber));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.RAW_IRON));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0),
+                new ItemStack(Items.MAGMA_BLOCK));
+
+        helper.succeedWhen(() -> {
+            port.setSpeed(64);
+            factory.scheduleExternalWork();
+            for (int tick = 0; tick < 70; tick++) factory.serverTick();
+            helper.assertTrue(factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0)).isEmpty(),
+                    "packaged crusher did not consume its input");
+            helper.assertTrue(factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0)).isEmpty(),
+                    "packaged catalyst chamber did not consume its input");
+            helper.assertTrue(!factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0)).isEmpty(),
+                    "packaged crusher produced no result");
+            helper.assertTrue(!factory.inventory().getStackInSlot(
+                            dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(1, 0)).isEmpty(),
+                    "packaged catalyst chamber produced no result");
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void factoryPortSumsMixedKineticLaneStress(GameTestHelper helper) {
+        BlockPos factoryPos = new BlockPos(1, 1, 1);
+        BlockPos portPos = factoryPos.east();
+        helper.setBlock(factoryPos.south(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+        helper.setBlock(factoryPos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        helper.setBlock(portPos, KineticsContent.FACTORY_PORT.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(factoryPos);
+        var port = helper.<KineticFactoryPortBlockEntity>getBlockEntity(portPos);
+        port.setSpeed(16);
+        factory.inventory().setStackInSlot(0, pressComponent(helper));
+        factory.inventory().setStackInSlot(1, machineComponent(helper, KineticsContent.ME_CRUSHER.get(), null));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(Items.IRON_INGOT));
+        factory.inventory().setStackInSlot(
+                dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.inputSlot(1, 0),
+                new ItemStack(Items.RAW_IRON));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(port.activeLaneCount() == 2, "factory port did not track both mixed lanes");
+            helper.assertTrue(port.calculateStressApplied()
+                            == KineticMachineKind.PRESS.stressImpact() + KineticMachineKind.CRUSHER.stressImpact(),
+                    "factory port did not sum each machine kind's stress");
+        });
+    }
+
+    @GameTest(template = "empty")
+    public static void factoryCrusherLanesRollProbabilityIndependently(GameTestHelper helper) {
+        var component = machineComponent(helper, KineticsContent.ME_CRUSHER.get(), null);
+        var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.read(component);
+        var inputs = new net.neoforged.neoforge.items.ItemStackHandler[] {
+                new net.neoforged.neoforge.items.ItemStackHandler(3),
+                new net.neoforged.neoforge.items.ItemStackHandler(3)
+        };
+        for (var laneInputs : inputs) laneInputs.setStackInSlot(0, new ItemStack(Items.RAW_IRON));
+
+        long seed = 78431L;
+        var recipe = KineticProcessBehavior.CreateRecipe.findRecipe(
+                KineticMachineKind.CRUSHER, helper.getLevel(), new ItemStack(Items.RAW_IRON));
+        var expectedRandom = net.minecraft.util.RandomSource.create(seed);
+        var bonus = BuiltInRegistries.ITEM.get(ResourceLocation.parse("create:experience_nugget"));
+        int expectedBonus = 0;
+        for (int lane = 0; lane < 2; lane++) {
+            for (ItemStack result : recipe.rollResults(expectedRandom)) if (result.is(bonus)) expectedBonus += result.getCount();
+        }
+
+        helper.getLevel().random.setSeed(seed);
+        int actualBonus = 0;
+        for (int lane = 0; lane < 2; lane++) {
+            var context = new dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor.LaneContext(
+                    helper.getLevel(), MACHINE, lane, envelope, inputs[lane]);
+            var plan = KineticVirtualLaneExecutor.INSTANCE.prepare(context);
+            helper.assertTrue(plan != null, "crusher lane did not resolve its recipe");
+            for (ItemStack result : plan.complete(inputs[lane])) if (result.is(bonus)) actualBonus += result.getCount();
+            helper.assertTrue(inputs[lane].getStackInSlot(0).isEmpty(), "crusher lane did not consume exactly one input");
+        }
+        helper.assertTrue(actualBonus == expectedBonus,
+                "executor did not perform one sequential probability roll per completed crusher lane");
+        helper.succeed();
+    }
+
     private static ItemStack pressComponent(GameTestHelper helper) {
-        var configuration = new net.minecraft.nbt.CompoundTag();
-        configuration.putString("kind", KineticMachineKind.PRESS.id());
+        return machineComponent(helper, KineticsContent.ME_PRESS.get(), null);
+    }
+
+    private static ItemStack machineComponent(
+            GameTestHelper helper, KineticMachineBlock block, KineticMachineBlockEntity configuredMachine) {
+        var configuration = configuredMachine == null
+                ? new net.minecraft.nbt.CompoundTag()
+                : configuredMachine.writeMachineSpaceConfiguration(helper.getLevel().registryAccess());
+        configuration.putString("kind", block.kind().id());
         var envelope = dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope.capture(
-                BuiltInRegistries.BLOCK.getKey(KineticsContent.ME_PRESS.get()),
-                KineticsContent.ME_PRESS.get().defaultBlockState(), configuration);
+                BuiltInRegistries.BLOCK.getKey(block), block.defaultBlockState(), configuration);
         return dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem.create(
                 ModContent.MACHINE_SPACE_COMPONENT.get(), envelope);
     }

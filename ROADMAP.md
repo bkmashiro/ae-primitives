@@ -13,7 +13,7 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-Extend the Kinetics virtual-lane executor from pressing to crushing and catalyst processing. Preserve catalyst configuration in packaged components, roll each probabilistic result per completed lane, and keep all Create recipe and stress code inside `create-extension`.
+Harden optional virtual lanes across save/reload and blocked-output transitions. Revalidate external resource bindings after load, retain lane progress and inventory without ghost stress demand, and prove that unavailable output capacity never consumes an input or rerolls a completed probabilistic operation.
 
 ## 1. Spatial parallel blocks
 
@@ -138,7 +138,7 @@ Do not add Mekanism integration. Its existing Pattern Provider processing workfl
 
 ## 5. Machine space components and heterogeneous factory
 
-This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities. Its four-lane menu installs components directly, exposes isolated input/output buffers and reports lane identity, progress and blocked state. A core-side executor registry now lets optional extensions own virtual execution without leaking their classes into the Core JAR. The first Kinetics slice packages idle ME presses and runs Create pressing recipes through a dedicated kinetic factory port; that port binds one controller, reports missing rotational power, and applies stress linearly per active lane.
+This phase became active after the Create, Farmer's Delight and Powah resource contracts were implemented. The first controller now persists four distinct Core-machine lanes and schedules their operations without materializing world block entities. Its four-lane menu installs components directly, exposes isolated input/output buffers and reports lane identity, progress and blocked state. A core-side executor registry lets optional extensions own virtual execution without leaking their classes into the Core JAR. Kinetics now packages idle presses and crushers plus configured catalyst chambers, and runs pressing, crushing and fan-catalyst recipes through a dedicated kinetic factory port. Catalyst identity and activation item survive packaging, each completed lane performs its own recipe roll, and mixed machine kinds contribute their actual stress cost to the same single-owner port.
 
 ### Packaging model
 

@@ -9,24 +9,24 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public final class KineticFactoryPortBlockEntity extends KineticBlockEntity {
     static final float MIN_SPEED = 16.0f;
-    private final boolean[] activeLanes = new boolean[HeterogeneousFactoryBlockEntity.LANE_COUNT];
+    private final float[] laneStress = new float[HeterogeneousFactoryBlockEntity.LANE_COUNT];
     private BlockPos owner;
 
     public KineticFactoryPortBlockEntity(BlockPos pos, BlockState state) {
         super(KineticsContent.FACTORY_PORT_ENTITY.get(), pos, state);
     }
 
-    public boolean requestLane(BlockPos factoryPos, int lane, boolean active) {
-        if (lane < 0 || lane >= activeLanes.length || !isAdjacentFactory(factoryPos)) return false;
+    public boolean requestLane(BlockPos factoryPos, int lane, float stress) {
+        if (lane < 0 || lane >= laneStress.length || stress < 0 || !isAdjacentFactory(factoryPos)) return false;
         if (owner != null && !owner.equals(factoryPos)) return false;
-        if (active) owner = factoryPos.immutable();
-        if (activeLanes[lane] != active) {
-            activeLanes[lane] = active;
+        if (stress > 0) owner = factoryPos.immutable();
+        if (laneStress[lane] != stress) {
+            laneStress[lane] = stress;
             if (hasNetwork()) getOrCreateNetwork().updateStressFor(this, calculateStressApplied());
             setChanged();
             sendData();
         }
-        if (!active && activeLaneCount() == 0) owner = null;
+        if (stress == 0 && activeLaneCount() == 0) owner = null;
         return true;
     }
 
@@ -37,12 +37,14 @@ public final class KineticFactoryPortBlockEntity extends KineticBlockEntity {
 
     public int activeLaneCount() {
         int count = 0;
-        for (boolean active : activeLanes) if (active) count++;
+        for (float stress : laneStress) if (stress > 0) count++;
         return count;
     }
 
     @Override public float calculateStressApplied() {
-        return KineticMachineKind.PRESS.stressImpact() * activeLaneCount();
+        float total = 0;
+        for (float stress : laneStress) total += stress;
+        return total;
     }
 
     @Override public void onSpeedChanged(float previousSpeed) {
@@ -58,7 +60,7 @@ public final class KineticFactoryPortBlockEntity extends KineticBlockEntity {
     }
 
     @Override public void remove() {
-        Arrays.fill(activeLanes, false);
+        Arrays.fill(laneStress, 0);
         owner = null;
         wakeFactory();
         super.remove();

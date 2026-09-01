@@ -331,7 +331,9 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
 
     @Override
     public boolean canPackIntoMachineSpace() {
-        if (kind() != KineticMachineKind.PRESS || work != 0 || !dispatchedPlans.isEmpty() || catalystId != null) return false;
+        if ((kind() != KineticMachineKind.PRESS && kind() != KineticMachineKind.CRUSHER && kind() != KineticMachineKind.FAN)
+                || work != 0 || !dispatchedPlans.isEmpty()) return false;
+        if (kind() == KineticMachineKind.FAN ? catalystId == null : catalystId != null) return false;
         for (int slot = 0; slot < inventory.getSlots(); slot++) if (!inventory.getStackInSlot(slot).isEmpty()) return false;
         for (int tank = 0; tank < basinFluids.getTanks(); tank++) if (!basinFluids.getFluidInTank(tank).isEmpty()) return false;
         return true;
@@ -341,12 +343,29 @@ public final class KineticMachineBlockEntity extends KineticBlockEntity implemen
     public CompoundTag writeMachineSpaceConfiguration(HolderLookup.Provider registries) {
         CompoundTag configuration = new CompoundTag();
         configuration.putString("kind", kind().id());
+        if (kind() == KineticMachineKind.FAN && catalystId != null) {
+            configuration.putString("catalystId", catalystId.toString());
+            configuration.put("catalystStack", catalystStack.saveOptional(registries));
+        }
         return configuration;
     }
 
     @Override
     public boolean restoreMachineSpaceConfiguration(CompoundTag configuration, HolderLookup.Provider registries) {
-        return kind() == KineticMachineKind.PRESS && KineticMachineKind.PRESS.id().equals(configuration.getString("kind"));
+        if (!kind().id().equals(configuration.getString("kind"))) return false;
+        if (kind() != KineticMachineKind.FAN) return kind() == KineticMachineKind.PRESS || kind() == KineticMachineKind.CRUSHER;
+        ResourceLocation id = ResourceLocation.tryParse(configuration.getString("catalystId"));
+        ItemStack stack = configuration.contains("catalystStack")
+                ? ItemStack.parseOptional(registries, configuration.getCompound("catalystStack")) : ItemStack.EMPTY;
+        var definition = id == null ? null : CatalystRegistry.get(id).orElse(null);
+        if (definition == null || stack.isEmpty()
+                || CatalystRegistry.find(stack).map(candidate -> !candidate.id().equals(id)).orElse(true)) return false;
+        catalystId = id;
+        catalystStack = stack.copyWithCount(1);
+        catalystVisual = definition.display();
+        setChanged();
+        sendData();
+        return true;
     }
     @Override public IGridNode getGridNode(Direction direction) { return gridNode.isReady() ? gridNode.getNode() : null; }
     @Override public IGridNode getActionableNode() { return gridNode.getNode(); }
