@@ -56,11 +56,7 @@
         "size": 16,
         "layers": [
           {"type": "vertical_gradient", "top": "#c4d0d8", "bottom": "#a2b0bd"},
-          {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 719},
-          {"type": "rect", "bounds": [3, 4, 13, 5], "color": "#7b8899"},
-          {"type": "rect", "bounds": [3, 11, 13, 12], "color": "#667387"},
-          {"type": "rect", "bounds": [2, 4, 3, 12], "color": "#667387"},
-          {"type": "rect", "bounds": [13, 4, 14, 12], "color": "#465064"}
+          {"type": "clustered_noise", "amount": 10, "scale": 4, "steps": 5, "seed": 719}
         ]
       }
     },
