@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "aeprimitives_pneumaticcraft:me_pneumatic_assembly_chamber"
+        }
+      ],
+      "conditions": [ { "condition": "minecraft:survives_explosion" } ]
+    }
+  ],
+  "random_sequence": "aeprimitives_pneumaticcraft:blocks/me_pneumatic_assembly_chamber"
+}

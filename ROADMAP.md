@@ -13,9 +13,9 @@ The repository remains a lightweight monorepo:
 
 ## Current execution pointer
 
-The original spatial-factory roadmap is complete. The current extension pointer is PneumaticCraft support. The first verified slice adds tiered compressed-air cells for normal AE2 drives plus bounded pressure import/export ports. The next product slice is network pressure monitoring and the first AE machine that consumes the matching pressure tier directly from ME storage.
+The original spatial-factory roadmap is complete. PneumaticCraft now has tiered compressed-air cells for normal AE2 drives, bounded pressure import/export ports and an ME Pneumatic Assembly Chamber that consumes the matching air domain directly from its grid. The current pointer is Phase 1 of the [production intelligence roadmap](docs/production-intelligence-roadmap.md): the selectable physical-quantity display, beginning with network pressure metrics.
 
-After that slice, follow the [production intelligence roadmap](docs/production-intelligence-roadmap.md). It incrementally reuses the current operation, sequence, machine-space and diagnostic models for selectable metrics, capability inspection, bounded forecasts, deterministic virtual commissioning, causal diagnostics and world overlays.
+The production intelligence roadmap incrementally reuses the current operation, sequence, machine-space and diagnostic models for selectable metrics, capability inspection, bounded forecasts, deterministic virtual commissioning, causal diagnostics and world overlays.
 
 Pressure rules for this extension:
 

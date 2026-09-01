@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["PGP", "GCG", "PMP"],
+  "key": {
+    "P": { "item": "pneumaticcraft:pressure_chamber_wall" },
+    "G": { "item": "pneumaticcraft:pressure_chamber_glass" },
+    "C": { "item": "ae2:interface" },
+    "M": { "item": "aeprimitives:advanced_machine_frame" }
+  },
+  "result": { "id": "aeprimitives_pneumaticcraft:me_pneumatic_assembly_chamber", "count": 1 }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" T ", "PGP", " C "],
+  "key": {
+    "T": { "item": "pneumaticcraft:pressure_tube" },
+    "P": { "item": "pneumaticcraft:pressure_gauge" },
+    "G": { "item": "ae2:fluix_crystal" },
+    "C": { "item": "ae2:calculation_processor" }
+  },
+  "result": { "id": "aeprimitives_pneumaticcraft:basic_pneumatic_assembly_head", "count": 1 }
+}

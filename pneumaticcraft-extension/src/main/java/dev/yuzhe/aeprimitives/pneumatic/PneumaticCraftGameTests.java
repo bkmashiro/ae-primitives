@@ -5,12 +5,15 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.GridHelper;
 import appeng.blockentity.storage.DriveBlockEntity;
 import appeng.core.definitions.AEBlocks;
+import appeng.core.definitions.AEItems;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import me.desht.pneumaticcraft.common.registry.ModItems;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -126,6 +129,76 @@ public final class PneumaticCraftGameTests {
         helper.assertTrue(!reinforced.isBlackListed(reinforced.getDefaultInstance(), AirKey.of(AirPressureTier.REINFORCED)),
                 "reinforced air cell rejected reinforced compressed air");
         helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 240)
+    public static void pneumaticAssemblyConsumesMatchingMeAirWithoutItemDuplication(GameTestHelper helper) {
+        BlockPos machinePos = new BlockPos(1, 1, 1);
+        BlockPos drivePos = new BlockPos(3, 1, 1);
+        helper.setBlock(machinePos, PneumaticContent.PNEUMATIC_ASSEMBLY_CHAMBER.get());
+        helper.setBlock(machinePos.east(), AEBlocks.ENERGY_CELL.block());
+        helper.setBlock(drivePos, AEBlocks.DRIVE.block());
+        helper.setBlock(drivePos.above(), AEBlocks.CREATIVE_ENERGY_CELL.block());
+
+        var machine = helper.<MePneumaticAssemblyChamberBlockEntity>getBlockEntity(machinePos);
+        var drive = helper.<DriveBlockEntity>getBlockEntity(drivePos);
+        var configured = new AtomicBoolean();
+        var initialAir = new java.util.concurrent.atomic.AtomicLong(-1);
+        var ticks = new AtomicInteger();
+
+        helper.onEachTick(() -> {
+            int tick = ticks.incrementAndGet();
+            var node = machine.getActionableNode();
+            if (node == null || node.getGrid() == null || drive.getMainNode().getNode() == null) {
+                if (tick == 220) helper.fail("ME pneumatic assembly chamber never joined a grid");
+                return;
+            }
+            if (drive.getMainNode().getGrid() != node.getGrid()) {
+                GridHelper.createConnection(node, drive.getMainNode().getNode());
+                return;
+            }
+            if (!configured.get() && drive.getMainNode().isOnline()) {
+                drive.getInternalInventory().setItemDirect(0,
+                        new ItemStack(PneumaticContent.BASIC_AIR_CELL.get()));
+                drive.getInternalInventory().setItemDirect(1,
+                        new ItemStack(AEItems.ITEM_CELL_1K.asItem()));
+                drive.onChangeInventory(null, 0);
+                drive.onChangeInventory(null, 1);
+                var storage = node.getGrid().getStorageService().getInventory();
+                long inserted = storage.insert(AirKey.of(AirPressureTier.BASIC), Long.MAX_VALUE / 4,
+                        Actionable.MODULATE, IActionSource.empty());
+                helper.assertTrue(inserted > 2_000, "basic air cell did not expose enough capacity");
+                initialAir.set(inserted);
+                machine.inventory().setStackInSlot(MePneumaticAssemblyChamberBlockEntity.HEAD_SLOT,
+                        new ItemStack(PneumaticContent.BASIC_ASSEMBLY_HEAD.get()));
+                machine.inventory().setStackInSlot(MePneumaticAssemblyChamberBlockEntity.INPUT_START,
+                        new ItemStack(Items.IRON_INGOT));
+                configured.set(true);
+                return;
+            }
+            if (!configured.get()) return;
+
+            var storage = node.getGrid().getStorageService().getInventory();
+            long result = storage.extract(appeng.api.stacks.AEItemKey.of(ModItems.COMPRESSED_IRON_INGOT.get()), 64,
+                    Actionable.SIMULATE, IActionSource.empty());
+            if (result == 1) {
+                long remainingAir = storage.extract(AirKey.of(AirPressureTier.BASIC), Long.MAX_VALUE,
+                        Actionable.SIMULATE, IActionSource.empty());
+                helper.assertTrue(remainingAir == initialAir.get() - 2_000,
+                        "assembly did not charge exactly one native input and output transfer");
+                helper.assertTrue(machine.inventory().getStackInSlot(
+                                MePneumaticAssemblyChamberBlockEntity.INPUT_START).isEmpty(),
+                        "assembly retained its consumed input");
+                helper.assertTrue(storage.extract(appeng.api.stacks.AEItemKey.of(ModItems.COMPRESSED_IRON_INGOT.get()), 64,
+                                Actionable.SIMULATE, IActionSource.empty()) == 1,
+                        "assembly duplicated its output");
+                helper.succeed();
+            }
+            if (tick == 220) {
+                helper.fail("ME pneumatic assembly stalled: status=" + machine.status()
+                        + ", air=" + machine.bankSnapshot());
+            }
+        });
     }
 
     private PneumaticCraftGameTests() {

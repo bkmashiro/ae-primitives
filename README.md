@@ -70,7 +70,7 @@ Each integration is a separate JAR. Install only the integrations used by the pa
 - [**Farmer's Delight**](farmers-delight-extension/README.md) adds ME cutting and cooking with an explicit factory heat port.
 - [**Botania**](botania-extension/README.md) adds Pure Daisy, Petal Apothecary, Runic Altar and Mana Pool interfaces.
 - [**Powah**](powah-extension/README.md) adds an ME Energizing Chamber and an explicit factory FE port.
-- [**PneumaticCraft**](pneumaticcraft-extension/README.md) adds tiered compressed-air cells and pressure import/export ports.
+- [**PneumaticCraft**](pneumaticcraft-extension/README.md) adds tiered compressed-air cells, pressure import/export ports and an ME Pneumatic Assembly Chamber.
 
 ### AE Primitives: Kinetics
 
