@@ -15,6 +15,7 @@ import dev.vfyjxf.taffy.style.FlexDirection;
 import dev.vfyjxf.taffy.style.TaffyPosition;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
 import dev.yuzhe.aeprimitives.diagnostics.CraftingForecast;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingAutopsy;
 import dev.yuzhe.aeprimitives.commissioning.CommissioningReport;
 import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ForecastPrecision;
@@ -87,9 +88,18 @@ public final class ProcessAnalyzerClient {
                 .gridLineColor(0x183f7180).gridAccentColor(0x383f7180));
 
         if (snapshot.sequences().isEmpty() && snapshot.machineInsights().isEmpty()
-                && snapshot.commissioningReports().isEmpty()) {
+                && snapshot.commissioningReports().isEmpty() && snapshot.autopsies().isEmpty()) {
             detail.setText(Component.translatable("screen.aeprimitives.process_analyzer.empty"));
         } else {
+            if (!snapshot.autopsies().isEmpty()) {
+                var autopsyTab = tab("autopsy");
+                autopsyTab.setOnClick(event -> {
+                    event.stopLaterPropagation();
+                    renderAutopsies(graph, detail, snapshot.autopsies());
+                    graph.fitToChildren(20, 0.72f);
+                });
+                tabs.addChild(autopsyTab);
+            }
             if (!snapshot.commissioningReports().isEmpty()) {
                 var commissioningTab = tab("commission");
                 commissioningTab.setOnClick(event -> {
@@ -119,7 +129,9 @@ public final class ProcessAnalyzerClient {
                 });
                 tabs.addChild(tab);
             }
-            if (!snapshot.machineInsights().isEmpty()) {
+            if (!snapshot.autopsies().isEmpty()) {
+                renderAutopsies(graph, detail, snapshot.autopsies());
+            } else if (!snapshot.machineInsights().isEmpty()) {
                 renderInsight(graph, detail, snapshot.machineInsights().getFirst());
             } else if (!snapshot.sequences().isEmpty()) {
                 var sequence = snapshot.sequences().getFirst();
@@ -207,6 +219,33 @@ public final class ProcessAnalyzerClient {
         long ready = reports.stream().filter(report -> report.status() == CommissioningStatus.READY).count();
         detail.setText(Component.literal("Virtual only · " + ready + "/" + reports.size()
                 + " ready · copied config · synthetic inputs · no items created"));
+    }
+
+    private static void renderAutopsies(
+            GraphView graph, Label detail, java.util.List<CraftingAutopsy> reports) {
+        graph.clearAllContentChildren();
+        int shown = Math.min(reports.size(), 3);
+        for (int index = 0; index < shown; index++) {
+            var report = reports.get(index);
+            int top = 2 + index * 40;
+            var card = new UIElement();
+            card.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE)
+                    .left(8).top(top).width(356).height(38).paddingAll(3).gapAll(1));
+            card.style(style -> style.background(new ColorRectTexture(0xff35242d))
+                    .overlay(new ColorBorderTexture(-2, 0xffa45b70)));
+            var title = new Label();
+            title.setText(Component.literal("lane " + (report.lane() + 1) + " · "
+                    + report.causeType().name().toLowerCase(java.util.Locale.ROOT)));
+            title.layout(layout -> layout.width(348).height(8));
+            title.textStyle(style -> style.fontSize(8).textColor(0xffffb8c3).textShadow(true));
+            var chain = new Label();
+            chain.setText(Component.literal(String.join("\n", report.chain())));
+            chain.layout(layout -> layout.width(348).height(21));
+            chain.textStyle(style -> style.fontSize(7).textColor(0xffe5d7dc).adaptiveHeight(true));
+            card.addChildren(title, chain);
+            graph.addContentChild(card);
+        }
+        detail.setText(Component.literal("Built on request · bounded owner history · no global tracing"));
     }
 
     private static String shortRecipeName(CommissioningReport report) {

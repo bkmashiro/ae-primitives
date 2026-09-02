@@ -41,6 +41,14 @@ public final class ProcessAnalyzerPreviewCommand {
                                     new ProcessDiagnosticSnapshot(0, List.of(), List.of(), List.of(),
                                             commissioningPreview())));
                             return 1;
+                        }))
+                .then(Commands.literal("preview-autopsy")
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(
+                                    new ProcessDiagnosticSnapshot(0, List.of(), List.of(), List.of(), List.of(),
+                                            autopsyPreview())));
+                            return 1;
                         })));
     }
 
@@ -115,5 +123,19 @@ public final class ProcessAnalyzerPreviewCommand {
 
     private static ResourceLocation vanilla(String path) {
         return ResourceLocation.withDefaultNamespace(path);
+    }
+
+    private static List<CraftingAutopsy> autopsyPreview() {
+        var owner = id("heterogeneous_spatial_factory");
+        return List.of(
+                new CraftingAutopsy(owner, 0, 18, DiagnosticEventType.BLOCKED_OUTPUT,
+                        id("output_buffer"), List.of("lane 1 completed work", "pending output retained",
+                        "output buffer has no capacity")),
+                new CraftingAutopsy(owner, 1, 21, DiagnosticEventType.WAITING_RESOURCE,
+                        id("external_resource"), List.of("lane 2 plan is ready", "external resource unavailable",
+                        "restore the required resource port")),
+                new CraftingAutopsy(owner, 2, 24, DiagnosticEventType.RECOVERED,
+                        id("reload_recovery"), List.of("lane 3 owned state loaded",
+                        "progress or pending output restored", "event-driven scheduler resumed")));
     }
 }

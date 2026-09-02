@@ -17,6 +17,8 @@ import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepView;
 import dev.yuzhe.aeprimitives.diagnostics.CraftingForecast;
 import dev.yuzhe.aeprimitives.diagnostics.ForecastPrecision;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingAutopsy;
+import dev.yuzhe.aeprimitives.diagnostics.DiagnosticEventType;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -34,7 +36,7 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             ProcessAnalyzerPayload::decode);
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("5").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
+        event.registrar("6").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
     }
 
     private static void handle(ProcessAnalyzerPayload payload, IPayloadContext context) {
@@ -131,6 +133,16 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             }
             buffer.writeUtf(report.message(), 256);
         }
+        buffer.writeVarInt(snapshot.autopsies().size());
+        for (var autopsy : snapshot.autopsies()) {
+            buffer.writeResourceLocation(autopsy.owner());
+            buffer.writeVarInt(autopsy.lane());
+            buffer.writeVarLong(autopsy.eventSequence());
+            buffer.writeEnum(autopsy.causeType());
+            writeOptionalId(buffer, autopsy.target());
+            buffer.writeVarInt(autopsy.chain().size());
+            for (var link : autopsy.chain()) buffer.writeUtf(link, 128);
+        }
     }
 
     private static ProcessAnalyzerPayload decode(RegistryFriendlyByteBuf buffer) {
@@ -226,8 +238,21 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             commissioning.add(new CommissioningReport(machine, recipe, status, consumption, outputs,
                     requirements, buffer.readUtf(256)));
         }
+        var autopsies = new ArrayList<CraftingAutopsy>();
+        int autopsyCount = bounded(buffer.readVarInt(), 256);
+        for (int autopsyIndex = 0; autopsyIndex < autopsyCount; autopsyIndex++) {
+            var owner = buffer.readResourceLocation();
+            int lane = buffer.readVarInt();
+            long eventSequence = buffer.readVarLong();
+            var type = buffer.readEnum(DiagnosticEventType.class);
+            var target = readOptionalId(buffer);
+            int chainCount = bounded(buffer.readVarInt(), 16);
+            var chain = new ArrayList<String>();
+            for (int chainIndex = 0; chainIndex < chainCount; chainIndex++) chain.add(buffer.readUtf(128));
+            autopsies.add(new CraftingAutopsy(owner, lane, eventSequence, type, target, chain));
+        }
         return new ProcessAnalyzerPayload(
-                new ProcessDiagnosticSnapshot(revision, sequences, insights, forecasts, commissioning));
+                new ProcessDiagnosticSnapshot(revision, sequences, insights, forecasts, commissioning, autopsies));
     }
 
     private static void writeCommissioningResources(

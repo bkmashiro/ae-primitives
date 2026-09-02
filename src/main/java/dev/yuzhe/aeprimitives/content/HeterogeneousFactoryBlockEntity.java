@@ -11,6 +11,10 @@ import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
 import dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope;
 import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutor;
 import dev.yuzhe.aeprimitives.space.VirtualMachineLaneExecutors;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingAutopsy;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingAutopsyEngine;
+import dev.yuzhe.aeprimitives.diagnostics.DiagnosticEventType;
+import dev.yuzhe.aeprimitives.diagnostics.FactoryFlightRecorder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -46,6 +50,16 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     public static final int EXTENDED_INPUT_START = OUTPUT_END;
     public static final int INVENTORY_END = EXTENDED_INPUT_START
             + LANE_COUNT * (LANE_INPUT_SLOTS - LANE_BUFFER_SLOTS);
+    private static final net.minecraft.resources.ResourceLocation FACTORY_ID =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "heterogeneous_spatial_factory");
+    private static final net.minecraft.resources.ResourceLocation INPUT_CAUSE =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "lane_input");
+    private static final net.minecraft.resources.ResourceLocation RESOURCE_CAUSE =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "external_resource");
+    private static final net.minecraft.resources.ResourceLocation OUTPUT_CAUSE =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "output_buffer");
+    private static final net.minecraft.resources.ResourceLocation RELOAD_CAUSE =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "reload_recovery");
 
     private final int[] laneProgress = new int[LANE_COUNT];
     private final CompoundTag[] externalLaneStates = new CompoundTag[LANE_COUNT];
@@ -55,6 +69,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     private final VirtualMachineLaneExecutor.LaneContext[] activeContexts =
             new VirtualMachineLaneExecutor.LaneContext[LANE_COUNT];
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
+    private final FactoryFlightRecorder flightRecorder = new FactoryFlightRecorder(LANE_COUNT);
     private boolean scheduled;
     private long wakeRevision;
     private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_END) {
@@ -66,6 +81,8 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             if (slot < COMPONENT_END) {
                 releaseExternalLane(slot);
                 laneProgress[slot] = 0;
+                flightRecorder.transition(slot, DiagnosticEventType.COMPONENT_CHANGED, FACTORY_ID,
+                        inventory.getStackInSlot(slot).isEmpty() ? "component_removed" : "component_changed");
             }
             scheduled = true;
             wakeRevision++;
@@ -105,6 +122,12 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     public int laneProgress(int lane) { return laneProgress[lane]; }
     public boolean isScheduled() { return scheduled; }
+    public List<dev.yuzhe.aeprimitives.diagnostics.FactoryDiagnosticEvent> diagnosticEvents() {
+        return flightRecorder.snapshot();
+    }
+    public List<CraftingAutopsy> craftingAutopsies() {
+        return CraftingAutopsyEngine.explain(FACTORY_ID, flightRecorder.snapshot());
+    }
 
     public ContainerData menuData() {
         return new ContainerData() {
@@ -147,6 +170,24 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         return external.plan.resourcesAvailable() ? LaneStatus.RUNNING : LaneStatus.WAITING_RESOURCE;
     }
 
+    private void recordLaneTransitions() {
+        for (int lane = 0; lane < LANE_COUNT; lane++) {
+            LaneStatus status = laneStatus(lane);
+            switch (status) {
+                case WAITING_INPUT -> flightRecorder.transition(lane, DiagnosticEventType.WAITING_INPUT,
+                        INPUT_CAUSE, "lane input unavailable");
+                case WAITING_RESOURCE -> flightRecorder.transition(lane, DiagnosticEventType.WAITING_RESOURCE,
+                        RESOURCE_CAUSE, "restore the required resource port");
+                case BLOCKED_OUTPUT -> flightRecorder.transition(lane, DiagnosticEventType.BLOCKED_OUTPUT,
+                        OUTPUT_CAUSE, "clear the output buffer or ME storage");
+                case RUNNING -> flightRecorder.transition(lane, DiagnosticEventType.STARTED,
+                        FACTORY_ID, "lane running");
+                case EMPTY, INVALID, OFFLINE -> flightRecorder.transition(lane,
+                        DiagnosticEventType.COMPONENT_CHANGED, FACTORY_ID, status.id());
+            }
+        }
+    }
+
     public void serverTick() {
         if (!(level instanceof ServerLevel server) || !scheduled || !getMainNode().isActive()) return;
         long observedWakeRevision = wakeRevision;
@@ -169,6 +210,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             workRemaining |= tickExternalLane(lane, external);
         }
         if (!workRemaining && wakeRevision == observedWakeRevision) scheduled = false;
+        recordLaneTransitions();
         setChanged();
         markForUpdate();
     }
@@ -186,6 +228,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         plan.apply(laneInventory);
         commitInputs(lane, laneInventory);
         queueAll(lane, plan.outputs());
+        flightRecorder.event(lane, DiagnosticEventType.COMPLETED, FACTORY_ID, "core operation completed");
         return true;
     }
 
@@ -216,6 +259,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
         if (outputs == null) { releaseExternalLane(lane); return false; }
         commitInputs(lane, inputs);
         pendingLaneOutputs[lane] = copyStacks(outputs);
+        flightRecorder.event(lane, DiagnosticEventType.COMPLETED, FACTORY_ID, "external operation completed");
         externalLaneStates[lane] = new CompoundTag();
         releaseExternalLane(lane);
         drainPending(lane);
@@ -407,6 +451,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             externalStates.add(laneTag);
         }
         tag.put("externalLaneStates", externalStates);
+        tag.put("flightRecorder", flightRecorder.save());
     }
 
     private void restoreInventory(CompoundTag savedInventory, HolderLookup.Provider registries) {
@@ -462,6 +507,13 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
             int lane = laneTag.getInt("lane");
             if (lane >= 0 && lane < LANE_COUNT && laneTag.contains("state"))
                 externalLaneStates[lane] = laneTag.getCompound("state").copy();
+        }
+        flightRecorder.load(tag.getCompound("flightRecorder"));
+        for (int lane = 0; lane < LANE_COUNT; lane++) {
+            if (laneProgress[lane] > 0 || !pendingLaneOutputs[lane].isEmpty() || !externalLaneStates[lane].isEmpty()) {
+                flightRecorder.event(lane, DiagnosticEventType.RECOVERED, RELOAD_CAUSE,
+                        "saved lane state restored");
+            }
         }
         if (hasPendingOutputs() || hasExternalState()) scheduled = true;
     }

@@ -183,6 +183,8 @@ The UI renders the returned description only. A failed or closed commissioning s
 
 ## Phase 5: flight recorder and crafting autopsy
 
+Status: implemented for the heterogeneous spatial factory. Its authoritative lane transitions feed a 32-entry owner-local ring buffer, survive reload within that bound and are converted into short blocked-output, missing-resource and recovery explanations only when the Process Analyzer requests them.
+
 Build the recorder only when the autopsy is ready to consume it.
 
 ### Product

@@ -562,9 +562,15 @@ public final class PrimitiveMachineGameTests {
                     dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, offset),
                     new ItemStack(Items.COBBLESTONE, 64));
         }
-        helper.succeedWhen(() -> helper.assertTrue(
-                factory.menuData().get(2) == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.BLOCKED_OUTPUT.ordinal(),
-                "factory menu did not report a blocked lane"));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(
+                    factory.menuData().get(2) == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.BLOCKED_OUTPUT.ordinal(),
+                    "factory menu did not report a blocked lane");
+            helper.assertTrue(factory.craftingAutopsies().stream().anyMatch(report ->
+                            report.lane() == 0 && report.causeType()
+                                    == dev.yuzhe.aeprimitives.diagnostics.DiagnosticEventType.BLOCKED_OUTPUT),
+                    "factory flight recorder did not explain the blocked output");
+        });
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)

@@ -4,6 +4,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import dev.yuzhe.aeprimitives.commissioning.CommissioningProviders;
 import dev.yuzhe.aeprimitives.content.ModContent;
+import dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
@@ -35,9 +36,11 @@ public final class ProcessAnalyzerItem extends Item {
         var insight = blockEntity == null ? null : MachineInsightProviders.inspect(blockEntity);
         var commissioning = blockEntity == null ? List.<dev.yuzhe.aeprimitives.commissioning.CommissioningReport>of()
                 : CommissioningProviders.commission(blockEntity);
-        if (insight != null || !commissioning.isEmpty()) {
+        var autopsies = blockEntity instanceof HeterogeneousFactoryBlockEntity factory
+                ? factory.craftingAutopsies() : List.<CraftingAutopsy>of();
+        if (insight != null || !commissioning.isEmpty() || !autopsies.isEmpty()) {
             send(player, new ProcessDiagnosticSnapshot(insight == null ? 0 : (int) insight.revision(),
-                    List.of(), insight == null ? List.of() : List.of(insight), List.of(), commissioning));
+                    List.of(), insight == null ? List.of() : List.of(insight), List.of(), commissioning, autopsies));
             return InteractionResult.CONSUME;
         }
         if (!(blockEntity instanceof PatternProviderLogicHost host) || host.getGrid() == null) {
