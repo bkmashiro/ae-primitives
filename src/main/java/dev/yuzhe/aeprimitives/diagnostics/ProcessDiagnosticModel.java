@@ -20,7 +20,8 @@ public final class ProcessDiagnosticModel {
                 .sorted(Comparator.comparing(sequence -> sequence.id().toString()))
                 .map(sequence -> buildSequence(sequence, operationProviders))
                 .toList();
-        return new ProcessDiagnosticSnapshot(revision, orderedSequences);
+        return new ProcessDiagnosticSnapshot(revision, orderedSequences, List.of(),
+                CraftingForecastEngine.forecast(revision, orderedSequences, operationProviders));
     }
 
     private static ProcessSequenceView buildSequence(

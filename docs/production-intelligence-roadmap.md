@@ -118,7 +118,9 @@ Combine resource contract cards and the pattern laboratory into one inspection s
 - Tools, catalysts, container remainders and external resource requirements remain distinguishable.
 - Viewing or compiling the graph does not reserve inputs or mutate provider state.
 
-## Phase 3: bounded crafting forecast
+## Phase 3: bounded Crafting Forecast
+
+Status: implemented. Forecasts are immutable, revision-bound projections of the analyzer snapshot. They net exact intermediate outputs against later inputs, preserve alternative-input uncertainty, report the first structural bottleneck and a conservative parallel bound, and leave completion time explicitly unknown until a provider exposes measured throughput.
 
 Add a forecast on top of the same compiled graph and machine insights.
 

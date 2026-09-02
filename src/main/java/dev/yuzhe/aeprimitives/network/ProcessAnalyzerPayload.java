@@ -12,6 +12,8 @@ import dev.yuzhe.aeprimitives.diagnostics.ProcessResourceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessSequenceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepView;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingForecast;
+import dev.yuzhe.aeprimitives.diagnostics.ForecastPrecision;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -29,7 +31,7 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             ProcessAnalyzerPayload::decode);
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("2").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
+        event.registrar("4").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
     }
 
     private static void handle(ProcessAnalyzerPayload payload, IPayloadContext context) {
@@ -86,6 +88,29 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             buffer.writeUtf(insight.blockedReason(), 256);
             buffer.writeVarLong(insight.revision());
         }
+        buffer.writeVarInt(snapshot.forecasts().size());
+        for (var forecast : snapshot.forecasts()) {
+            buffer.writeResourceLocation(forecast.sequence());
+            buffer.writeVarInt(forecast.sourceRevision());
+            buffer.writeBoolean(forecast.providersComplete());
+            writeResources(buffer, forecast.knownInputs());
+            buffer.writeEnum(forecast.inputPrecision());
+            buffer.writeVarInt(forecast.knownExternalRequirements().size());
+            for (var requirement : forecast.knownExternalRequirements()) {
+                buffer.writeEnum(requirement.kind());
+                buffer.writeResourceLocation(requirement.id());
+                buffer.writeDouble(requirement.amount());
+                buffer.writeUtf(requirement.unit(), 32);
+                buffer.writeBoolean(requirement.exact());
+            }
+            buffer.writeEnum(forecast.externalPrecision());
+            buffer.writeVarInt(forecast.safeParallelCapacity());
+            buffer.writeVarInt(forecast.bottleneckStep());
+            writeOptionalId(buffer, forecast.bottleneckOperation());
+            buffer.writeVarLong(forecast.minimumCompletionTicks());
+            buffer.writeVarLong(forecast.maximumCompletionTicks());
+            buffer.writeEnum(forecast.completionPrecision());
+        }
     }
 
     private static ProcessAnalyzerPayload decode(RegistryFriendlyByteBuf buffer) {
@@ -141,7 +166,29 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             insights.add(new MachineInsight(identity, operations, requirements, buffer.readVarInt(),
                     buffer.readUtf(256), buffer.readVarLong()));
         }
-        return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences, insights));
+        var forecasts = new ArrayList<CraftingForecast>();
+        int forecastCount = bounded(buffer.readVarInt(), 256);
+        for (int forecastIndex = 0; forecastIndex < forecastCount; forecastIndex++) {
+            var sequence = buffer.readResourceLocation();
+            int sourceRevision = buffer.readVarInt();
+            boolean providersComplete = buffer.readBoolean();
+            var knownInputs = readResources(buffer);
+            var inputPrecision = buffer.readEnum(ForecastPrecision.class);
+            var externalRequirements = new ArrayList<MachineInsightRequirement>();
+            int externalCount = bounded(buffer.readVarInt(), 1024);
+            for (int externalIndex = 0; externalIndex < externalCount; externalIndex++) {
+                externalRequirements.add(new MachineInsightRequirement(
+                        buffer.readEnum(MachineInsightRequirementKind.class), buffer.readResourceLocation(),
+                        buffer.readDouble(), buffer.readUtf(32), buffer.readBoolean()));
+            }
+            var externalPrecision = buffer.readEnum(ForecastPrecision.class);
+            forecasts.add(new CraftingForecast(
+                    sequence, sourceRevision, providersComplete, knownInputs, inputPrecision,
+                    externalRequirements, externalPrecision, buffer.readVarInt(),
+                    buffer.readVarInt(), readOptionalId(buffer), buffer.readVarLong(), buffer.readVarLong(),
+                    buffer.readEnum(ForecastPrecision.class)));
+        }
+        return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences, insights, forecasts));
     }
 
     private static void writeResources(RegistryFriendlyByteBuf buffer,

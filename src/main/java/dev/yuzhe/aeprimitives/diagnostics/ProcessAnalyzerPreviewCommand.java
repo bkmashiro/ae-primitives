@@ -22,6 +22,14 @@ public final class ProcessAnalyzerPreviewCommand {
                             var player = context.getSource().getPlayerOrException();
                             PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(snapshot()));
                             return 1;
+                        }))
+                .then(Commands.literal("preview-forecast")
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            var complete = snapshot();
+                            PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(
+                                    new ProcessDiagnosticSnapshot(complete.revision(), complete.sequences())));
+                            return 1;
                         })));
     }
 
@@ -30,37 +38,47 @@ public final class ProcessAnalyzerPreviewCommand {
         var sequence = new ProcessSequenceView(
                 id("demo/alloy-line"),
                 List.of(
-                        new ProcessStepView(0, id("demo/crush_ore"), id("crushing"),
-                                vanilla("iron_ore"), vanilla("raw_iron"), ProcessStepStatus.READY,
+                        previewStep(0, "demo/crush_ore", "crushing", "iron_ore", "raw_iron",
+                                ProcessStepStatus.READY,
                                 List.of(new ProcessProviderView(overworld, new BlockPos(4, 64, 2), false))),
-                        new ProcessStepView(1, id("demo/smelt_raw_iron"), id("smelting"),
-                                vanilla("raw_iron"), vanilla("iron_ingot"), ProcessStepStatus.BUSY,
+                        previewStep(1, "demo/smelt_raw_iron", "smelting", "raw_iron", "iron_ingot",
+                                ProcessStepStatus.BUSY,
                                 List.of(new ProcessProviderView(overworld, new BlockPos(7, 64, 2), true))),
-                        new ProcessStepView(2, id("demo/press_ingot"), id("pressing"),
-                                vanilla("iron_ingot"), vanilla("heavy_weighted_pressure_plate"), ProcessStepStatus.MISSING,
-                                List.of())),
+                        previewStep(2, "demo/press_ingot", "pressing", "iron_ingot",
+                                "heavy_weighted_pressure_plate", ProcessStepStatus.MISSING, List.of())),
                 List.of(new ProcessEdgeView(0, 1), new ProcessEdgeView(1, 2)));
         var nested = new ProcessSequenceView(
                 id("demo/precision-part"),
                 List.of(
-                        new ProcessStepView(0, id("demo/cut_plate"), id("cutting"),
-                                vanilla("copper_ingot"), vanilla("cut_copper"), ProcessStepStatus.READY,
+                        previewStep(0, "demo/cut_plate", "cutting", "copper_ingot", "cut_copper",
+                                ProcessStepStatus.READY,
                                 List.of(new ProcessProviderView(overworld, new BlockPos(10, 64, 2), false))),
-                        new ProcessStepView(1, id("demo/assemble_part"), id("sequence"),
-                                vanilla("cut_copper"), vanilla("lightning_rod"), ProcessStepStatus.READY,
+                        previewStep(1, "demo/assemble_part", "sequence", "cut_copper", "lightning_rod",
+                                ProcessStepStatus.READY,
                                 List.of(new ProcessProviderView(overworld, new BlockPos(12, 64, 2), false)))),
                 List.of(new ProcessEdgeView(0, 1)));
         var press = new MachineInsight(
                 ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "me_press"),
                 List.of(OperationPatternSpec.all(ResourceLocation.fromNamespaceAndPath("create", "pressing"))),
-                List.of(new MachineInsightRequirement(MachineInsightRequirementKind.EXTERNAL_RESOURCE,
-                        ResourceLocation.fromNamespaceAndPath("create", "rotation"), 8, "SU/RPM", true)),
+                List.of(
+                        new MachineInsightRequirement(MachineInsightRequirementKind.EXTERNAL_RESOURCE,
+                                ResourceLocation.fromNamespaceAndPath("create", "stress_impact"), 8, "SU", true),
+                        new MachineInsightRequirement(MachineInsightRequirementKind.EXTERNAL_RESOURCE,
+                                ResourceLocation.fromNamespaceAndPath("create", "minimum_speed"), 16, "RPM", true)),
                 8, "", 42);
         return new ProcessDiagnosticSnapshot(42, List.of(sequence, nested), List.of(press));
     }
 
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath("aeprimitives", path);
+    }
+
+    private static ProcessStepView previewStep(int index, String recipe, String operation,
+                                               String input, String output, ProcessStepStatus status,
+                                               List<ProcessProviderView> providers) {
+        return new ProcessStepView(index, id(recipe), id(operation), vanilla(input), vanilla(output), status,
+                providers, List.of(new ProcessResourceView("item", vanilla(input), 1)),
+                List.of(new ProcessResourceView("item", vanilla(output), 1)));
     }
 
     private static ResourceLocation vanilla(String path) {

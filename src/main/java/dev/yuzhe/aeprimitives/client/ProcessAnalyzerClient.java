@@ -14,6 +14,8 @@ import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import dev.vfyjxf.taffy.style.TaffyPosition;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
+import dev.yuzhe.aeprimitives.diagnostics.CraftingForecast;
+import dev.yuzhe.aeprimitives.diagnostics.ForecastPrecision;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticSnapshot;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessSequenceView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessStepStatus;
@@ -100,7 +102,7 @@ public final class ProcessAnalyzerClient {
                 tab.textStyle(style -> style.fontSize(9).textColor(sequence.blocked() ? 0xffffa2a7 : 0xff9fe7e5));
                 tab.setOnClick(event -> {
                     event.stopLaterPropagation();
-                    renderSequence(graph, detail, sequence);
+                    renderSequence(graph, detail, sequence, forecast(snapshot, sequence));
                     graph.fitToChildren(20, 0.55f);
                 });
                 tabs.addChild(tab);
@@ -108,7 +110,8 @@ public final class ProcessAnalyzerClient {
             if (!snapshot.machineInsights().isEmpty()) {
                 renderInsight(graph, detail, snapshot.machineInsights().getFirst());
             } else {
-                renderSequence(graph, detail, snapshot.sequences().getFirst());
+                var sequence = snapshot.sequences().getFirst();
+                renderSequence(graph, detail, sequence, forecast(snapshot, sequence));
             }
         }
 
@@ -161,7 +164,8 @@ public final class ProcessAnalyzerClient {
         detail.setText(Component.literal("Read-only machine capability snapshot · revision " + insight.revision()));
     }
 
-    private static void renderSequence(GraphView graph, Label detail, ProcessSequenceView sequence) {
+    private static void renderSequence(
+            GraphView graph, Label detail, ProcessSequenceView sequence, CraftingForecast forecast) {
         graph.clearAllContentChildren();
         for (var edge : sequence.edges()) {
             var destination = sequence.steps().get(edge.toStep());
@@ -173,7 +177,37 @@ public final class ProcessAnalyzerClient {
             graph.addContentChild(wire);
         }
         for (var step : sequence.steps()) graph.addContentChild(node(step, detail));
-        detail.setText(Component.literal(sequence.id().toString()));
+        detail.setText(Component.literal(forecastSummary(sequence, forecast)));
+    }
+
+    private static CraftingForecast forecast(ProcessDiagnosticSnapshot snapshot, ProcessSequenceView sequence) {
+        return snapshot.forecasts().stream().filter(value -> value.sequence().equals(sequence.id()))
+                .findFirst().orElse(null);
+    }
+
+    private static String forecastSummary(ProcessSequenceView sequence, CraftingForecast forecast) {
+        if (forecast == null) return sequence.id().toString();
+        var summary = new StringBuilder(forecast.providersComplete() ? "Ready" : "Blocked")
+                .append(" | ");
+        if (forecast.knownInputs().isEmpty()) summary.append("inputs unknown");
+        else {
+            var input = forecast.knownInputs().getFirst();
+            summary.append(input.amount()).append(' ').append(input.id().getPath());
+            if (forecast.knownInputs().size() > 1) summary.append(" +").append(forecast.knownInputs().size() - 1);
+            summary.append(' ').append(forecast.inputPrecision().name().toLowerCase(java.util.Locale.ROOT));
+        }
+        summary.append(" | parallel ").append(forecast.safeParallelCapacity());
+        if (!forecast.knownExternalRequirements().isEmpty()) {
+            var requirement = forecast.knownExternalRequirements().getFirst();
+            summary.append(" | ext ").append(requirement.amount()).append(' ').append(requirement.unit());
+        }
+        if (forecast.bottleneckOperation() != null) {
+            summary.append(" | bottleneck ").append(forecast.bottleneckOperation().getPath());
+        }
+        summary.append(" | ETA ").append(forecast.completionPrecision() == ForecastPrecision.UNKNOWN
+                ? "?" : forecast.minimumCompletionTicks() + "-" + forecast.maximumCompletionTicks() + "t");
+        summary.append(" | r").append(forecast.sourceRevision());
+        return summary.toString();
     }
 
     private static UIElement node(ProcessStepView step, Label detail) {

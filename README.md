@@ -58,7 +58,7 @@ Use the **ME Process Analyzer** on a Pattern Provider to inspect the process gra
 - **Busy** when matching providers exist but are currently occupied.
 - **Missing** when the network has no provider advertising that operation and recipe.
 
-The graph can be panned and zoomed. Select a node to see the matching providers and their coordinates. Diagnostics reuse the live pattern catalog maintained by provider updates; the analyzer does not scan blocks in the world.
+The graph can be panned and zoomed. Select a node to see the matching providers and their coordinates. Each sequence also receives a revision-bound forecast that nets known intermediate outputs, preserves alternative-input uncertainty, identifies the first structural bottleneck and refuses to invent a completion time when throughput is unknown. Diagnostics reuse the live pattern catalog maintained by provider updates; the analyzer does not scan blocks in the world.
 
 When Ponder is installed, the analyzer also has an interactive tutorial showing how Operation Patterns and Sequence Patterns fit together.
 

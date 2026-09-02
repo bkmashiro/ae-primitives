@@ -1,7 +1,10 @@
 package dev.yuzhe.aeprimitives.sequence;
 
 import appeng.api.networking.IGrid;
+import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
+import dev.yuzhe.aeprimitives.diagnostics.MachineInsightProviders;
 import dev.yuzhe.aeprimitives.diagnostics.OperationProviderView;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticModel;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticSnapshot;
@@ -83,9 +86,23 @@ public final class SequenceRuntime {
                     level.dimension().location().toString(),
                     state.blockEntity().getBlockPos(),
                     provider.isBusy(),
-                    state.operations()));
+                    state.operations(),
+                    targetInsight(state.blockEntity())));
         });
         return ProcessDiagnosticModel.build(diagnosticRevision, sequences, providers);
+    }
+
+    private static MachineInsight targetInsight(BlockEntity blockEntity) {
+        if (!(blockEntity instanceof PatternProviderBlockEntity provider)) return null;
+        var level = provider.getLevel();
+        if (level == null) return null;
+        for (var direction : provider.getTargets()) {
+            var target = level.getBlockEntity(provider.getBlockPos().relative(direction));
+            if (target == null) continue;
+            var insight = MachineInsightProviders.inspect(target);
+            if (insight != null) return insight;
+        }
+        return null;
     }
 
     private static void rebuild(IGrid grid, PatternProviderLogic owner) {
