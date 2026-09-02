@@ -97,6 +97,12 @@ public final class KineticMachineGameTests {
                 .setValue(SpatialParallelBlock.FACING, Direction.WEST));
         helper.assertTrue(owner.parallelLanes() == 3, "Advanced sidecar did not add two owner lanes");
         helper.assertTrue(other.parallelLanes() == 1, "One sidecar bound to both adjacent machines");
+        var lens = dev.yuzhe.aeprimitives.diagnostics.NetworkLensResolver.resolve(
+                helper.getLevel(), helper.absolutePos(MACHINE));
+        helper.assertTrue(lens.targets().stream().anyMatch(target ->
+                        target.kind() == dev.yuzhe.aeprimitives.diagnostics.NetworkLensTargetKind.SPATIAL_BINDING
+                                && helper.absolutePos(sidecarPos).equals(target.pos())),
+                "network lens missed the tier-matched one-sided spatial binding");
         helper.succeed();
     }
 
@@ -532,7 +538,14 @@ public final class KineticMachineGameTests {
         helper.succeedWhen(() -> {
             port.setSpeed(64);
             factory.scheduleExternalWork();
-            for (int tick = 0; tick < 70; tick++) factory.serverTick();
+            for (int tick = 0; tick < 5; tick++) factory.serverTick();
+            var lens = dev.yuzhe.aeprimitives.diagnostics.NetworkLensResolver.resolve(
+                    helper.getLevel(), helper.absolutePos(factoryPos));
+            helper.assertTrue(lens.targets().stream().anyMatch(target ->
+                            target.kind() == dev.yuzhe.aeprimitives.diagnostics.NetworkLensTargetKind.RESOURCE_PORT
+                                    && helper.absolutePos(portPos).equals(target.pos())),
+                    "network lens did not resolve the bound kinetic resource port");
+            for (int tick = 1; tick < 70; tick++) factory.serverTick();
             var output = factory.inventory().getStackInSlot(
                     dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.outputSlot(0, 0));
             helper.assertTrue(output.is(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("create", "iron_sheet"))),

@@ -17,38 +17,39 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/** A short-lived single-player overlay request; the server retains no lens state. */
+/** A short-lived single-player overlay response; the server retains no lens state. */
 public record NetworkLensPayload(
         ResourceLocation dimension,
         List<NetworkLensTarget> targets,
-        ResourceLocation textualTarget,
-        int lane,
         int durationTicks) implements CustomPacketPayload {
     public static final Type<NetworkLensPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(AePrimitives.MOD_ID, "network_lens"));
     public static final StreamCodec<RegistryFriendlyByteBuf, NetworkLensPayload> STREAM_CODEC = StreamCodec.of(
             NetworkLensPayload::encode, NetworkLensPayload::decode);
-    private static final int MAX_TARGETS = 7;
+    static final int MAX_TARGETS = 20;
     private static final int MAX_DURATION = 200;
 
     public NetworkLensPayload {
-        targets = List.copyOf(targets.subList(0, Math.min(targets.size(), MAX_TARGETS)));
-        lane = Math.max(-1, lane);
+        if (dimension == null || targets == null || targets.size() > MAX_TARGETS) {
+            throw new IllegalArgumentException("invalid lens payload");
+        }
+        targets = List.copyOf(targets);
         durationTicks = Math.max(1, Math.min(durationTicks, MAX_DURATION));
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("1").playToClient(TYPE, STREAM_CODEC, NetworkLensPayload::handle);
+        event.registrar("2").playToClient(TYPE, STREAM_CODEC, NetworkLensPayload::handle);
     }
 
     public static void send(ServerPlayer player, BlockPos owner) {
         if (!(player.level() instanceof net.minecraft.server.level.ServerLevel level)
+                || !player.mayInteract(level, owner)
                 || player.distanceToSqr(owner.getX() + 0.5, owner.getY() + 0.5, owner.getZ() + 0.5) > 4096.0) {
             return;
         }
         var resolved = NetworkLensResolver.resolve(level, owner);
         PacketDistributor.sendToPlayer(player, new NetworkLensPayload(level.dimension().location(),
-                resolved.targets(), resolved.textualTarget(), resolved.lane(), 100));
+                resolved.targets(), 100));
     }
 
     private static void handle(NetworkLensPayload payload, IPayloadContext context) {
@@ -59,28 +60,30 @@ public record NetworkLensPayload(
         buffer.writeResourceLocation(payload.dimension);
         buffer.writeVarInt(payload.targets.size());
         for (var target : payload.targets) {
-            buffer.writeBlockPos(target.pos());
+            buffer.writeBoolean(target.pos() != null);
+            if (target.pos() != null) buffer.writeBlockPos(target.pos());
             buffer.writeEnum(target.kind());
+            buffer.writeResourceLocation(target.identity());
+            buffer.writeVarInt(target.lane() + 1);
             buffer.writeUtf(target.label(), 64);
         }
-        buffer.writeBoolean(payload.textualTarget != null);
-        if (payload.textualTarget != null) buffer.writeResourceLocation(payload.textualTarget);
-        buffer.writeVarInt(payload.lane + 1);
         buffer.writeVarInt(payload.durationTicks);
     }
 
     private static NetworkLensPayload decode(RegistryFriendlyByteBuf buffer) {
         ResourceLocation dimension = buffer.readResourceLocation();
-        int count = Math.min(buffer.readVarInt(), MAX_TARGETS);
+        int count = buffer.readVarInt();
+        if (count < 0 || count > MAX_TARGETS) throw new IllegalArgumentException("invalid lens target count: " + count);
         var targets = new ArrayList<NetworkLensTarget>(count);
         for (int index = 0; index < count; index++) {
-            targets.add(new NetworkLensTarget(buffer.readBlockPos(), buffer.readEnum(NetworkLensTargetKind.class),
-                    buffer.readUtf(64)));
+            BlockPos pos = buffer.readBoolean() ? buffer.readBlockPos() : null;
+            var kind = buffer.readEnum(NetworkLensTargetKind.class);
+            var identity = buffer.readResourceLocation();
+            int lane = buffer.readVarInt() - 1;
+            String label = buffer.readUtf(64);
+            targets.add(new NetworkLensTarget(pos, kind, identity, lane, label));
         }
-        ResourceLocation textual = buffer.readBoolean() ? buffer.readResourceLocation() : null;
-        int lane = buffer.readVarInt() - 1;
-        int duration = buffer.readVarInt();
-        return new NetworkLensPayload(dimension, targets, textual, lane, duration);
+        return new NetworkLensPayload(dimension, targets, buffer.readVarInt());
     }
 
     @Override

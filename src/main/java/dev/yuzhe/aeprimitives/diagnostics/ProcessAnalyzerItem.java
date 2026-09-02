@@ -33,6 +33,11 @@ public final class ProcessAnalyzerItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext context) {
         if (!(context.getPlayer() instanceof ServerPlayer player)) return InteractionResult.SUCCESS;
+        if (!player.mayInteract(context.getLevel(), context.getClickedPos())) {
+            player.displayClientMessage(Component.literal("Process Analyzer: access denied")
+                    .withStyle(ChatFormatting.RED), true);
+            return InteractionResult.CONSUME;
+        }
         var blockEntity = context.getLevel().getBlockEntity(context.getClickedPos());
         if (player.isShiftKeyDown()) {
             NetworkLensPayload.send(player, context.getClickedPos());
@@ -51,6 +56,12 @@ public final class ProcessAnalyzerItem extends Item {
         if (!(blockEntity instanceof PatternProviderLogicHost host) || host.getGrid() == null) {
             player.displayClientMessage(Component.translatable("message.aeprimitives.process_analyzer.target")
                     .withStyle(ChatFormatting.YELLOW), true);
+            return InteractionResult.CONSUME;
+        }
+        var gridOwner = host.getGrid().getPivot().getOwningPlayerProfileId();
+        if (gridOwner == null || (!gridOwner.equals(player.getUUID()) && !player.hasPermissions(2))) {
+            player.displayClientMessage(Component.literal("Process Analyzer: ME network access denied")
+                    .withStyle(ChatFormatting.RED), true);
             return InteractionResult.CONSUME;
         }
         send(player, SequenceRuntime.snapshot(host.getGrid()));

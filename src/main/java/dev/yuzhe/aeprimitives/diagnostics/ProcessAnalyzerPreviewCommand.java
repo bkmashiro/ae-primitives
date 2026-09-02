@@ -57,11 +57,12 @@ public final class ProcessAnalyzerPreviewCommand {
                             var owner = player.blockPosition().offset(0, 0, 3);
                             PacketDistributor.sendToPlayer(player, new NetworkLensPayload(
                                     player.level().dimension().location(), List.of(
-                                    new NetworkLensTarget(owner, NetworkLensTargetKind.BLOCKED_CAUSE,
-                                            "blocked factory"),
-                                    new NetworkLensTarget(owner.east(), NetworkLensTargetKind.SPATIAL_BINDING,
-                                            "bound spatial parallel")),
-                                    id("output_buffer"), 1, 100));
+                                    NetworkLensTarget.world(owner, NetworkLensTargetKind.BLOCKED_CAUSE,
+                                            id("heterogeneous_spatial_factory"), -1, "blocked factory"),
+                                    NetworkLensTarget.world(owner.east(), NetworkLensTargetKind.SPATIAL_BINDING,
+                                            id("basic_spatial_parallel"), -1, "bound spatial parallel"),
+                                    NetworkLensTarget.textual(NetworkLensTargetKind.VIRTUAL_LANE,
+                                            id("output_buffer"), 1, "blocked_output")), 100));
                             return 1;
                         })));
     }

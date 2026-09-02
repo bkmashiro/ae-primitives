@@ -33,7 +33,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class PrimitiveMachineGameTests {
     @GameTest(template = "empty")
-    public static void networkLensResolvesOnlyDirectedSpatialOwnership(GameTestHelper helper) {
+    public static void networkLensRejectsSidecarsBesideNonHosts(GameTestHelper helper) {
         var owner = MACHINE;
         var bound = MACHINE.offset(1, 0, 0);
         var unrelated = MACHINE.offset(-1, 0, 0);
@@ -44,9 +44,8 @@ public final class PrimitiveMachineGameTests {
                 .setValue(dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock.FACING, net.minecraft.core.Direction.WEST));
         var result = dev.yuzhe.aeprimitives.diagnostics.NetworkLensResolver.resolve(
                 helper.getLevel(), helper.absolutePos(owner));
-        helper.assertTrue(result.targets().size() == 2, "lens scanned or accepted an unrelated sidecar");
-        helper.assertTrue(result.targets().stream().anyMatch(target -> target.pos().equals(helper.absolutePos(bound))),
-                "lens missed the directed spatial binding");
+        helper.assertTrue(result.targets().size() == 1,
+                "lens accepted a spatial sidecar beside a block that is not a spatial host");
         helper.succeed();
     }
 

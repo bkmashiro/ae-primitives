@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import java.util.stream.Collectors;
 
 /** Client-only ephemeral overlay. Nothing is persisted or broadcast. */
 public final class NetworkLensClient {
@@ -16,28 +17,33 @@ public final class NetworkLensClient {
 
     public static void activate(NetworkLensPayload payload) {
         var minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || !minecraft.level.dimension().location().equals(payload.dimension())) return;
+        if (minecraft.level == null) return;
         active = new Active(payload, minecraft.level.getGameTime() + payload.durationTicks());
-        String detail = payload.textualTarget() == null ? "world target" : payload.textualTarget().toString();
-        if (payload.lane() >= 0) detail = "lane " + (payload.lane() + 1) + " · " + detail;
+        boolean sameDimension = minecraft.level.dimension().location().equals(payload.dimension());
+        String detail = payload.targets().stream()
+                .filter(target -> target.pos() == null || !sameDimension || !minecraft.level.hasChunkAt(target.pos()))
+                .map(target -> (target.lane() >= 0 ? "lane " + (target.lane() + 1) + " · " : "")
+                        + target.identity())
+                .collect(Collectors.joining("  ·  "));
+        if (detail.isBlank()) detail = "world targets";
         minecraft.gui.setOverlayMessage(Component.literal("ME Network Lens · " + detail), false);
     }
 
     public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         var minecraft = Minecraft.getInstance();
-        if (active == null || minecraft.level == null
-                || minecraft.level.getGameTime() >= active.expiresAt
-                || !minecraft.level.dimension().location().equals(active.payload.dimension())) {
+        if (active == null || minecraft.level == null || minecraft.level.getGameTime() >= active.expiresAt) {
             active = null;
             return;
         }
+        if (!minecraft.level.dimension().location().equals(active.payload.dimension())) return;
         PoseStack poses = event.getPoseStack();
         var camera = event.getCamera().getPosition();
         poses.pushPose();
         poses.translate(-camera.x, -camera.y, -camera.z);
         var consumer = minecraft.renderBuffers().bufferSource().getBuffer(RenderType.lines());
         for (var target : active.payload.targets()) {
+            if (target.pos() == null || !minecraft.level.hasChunkAt(target.pos())) continue;
             float red = target.kind() == NetworkLensTargetKind.BLOCKED_CAUSE ? 1.0f : 0.2f;
             float green = target.kind() == NetworkLensTargetKind.SPATIAL_BINDING ? 0.85f : 0.45f;
             float blue = target.kind() == NetworkLensTargetKind.MACHINE ? 1.0f : 0.55f;

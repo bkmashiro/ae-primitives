@@ -6,8 +6,10 @@ import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
+import dev.yuzhe.aeprimitives.space.FactoryResourcePort;
+import net.minecraft.resources.ResourceLocation;
 
-public final class KineticFactoryPortBlockEntity extends KineticBlockEntity {
+public final class KineticFactoryPortBlockEntity extends KineticBlockEntity implements FactoryResourcePort {
     static final float MIN_SPEED = 16.0f;
     private final float[] laneStress = new float[HeterogeneousFactoryBlockEntity.LANE_COUNT];
     private BlockPos owner;
@@ -39,6 +41,12 @@ public final class KineticFactoryPortBlockEntity extends KineticBlockEntity {
         int count = 0;
         for (float stress : laneStress) if (stress > 0) count++;
         return count;
+    }
+
+    @Override public BlockPos lensOwner() { return owner; }
+
+    @Override public ResourceLocation lensResourceId() {
+        return ResourceLocation.fromNamespaceAndPath("create", "stress");
     }
 
     @Override public float calculateStressApplied() {
