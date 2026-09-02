@@ -15,6 +15,8 @@ import dev.vfyjxf.taffy.style.FlexDirection;
 import dev.vfyjxf.taffy.style.TaffyPosition;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
 import dev.yuzhe.aeprimitives.diagnostics.CraftingForecast;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningReport;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.diagnostics.ForecastPrecision;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessDiagnosticSnapshot;
 import dev.yuzhe.aeprimitives.diagnostics.ProcessSequenceView;
@@ -84,9 +86,19 @@ public final class ProcessAnalyzerClient {
                 .gridSize(24).gridMinPixels(10)
                 .gridLineColor(0x183f7180).gridAccentColor(0x383f7180));
 
-        if (snapshot.sequences().isEmpty() && snapshot.machineInsights().isEmpty()) {
+        if (snapshot.sequences().isEmpty() && snapshot.machineInsights().isEmpty()
+                && snapshot.commissioningReports().isEmpty()) {
             detail.setText(Component.translatable("screen.aeprimitives.process_analyzer.empty"));
         } else {
+            if (!snapshot.commissioningReports().isEmpty()) {
+                var commissioningTab = tab("commission");
+                commissioningTab.setOnClick(event -> {
+                    event.stopLaterPropagation();
+                    renderCommissioning(graph, detail, snapshot.commissioningReports());
+                    graph.fitToChildren(20, 0.72f);
+                });
+                tabs.addChild(commissioningTab);
+            }
             for (var insight : snapshot.machineInsights()) {
                 var tab = tab(insight.identity().getPath());
                 tab.setOnClick(event -> {
@@ -109,9 +121,11 @@ public final class ProcessAnalyzerClient {
             }
             if (!snapshot.machineInsights().isEmpty()) {
                 renderInsight(graph, detail, snapshot.machineInsights().getFirst());
-            } else {
+            } else if (!snapshot.sequences().isEmpty()) {
                 var sequence = snapshot.sequences().getFirst();
                 renderSequence(graph, detail, sequence, forecast(snapshot, sequence));
+            } else {
+                renderCommissioning(graph, detail, snapshot.commissioningReports());
             }
         }
 
@@ -162,6 +176,74 @@ public final class ProcessAnalyzerClient {
         card.addChildren(title, operations, resources, capacity);
         graph.addContentChild(card);
         detail.setText(Component.literal("Read-only machine capability snapshot · revision " + insight.revision()));
+    }
+
+    private static void renderCommissioning(
+            GraphView graph, Label detail, java.util.List<CommissioningReport> reports) {
+        graph.clearAllContentChildren();
+        int shown = Math.min(reports.size(), 4);
+        for (int index = 0; index < shown; index++) {
+            var report = reports.get(index);
+            int color = report.status() == CommissioningStatus.READY ? 0xff1d3540 : 0xff4a2830;
+            var card = new UIElement();
+            int column = index % 2;
+            int row = index / 2;
+            card.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE)
+                    .left(8 + column * 188).top(6 + row * 56).width(176).height(48).paddingAll(5).gapAll(2));
+            card.style(style -> style.background(new ColorRectTexture(color))
+                    .overlay(new ColorBorderTexture(-2,
+                            report.status() == CommissioningStatus.READY ? 0xff4d8792 : 0xff9b4d59)));
+            var title = new Label();
+            title.setText(Component.literal(shortRecipeName(report)));
+            title.layout(layout -> layout.width(166).height(10));
+            title.textStyle(style -> style.fontSize(9).textColor(0xff9fe7e5).textShadow(true));
+            var flow = new Label();
+            flow.setText(Component.literal(commissioningFlow(report)));
+            flow.layout(layout -> layout.width(166));
+            flow.textStyle(style -> style.fontSize(8).textColor(0xffd7e5e7).adaptiveHeight(true));
+            card.addChildren(title, flow);
+            graph.addContentChild(card);
+        }
+        long ready = reports.stream().filter(report -> report.status() == CommissioningStatus.READY).count();
+        detail.setText(Component.literal("Virtual only · " + ready + "/" + reports.size()
+                + " ready · copied config · synthetic inputs · no items created"));
+    }
+
+    private static String shortRecipeName(CommissioningReport report) {
+        if (report.recipe() == null) return report.status().name().toLowerCase(java.util.Locale.ROOT);
+        String path = report.recipe().getPath();
+        int slash = path.lastIndexOf('/');
+        return slash < 0 ? path : path.substring(slash + 1);
+    }
+
+    private static String commissioningFlow(CommissioningReport report) {
+        if (report.status() != CommissioningStatus.READY) return report.message();
+        if (report.consumption().size() == 1 && report.outputs().size() == 1) {
+            String inputPath = report.consumption().getFirst().id().getPath();
+            String outputPath = report.outputs().getFirst().id().getPath();
+            if (inputPath.endsWith("_concrete_powder") && outputPath.endsWith("_concrete")) {
+                return report.consumption().getFirst().amount() + " powder -> "
+                        + report.outputs().getFirst().amount() + " concrete";
+            }
+        }
+        String inputs = report.consumption().stream().limit(2)
+                .map(resource -> resource.amount() + " " + shortResourceName(resource.id().getPath())
+                        + (resource.retained() ? " retained" : ""))
+                .collect(Collectors.joining(" + "));
+        String outputs = report.outputs().stream().limit(2)
+                .map(resource -> resource.amount() + " " + shortResourceName(resource.id().getPath()))
+                .collect(Collectors.joining(" + "));
+        return inputs + " -> " + outputs;
+    }
+
+    private static String shortResourceName(String path) {
+        if (path.endsWith("_concrete_powder")) {
+            return path.substring(0, path.length() - "_concrete_powder".length()) + " powder";
+        }
+        if (path.endsWith("_concrete")) {
+            return path.substring(0, path.length() - "_concrete".length()) + " concrete";
+        }
+        return path.length() <= 18 ? path : path.substring(0, 17) + "…";
     }
 
     private static void renderSequence(

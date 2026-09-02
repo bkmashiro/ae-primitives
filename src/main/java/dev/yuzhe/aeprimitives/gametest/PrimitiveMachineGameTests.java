@@ -35,6 +35,44 @@ public final class PrimitiveMachineGameTests {
     private static final BlockPos ENERGY = new BlockPos(2, 1, 1);
     private static final BlockPos MACHINE = new BlockPos(3, 1, 1);
 
+    @GameTest(template = "empty")
+    public static void deterministicCommissioningDoesNotTouchRealInventory(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.CONCRETE_CURING_CHAMBER.get());
+        var machine = helper.<PrimitiveMachineBlockEntity>getBlockEntity(MACHINE);
+        machine.inventory().setStackInSlot(0, new ItemStack(Items.DIAMOND, 7));
+        var before = machine.saveWithFullMetadata(helper.getLevel().registryAccess());
+
+        var reports = dev.yuzhe.aeprimitives.commissioning.CommissioningProviders.commission(machine);
+        var after = machine.saveWithFullMetadata(helper.getLevel().registryAccess());
+
+        helper.assertTrue(!reports.isEmpty() && reports.stream().allMatch(report ->
+                        report.status() == dev.yuzhe.aeprimitives.commissioning.CommissioningStatus.READY),
+                "deterministic machine did not produce virtual commissioning reports");
+        helper.assertTrue(machine.inventory().getStackInSlot(0).is(Items.DIAMOND)
+                        && machine.inventory().getStackInSlot(0).getCount() == 7,
+                "virtual commissioning touched the real machine inventory");
+        helper.assertTrue(before.equals(after),
+                "virtual commissioning changed the serialized machine or resource state");
+        helper.assertTrue(reports.stream().flatMap(report -> report.outputs().stream())
+                        .noneMatch(output -> output.id().equals(
+                                Items.DIAMOND.builtInRegistryHolder().key().location())),
+                "virtual commissioning leaked the real inventory into synthetic outputs");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void probabilisticMachineIsRejectedBeforeCommissioning(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.FORTUNE_CHAMBER.get());
+        var machine = helper.<PrimitiveMachineBlockEntity>getBlockEntity(MACHINE);
+        var reports = dev.yuzhe.aeprimitives.commissioning.CommissioningProviders.commission(machine);
+        helper.assertTrue(reports.size() == 1 && reports.getFirst().status()
+                        == dev.yuzhe.aeprimitives.commissioning.CommissioningStatus.UNSUPPORTED_PROBABILISTIC,
+                "probabilistic machine entered deterministic commissioning");
+        helper.assertTrue(reports.getFirst().outputs().isEmpty(),
+                "rejected probabilistic commissioning exposed output");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void generatorProducesCobblestone(GameTestHelper helper) {
         var machine = setup(helper, ModContent.RESOURCE_GENERATOR.get());

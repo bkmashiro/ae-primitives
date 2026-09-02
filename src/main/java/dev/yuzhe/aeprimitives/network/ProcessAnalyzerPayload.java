@@ -2,6 +2,9 @@ package dev.yuzhe.aeprimitives.network;
 
 import dev.yuzhe.aeprimitives.AePrimitives;
 import dev.yuzhe.aeprimitives.client.ProcessAnalyzerClient;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningReport;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningResource;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsight;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsightRequirement;
 import dev.yuzhe.aeprimitives.diagnostics.MachineInsightRequirementKind;
@@ -31,7 +34,7 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             ProcessAnalyzerPayload::decode);
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("4").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
+        event.registrar("5").playToClient(TYPE, STREAM_CODEC, ProcessAnalyzerPayload::handle);
     }
 
     private static void handle(ProcessAnalyzerPayload payload, IPayloadContext context) {
@@ -111,6 +114,23 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
             buffer.writeVarLong(forecast.maximumCompletionTicks());
             buffer.writeEnum(forecast.completionPrecision());
         }
+        buffer.writeVarInt(snapshot.commissioningReports().size());
+        for (var report : snapshot.commissioningReports()) {
+            buffer.writeResourceLocation(report.machine());
+            writeOptionalId(buffer, report.recipe());
+            buffer.writeEnum(report.status());
+            writeCommissioningResources(buffer, report.consumption());
+            writeCommissioningResources(buffer, report.outputs());
+            buffer.writeVarInt(report.requirements().size());
+            for (var requirement : report.requirements()) {
+                buffer.writeEnum(requirement.kind());
+                buffer.writeResourceLocation(requirement.id());
+                buffer.writeDouble(requirement.amount());
+                buffer.writeUtf(requirement.unit(), 32);
+                buffer.writeBoolean(requirement.exact());
+            }
+            buffer.writeUtf(report.message(), 256);
+        }
     }
 
     private static ProcessAnalyzerPayload decode(RegistryFriendlyByteBuf buffer) {
@@ -188,7 +208,48 @@ public record ProcessAnalyzerPayload(ProcessDiagnosticSnapshot snapshot) impleme
                     buffer.readVarInt(), readOptionalId(buffer), buffer.readVarLong(), buffer.readVarLong(),
                     buffer.readEnum(ForecastPrecision.class)));
         }
-        return new ProcessAnalyzerPayload(new ProcessDiagnosticSnapshot(revision, sequences, insights, forecasts));
+        var commissioning = new ArrayList<CommissioningReport>();
+        int commissioningCount = bounded(buffer.readVarInt(), 1024);
+        for (int commissioningIndex = 0; commissioningIndex < commissioningCount; commissioningIndex++) {
+            var machine = buffer.readResourceLocation();
+            var recipe = readOptionalId(buffer);
+            var status = buffer.readEnum(CommissioningStatus.class);
+            var consumption = readCommissioningResources(buffer);
+            var outputs = readCommissioningResources(buffer);
+            var requirements = new ArrayList<MachineInsightRequirement>();
+            int requirementCount = bounded(buffer.readVarInt(), 1024);
+            for (int requirementIndex = 0; requirementIndex < requirementCount; requirementIndex++) {
+                requirements.add(new MachineInsightRequirement(
+                        buffer.readEnum(MachineInsightRequirementKind.class), buffer.readResourceLocation(),
+                        buffer.readDouble(), buffer.readUtf(32), buffer.readBoolean()));
+            }
+            commissioning.add(new CommissioningReport(machine, recipe, status, consumption, outputs,
+                    requirements, buffer.readUtf(256)));
+        }
+        return new ProcessAnalyzerPayload(
+                new ProcessDiagnosticSnapshot(revision, sequences, insights, forecasts, commissioning));
+    }
+
+    private static void writeCommissioningResources(
+            RegistryFriendlyByteBuf buffer, java.util.List<CommissioningResource> resources) {
+        buffer.writeVarInt(resources.size());
+        for (var resource : resources) {
+            buffer.writeUtf(resource.kind(), 32);
+            buffer.writeResourceLocation(resource.id());
+            buffer.writeVarLong(resource.amount());
+            buffer.writeBoolean(resource.retained());
+        }
+    }
+
+    private static java.util.List<CommissioningResource> readCommissioningResources(
+            RegistryFriendlyByteBuf buffer) {
+        int count = bounded(buffer.readVarInt(), 1024);
+        var resources = new ArrayList<CommissioningResource>();
+        for (int index = 0; index < count; index++) {
+            resources.add(new CommissioningResource(buffer.readUtf(32), buffer.readResourceLocation(),
+                    buffer.readVarLong(), buffer.readBoolean()));
+        }
+        return resources;
     }
 
     private static void writeResources(RegistryFriendlyByteBuf buffer,

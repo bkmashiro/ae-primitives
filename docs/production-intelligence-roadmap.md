@@ -148,6 +148,8 @@ The forecast is analytical, not an execution simulator. It evaluates immutable s
 
 ## Phase 4: deterministic virtual commissioning
 
+**Implemented.** Core now commissions supported deterministic primitive machines and packaged machine-space components from copied configuration. A bounded synthetic input ledger produces immutable resource descriptions only; probabilistic and world-native machines are rejected before planning. The Process Analyzer renders those descriptions without exposing production handles or collectible stacks.
+
 Commissioning validates a machine configuration without executing a real production path.
 
 ### Product

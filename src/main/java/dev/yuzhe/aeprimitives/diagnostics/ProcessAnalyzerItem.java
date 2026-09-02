@@ -2,6 +2,7 @@ package dev.yuzhe.aeprimitives.diagnostics;
 
 import appeng.api.stacks.AEItemKey;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningProviders;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
@@ -32,8 +33,11 @@ public final class ProcessAnalyzerItem extends Item {
         if (!(context.getPlayer() instanceof ServerPlayer player)) return InteractionResult.SUCCESS;
         var blockEntity = context.getLevel().getBlockEntity(context.getClickedPos());
         var insight = blockEntity == null ? null : MachineInsightProviders.inspect(blockEntity);
-        if (insight != null) {
-            send(player, new ProcessDiagnosticSnapshot((int) insight.revision(), List.of(), List.of(insight)));
+        var commissioning = blockEntity == null ? List.<dev.yuzhe.aeprimitives.commissioning.CommissioningReport>of()
+                : CommissioningProviders.commission(blockEntity);
+        if (insight != null || !commissioning.isEmpty()) {
+            send(player, new ProcessDiagnosticSnapshot(insight == null ? 0 : (int) insight.revision(),
+                    List.of(), insight == null ? List.of() : List.of(insight), List.of(), commissioning));
             return InteractionResult.CONSUME;
         }
         if (!(blockEntity instanceof PatternProviderLogicHost host) || host.getGrid() == null) {
@@ -67,8 +71,10 @@ public final class ProcessAnalyzerItem extends Item {
         if (subject.is(ModContent.MACHINE_SPACE_COMPONENT.get())) {
             var envelope = MachineSpaceComponentItem.read(subject);
             var insight = envelope == null ? null : MachineInsightProviders.inspect(envelope);
-            return insight == null ? null
-                    : new ProcessDiagnosticSnapshot((int) insight.revision(), List.of(), List.of(insight));
+            var commissioning = CommissioningProviders.commission(envelope);
+            return insight == null && commissioning.isEmpty() ? null
+                    : new ProcessDiagnosticSnapshot(insight == null ? 0 : (int) insight.revision(), List.of(),
+                            insight == null ? List.of() : List.of(insight), List.of(), commissioning);
         }
         var key = AEItemKey.of(subject);
         if (key == null) return null;

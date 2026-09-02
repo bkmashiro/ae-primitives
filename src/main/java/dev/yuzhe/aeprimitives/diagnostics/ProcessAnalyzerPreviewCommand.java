@@ -1,6 +1,9 @@
 package dev.yuzhe.aeprimitives.diagnostics;
 
 import com.mojang.brigadier.CommandDispatcher;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningReport;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningResource;
+import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
 import java.util.List;
@@ -29,6 +32,14 @@ public final class ProcessAnalyzerPreviewCommand {
                             var complete = snapshot();
                             PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(
                                     new ProcessDiagnosticSnapshot(complete.revision(), complete.sequences())));
+                            return 1;
+                        }))
+                .then(Commands.literal("preview-commissioning")
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(
+                                    new ProcessDiagnosticSnapshot(0, List.of(), List.of(), List.of(),
+                                            commissioningPreview())));
                             return 1;
                         })));
     }
@@ -71,6 +82,27 @@ public final class ProcessAnalyzerPreviewCommand {
 
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath("aeprimitives", path);
+    }
+
+    private static List<CommissioningReport> commissioningPreview() {
+        var machine = id("concrete_curing_chamber");
+        return List.of(
+                previewCommissioning(machine, "white", "white_concrete_powder", "white_concrete"),
+                previewCommissioning(machine, "orange", "orange_concrete_powder", "orange_concrete"),
+                previewCommissioning(machine, "magenta", "magenta_concrete_powder", "magenta_concrete"),
+                previewCommissioning(machine, "light_blue", "light_blue_concrete_powder", "light_blue_concrete"),
+                previewCommissioning(machine, "yellow", "yellow_concrete_powder", "yellow_concrete"));
+    }
+
+    private static CommissioningReport previewCommissioning(
+            ResourceLocation machine, String variant, String input, String output) {
+        return new CommissioningReport(machine, id("dynamic/concrete_curing_chamber/" + variant),
+                CommissioningStatus.READY,
+                List.of(new CommissioningResource("item", vanilla(input), 1, false)),
+                List.of(new CommissioningResource("item", vanilla(output), 1, false)),
+                List.of(new MachineInsightRequirement(MachineInsightRequirementKind.EXTERNAL_RESOURCE,
+                        ResourceLocation.fromNamespaceAndPath("ae2", "channel"), 1, "channel", true)),
+                "deterministic_virtual_plan");
     }
 
     private static ProcessStepView previewStep(int index, String recipe, String operation,
