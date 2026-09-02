@@ -7,11 +7,19 @@ import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
 import dev.yuzhe.aeprimitives.network.NetworkLensPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
+import dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity;
+import dev.yuzhe.aeprimitives.content.ModContent;
+import dev.yuzhe.aeprimitives.space.MachineSpaceComponentItem;
+import dev.yuzhe.aeprimitives.space.MachineSpaceEnvelope;
+import appeng.core.definitions.AEBlocks;
 import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Development-only visual fixture used by Minecraft Visual Harness. */
@@ -64,7 +72,44 @@ public final class ProcessAnalyzerPreviewCommand {
                                     NetworkLensTarget.textual(NetworkLensTargetKind.VIRTUAL_LANE,
                                             id("output_buffer"), 1, "blocked_output")), 100));
                             return 1;
-                        })));
+                        }))
+                .then(Commands.literal("preview-factory")
+                        .executes(context -> previewFactory(context.getSource()))));
+    }
+
+    private static int previewFactory(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        var level = player.serverLevel();
+        var pos = player.blockPosition().offset(0, 0, 3);
+        level.setBlockAndUpdate(pos, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get().defaultBlockState());
+        level.setBlockAndUpdate(pos.below(), AEBlocks.CREATIVE_ENERGY_CELL.block().defaultBlockState());
+        if (!(level.getBlockEntity(pos) instanceof HeterogeneousFactoryBlockEntity factory)) return 0;
+        var requested = List.of(
+                id("concrete_curing_chamber"),
+                ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "me_press"),
+                ResourceLocation.fromNamespaceAndPath("aeprimitives_farmersdelight", "me_cooking_pot"),
+                ResourceLocation.fromNamespaceAndPath("aeprimitives_powah", "me_energizing_chamber"));
+        var fallbacks = List.of(id("concrete_curing_chamber"), id("growth_chamber"),
+                ResourceLocation.withDefaultNamespace("furnace"), id("soil_processor"));
+        for (int lane = 0; lane < HeterogeneousFactoryBlockEntity.LANE_COUNT; lane++) {
+            var machineId = BuiltInRegistries.BLOCK.containsKey(requested.get(lane))
+                    ? requested.get(lane) : fallbacks.get(lane);
+            var block = BuiltInRegistries.BLOCK.get(machineId);
+            var envelope = MachineSpaceEnvelope.capture(machineId, block.defaultBlockState(), new CompoundTag());
+            factory.inventory().setStackInSlot(lane,
+                    MachineSpaceComponentItem.create(ModContent.MACHINE_SPACE_COMPONENT.get(), envelope));
+        }
+        factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.inputSlot(0, 0),
+                new ItemStack(net.minecraft.world.item.Items.RED_CONCRETE_POWDER));
+        for (int slot = 0; slot < HeterogeneousFactoryBlockEntity.LANE_BUFFER_SLOTS; slot++) {
+            factory.inventory().setStackInSlot(HeterogeneousFactoryBlockEntity.outputSlot(0, slot),
+                    new ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 64));
+        }
+        factory.scheduleExternalWork();
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+                "Factory visual fixture placed at " + pos.toShortString()), false);
+        return 1;
     }
 
     static ProcessDiagnosticSnapshot snapshot() {

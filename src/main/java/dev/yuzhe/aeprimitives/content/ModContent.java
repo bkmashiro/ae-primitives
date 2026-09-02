@@ -68,7 +68,7 @@ public final class ModContent {
     public static final DeferredBlock<MachineAssemblyTableBlock> MACHINE_ASSEMBLY_TABLE = BLOCKS.register("machine_assembly_table", () ->
             new MachineAssemblyTableBlock(BlockBehaviour.Properties.of().strength(3.0f, 6.0f).requiresCorrectToolForDrops()));
     public static final DeferredBlock<HeterogeneousFactoryBlock> HETEROGENEOUS_SPATIAL_FACTORY = BLOCKS.register("heterogeneous_spatial_factory", () ->
-            new HeterogeneousFactoryBlock(BlockBehaviour.Properties.of().strength(4.0f, 8.0f).requiresCorrectToolForDrops()));
+            new HeterogeneousFactoryBlock(BlockBehaviour.Properties.of().strength(4.0f, 8.0f).requiresCorrectToolForDrops().noOcclusion()));
     public static final DeferredBlock<PhysicalMetricDisplayBlock> PHYSICAL_METRIC_DISPLAY = BLOCKS.register("physical_metric_display", () ->
             new PhysicalMetricDisplayBlock(BlockBehaviour.Properties.of().strength(2.0f, 4.0f).requiresCorrectToolForDrops().noOcclusion()));
 

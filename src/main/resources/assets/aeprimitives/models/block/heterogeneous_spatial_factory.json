@@ -1,1 +1,18 @@
-{"parent":"minecraft:block/cube_bottom_top","textures":{"bottom":"aeprimitives:block/casing","side":"ae2:block/spatial_io_port_side","top":"ae2:block/spatial_io_port_top"}}
+{
+  "ambientocclusion": false,
+  "textures": {
+    "frame": "ae2:block/spatial_io_port_side",
+    "cap": "ae2:block/spatial_io_port_top",
+    "glass": "minecraft:block/glass",
+    "particle": "ae2:block/spatial_io_port_side"
+  },
+  "elements": [
+    {"from":[0,0,0],"to":[16,2,16],"faces":{"down":{"texture":"#frame"},"up":{"texture":"#cap"},"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[0,14,0],"to":[16,16,16],"faces":{"down":{"texture":"#cap"},"up":{"texture":"#frame"},"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[0,2,0],"to":[2,14,2],"faces":{"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[14,2,0],"to":[16,14,2],"faces":{"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[0,2,14],"to":[2,14,16],"faces":{"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[14,2,14],"to":[16,14,16],"faces":{"north":{"texture":"#frame"},"south":{"texture":"#frame"},"west":{"texture":"#frame"},"east":{"texture":"#frame"}}},
+    {"from":[2,2,2],"to":[14,14,14],"faces":{"north":{"texture":"#glass"},"south":{"texture":"#glass"},"west":{"texture":"#glass"},"east":{"texture":"#glass"},"up":{"texture":"#glass"},"down":{"texture":"#glass"}}}
+  ]
+}

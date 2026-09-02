@@ -539,6 +539,10 @@ public final class KineticMachineGameTests {
             port.setSpeed(64);
             factory.scheduleExternalWork();
             for (int tick = 0; tick < 5; tick++) factory.serverTick();
+            var visual = factory.visualLanes().get(0);
+            helper.assertTrue(ResourceLocation.fromNamespaceAndPath("aeprimitives_kinetics", "me_press").equals(visual.machineId())
+                            && visual.status() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.RUNNING,
+                    "factory visual snapshot did not preserve the active Create host machine");
             var lens = dev.yuzhe.aeprimitives.diagnostics.NetworkLensResolver.resolve(
                     helper.getLevel(), helper.absolutePos(factoryPos));
             helper.assertTrue(lens.targets().stream().anyMatch(target ->

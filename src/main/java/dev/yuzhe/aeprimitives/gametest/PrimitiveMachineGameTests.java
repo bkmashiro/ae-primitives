@@ -488,6 +488,27 @@ public final class PrimitiveMachineGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void heterogeneousFactoryPublishesBoundedVisualSnapshot(GameTestHelper helper) {
+        helper.setBlock(MACHINE, ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get());
+        var factory = helper.<dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity>getBlockEntity(MACHINE);
+        factory.inventory().setStackInSlot(0, machineComponent(helper, ModContent.CONCRETE_CURING_CHAMBER.get()));
+        var lanes = factory.visualLanes();
+        helper.assertTrue(lanes.size() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_COUNT,
+                "factory visual snapshot was not bounded to its four lanes");
+        helper.assertTrue(lanes.get(0).machineId().equals(
+                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aeprimitives", "concrete_curing_chamber"))
+                        && lanes.get(0).status() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.OFFLINE,
+                "factory visual snapshot lost the authoritative component identity or offline status");
+        helper.assertTrue(lanes.subList(1, lanes.size()).stream().allMatch(lane -> lane.machineId() == null
+                        && lane.status() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.EMPTY),
+                "empty visual lanes acquired synthetic machine state");
+        var update = factory.getUpdateTag(helper.getLevel().registryAccess()).getList("visualLanes", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        helper.assertTrue(update.size() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_COUNT,
+                "factory update tag did not carry the bounded visual snapshot");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 1000)
     public static void heterogeneousFactoryRunsIndependentLinearLanes(GameTestHelper helper) {
         helper.setBlock(ENERGY, AEBlocks.CREATIVE_ENERGY_CELL.block());

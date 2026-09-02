@@ -36,6 +36,8 @@ public final class ClientRegistration {
             ItemBlockRenderTypes.setRenderLayer(ModContent.GROWTH_CHAMBER.get(), RenderType.translucent());
             BlockEntityRenderers.register(ModContent.MACHINE_ENTITY.get(), PrimitiveMachineRenderer::new);
             BlockEntityRenderers.register(ModContent.PHYSICAL_METRIC_DISPLAY_ENTITY.get(), PhysicalMetricDisplayRenderer::new);
+            BlockEntityRenderers.register(ModContent.HETEROGENEOUS_FACTORY_ENTITY.get(), HeterogeneousFactoryRenderer::new);
+            ItemBlockRenderTypes.setRenderLayer(ModContent.HETEROGENEOUS_SPATIAL_FACTORY.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModContent.RESONANCE_COIL.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModContent.RESONANCE_CORE.get(), RenderType.translucent());
         });

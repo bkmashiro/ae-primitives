@@ -207,6 +207,11 @@ public final class PowahGameTests {
                     "packaged energizing chamber did not complete through the explicit FE port");
             helper.assertTrue(port.energy().getEnergyStored() == 0,
                     "packaged energizing chamber did not pay the exact recipe FE");
+            var visual = factory.visualLanes().get(0);
+            helper.assertTrue(ResourceLocation.fromNamespaceAndPath("aeprimitives_powah", "me_energizing_chamber")
+                            .equals(visual.machineId())
+                            && visual.status() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.WAITING_INPUT,
+                    "factory visual snapshot did not preserve the completed Powah host machine status");
         });
     }
 

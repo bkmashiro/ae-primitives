@@ -227,6 +227,8 @@ Expose the same snapshot and causal target in the world.
 
 ## Phase 7: spatial factory visualization
 
+**Status: complete.** The four-lane glass factory view publishes only machine identity, lane status and a 16-step progress bucket when that bounded snapshot changes. The client resolves the registered host block model, renders it as a miniature with a status pedestal, and never feeds animation state back into production.
+
 Use the established insight state to make the heterogeneous factory legible without inventing a second runtime.
 
 ### Product
