@@ -71,7 +71,7 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     private final MachineSource source = new MachineSource(() -> getMainNode().getNode());
     private final FactoryFlightRecorder flightRecorder = new FactoryFlightRecorder(LANE_COUNT);
     private List<FactoryVisualLane> clientVisualLanes = emptyVisualLanes();
-    private int lastVisualHash = Integer.MIN_VALUE;
+    private List<FactoryVisualLane> lastSentVisualLanes = List.of();
     private boolean lastVisualNodeActive;
     private boolean scheduled;
     private long wakeRevision;
@@ -466,20 +466,20 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
 
     private void syncVisualIfChanged() {
         List<FactoryVisualLane> lanes = buildVisualLanes();
-        int hash = lanes.hashCode();
-        if (hash == lastVisualHash) return;
-        lastVisualHash = hash;
+        if (lanes.equals(lastSentVisualLanes)) return;
+        lastSentVisualLanes = lanes;
         markForUpdate();
     }
 
     private CompoundTag visualTag() {
         var tag = new CompoundTag();
+        tag.putInt("visualVersion", 1);
         var lanes = new ListTag();
         for (FactoryVisualLane lane : buildVisualLanes()) {
             var laneTag = new CompoundTag();
             laneTag.putInt("lane", lane.lane());
             if (lane.machineId() != null) laneTag.putString("machine", lane.machineId().toString());
-            laneTag.putString("status", lane.status().name());
+            laneTag.putString("status", lane.status().id());
             laneTag.putInt("progressStep", lane.progressStep());
             lanes.add(laneTag);
         }
@@ -488,20 +488,23 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
     }
 
     private void readVisualTag(CompoundTag tag) {
+        if (tag.getInt("visualVersion") != 1) {
+            clientVisualLanes = emptyVisualLanes();
+            return;
+        }
         var decoded = new FactoryVisualLane[LANE_COUNT];
         var lanes = tag.getList("visualLanes", Tag.TAG_COMPOUND);
+        if (lanes.size() != LANE_COUNT) {
+            clientVisualLanes = emptyVisualLanes();
+            return;
+        }
         for (int i = 0; i < lanes.size(); i++) {
             var laneTag = lanes.getCompound(i);
             int lane = laneTag.getInt("lane");
             if (lane < 0 || lane >= LANE_COUNT || decoded[lane] != null) continue;
             var machineId = laneTag.contains("machine")
                     ? net.minecraft.resources.ResourceLocation.tryParse(laneTag.getString("machine")) : null;
-            LaneStatus status;
-            try {
-                status = LaneStatus.valueOf(laneTag.getString("status"));
-            } catch (IllegalArgumentException ignored) {
-                status = LaneStatus.INVALID;
-            }
+            LaneStatus status = laneStatusFromWire(laneTag.getString("status"));
             int step = Math.max(0, Math.min(FactoryVisualLane.PROGRESS_STEPS - 1,
                     laneTag.getInt("progressStep")));
             decoded[lane] = new FactoryVisualLane(lane, machineId, status, step);
@@ -512,6 +515,11 @@ public final class HeterogeneousFactoryBlockEntity extends AENetworkedBlockEntit
                     ? new FactoryVisualLane(lane, null, LaneStatus.EMPTY, 0) : decoded[lane]);
         }
         clientVisualLanes = List.copyOf(result);
+    }
+
+    private static LaneStatus laneStatusFromWire(String id) {
+        for (LaneStatus status : LaneStatus.values()) if (status.id().equals(id)) return status;
+        return LaneStatus.INVALID;
     }
 
     @Override public CompoundTag getUpdateTag(HolderLookup.Provider registries) { return visualTag(); }

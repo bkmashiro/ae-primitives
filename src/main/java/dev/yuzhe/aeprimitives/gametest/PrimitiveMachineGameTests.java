@@ -503,9 +503,14 @@ public final class PrimitiveMachineGameTests {
         helper.assertTrue(lanes.subList(1, lanes.size()).stream().allMatch(lane -> lane.machineId() == null
                         && lane.status() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LaneStatus.EMPTY),
                 "empty visual lanes acquired synthetic machine state");
-        var update = factory.getUpdateTag(helper.getLevel().registryAccess()).getList("visualLanes", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        var updateTag = factory.getUpdateTag(helper.getLevel().registryAccess());
+        helper.assertTrue(updateTag.getInt("visualVersion") == 1,
+                "factory visual snapshot did not declare its wire schema");
+        var update = updateTag.getList("visualLanes", net.minecraft.nbt.Tag.TAG_COMPOUND);
         helper.assertTrue(update.size() == dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity.LANE_COUNT,
                 "factory update tag did not carry the bounded visual snapshot");
+        helper.assertTrue("offline".equals(update.getCompound(0).getString("status")),
+                "factory visual snapshot did not use the stable status wire id");
         helper.succeed();
     }
 
