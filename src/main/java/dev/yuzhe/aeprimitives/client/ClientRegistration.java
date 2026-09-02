@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.common.NeoForge;
 
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
@@ -24,6 +25,7 @@ public final class ClientRegistration {
         bus.addListener(ClientRegistration::setup);
         bus.addListener(ClientRegistration::screens);
         bus.addListener(ClientRegistration::reloadListeners);
+        NeoForge.EVENT_BUS.addListener(NetworkLensClient::render);
     }
     private static void setup(FMLClientSetupEvent event) {
         if (ModList.get().isLoaded("ponder")) {
@@ -44,7 +46,10 @@ public final class ClientRegistration {
     }
     private static void reloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager ->
-                SimpleMachineAnimations.clearCache());
+                {
+                    SimpleMachineAnimations.clearCache();
+                    NetworkLensClient.clear();
+                });
     }
 
     private ClientRegistration() {}

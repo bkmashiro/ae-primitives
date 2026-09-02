@@ -5,6 +5,7 @@ import dev.yuzhe.aeprimitives.commissioning.CommissioningReport;
 import dev.yuzhe.aeprimitives.commissioning.CommissioningResource;
 import dev.yuzhe.aeprimitives.commissioning.CommissioningStatus;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
+import dev.yuzhe.aeprimitives.network.NetworkLensPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternSpec;
 import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
@@ -48,6 +49,19 @@ public final class ProcessAnalyzerPreviewCommand {
                             PacketDistributor.sendToPlayer(player, new ProcessAnalyzerPayload(
                                     new ProcessDiagnosticSnapshot(0, List.of(), List.of(), List.of(), List.of(),
                                             autopsyPreview())));
+                            return 1;
+                        }))
+                .then(Commands.literal("preview-lens")
+                        .executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            var owner = player.blockPosition().offset(0, 0, 3);
+                            PacketDistributor.sendToPlayer(player, new NetworkLensPayload(
+                                    player.level().dimension().location(), List.of(
+                                    new NetworkLensTarget(owner, NetworkLensTargetKind.BLOCKED_CAUSE,
+                                            "blocked factory"),
+                                    new NetworkLensTarget(owner.east(), NetworkLensTargetKind.SPATIAL_BINDING,
+                                            "bound spatial parallel")),
+                                    id("output_buffer"), 1, 100));
                             return 1;
                         })));
     }

@@ -6,6 +6,7 @@ import dev.yuzhe.aeprimitives.commissioning.CommissioningProviders;
 import dev.yuzhe.aeprimitives.content.ModContent;
 import dev.yuzhe.aeprimitives.content.HeterogeneousFactoryBlockEntity;
 import dev.yuzhe.aeprimitives.network.ProcessAnalyzerPayload;
+import dev.yuzhe.aeprimitives.network.NetworkLensPayload;
 import dev.yuzhe.aeprimitives.operation.OperationPatternData;
 import dev.yuzhe.aeprimitives.sequence.SequencePatternData;
 import dev.yuzhe.aeprimitives.sequence.SequenceRuntime;
@@ -33,6 +34,10 @@ public final class ProcessAnalyzerItem extends Item {
     public InteractionResult useOn(UseOnContext context) {
         if (!(context.getPlayer() instanceof ServerPlayer player)) return InteractionResult.SUCCESS;
         var blockEntity = context.getLevel().getBlockEntity(context.getClickedPos());
+        if (player.isShiftKeyDown()) {
+            NetworkLensPayload.send(player, context.getClickedPos());
+            return InteractionResult.CONSUME;
+        }
         var insight = blockEntity == null ? null : MachineInsightProviders.inspect(blockEntity);
         var commissioning = blockEntity == null ? List.<dev.yuzhe.aeprimitives.commissioning.CommissioningReport>of()
                 : CommissioningProviders.commission(blockEntity);

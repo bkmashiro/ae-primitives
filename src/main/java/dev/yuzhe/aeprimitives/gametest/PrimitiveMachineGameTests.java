@@ -32,6 +32,24 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @GameTestHolder(AePrimitives.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class PrimitiveMachineGameTests {
+    @GameTest(template = "empty")
+    public static void networkLensResolvesOnlyDirectedSpatialOwnership(GameTestHelper helper) {
+        var owner = MACHINE;
+        var bound = MACHINE.offset(1, 0, 0);
+        var unrelated = MACHINE.offset(-1, 0, 0);
+        helper.setBlock(owner, ModContent.CONCRETE_CURING_CHAMBER.get());
+        helper.setBlock(bound, ModContent.BASIC_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock.FACING, net.minecraft.core.Direction.WEST));
+        helper.setBlock(unrelated, ModContent.BASIC_SPATIAL_PARALLEL.get().defaultBlockState()
+                .setValue(dev.yuzhe.aeprimitives.spatial.SpatialParallelBlock.FACING, net.minecraft.core.Direction.WEST));
+        var result = dev.yuzhe.aeprimitives.diagnostics.NetworkLensResolver.resolve(
+                helper.getLevel(), helper.absolutePos(owner));
+        helper.assertTrue(result.targets().size() == 2, "lens scanned or accepted an unrelated sidecar");
+        helper.assertTrue(result.targets().stream().anyMatch(target -> target.pos().equals(helper.absolutePos(bound))),
+                "lens missed the directed spatial binding");
+        helper.succeed();
+    }
+
     private static final BlockPos ENERGY = new BlockPos(2, 1, 1);
     private static final BlockPos MACHINE = new BlockPos(3, 1, 1);
 

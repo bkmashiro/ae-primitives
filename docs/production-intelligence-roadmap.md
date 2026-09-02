@@ -209,6 +209,8 @@ Build the recorder only when the autopsy is ready to consume it.
 
 ## Phase 6: ME Network Lens
 
+Status: implemented as a short-lived crouch-use mode of the Process Analyzer. The server resolves only the clicked owner and six loaded adjacent ownership edges, sends at most seven targets to the requesting player and retains no lens state; unresolved resource causes remain textual.
+
 Expose the same snapshot and causal target in the world.
 
 ### Product
